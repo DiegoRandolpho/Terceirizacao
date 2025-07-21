@@ -1,4 +1,4 @@
-<!-- index.html - Versão adaptada para Supabase -->
+<!-- index.html - Webapp com navegação por seções -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,31 +9,70 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body class="bg-gray-100 p-6">
-  <div class="max-w-2xl mx-auto bg-white shadow p-6 rounded-lg">
-    <h1 class="text-2xl font-bold mb-4">Cadastro de Equipamento</h1>
-    <form id="cadastro-form" class="space-y-4">
-      <input id="placa" type="text" placeholder="Placa" class="w-full border p-2 rounded" required />
-      <input id="filial" type="text" placeholder="Filial" class="w-full border p-2 rounded" required />
-      <input id="data" type="date" class="w-full border p-2 rounded" required />
-      <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Cadastrar</button>
-    </form>
-    <div id="mensagem" class="mt-4 text-center text-sm"></div>
+  <div class="max-w-4xl mx-auto">
+    <!-- Menu de Navegação -->
+    <nav class="flex flex-wrap justify-center gap-4 mb-6">
+      <button onclick="mostrarSecao('cadastro-equipamento')" class="bg-blue-600 text-white px-4 py-2 rounded">Cadastro de Equipamentos</button>
+      <button onclick="mostrarSecao('cadastro-filial')" class="bg-green-600 text-white px-4 py-2 rounded">Cadastro de Filiais</button>
+      <button onclick="mostrarSecao('dashboard')" class="bg-yellow-500 text-white px-4 py-2 rounded">Dashboard</button>
+      <button onclick="mostrarSecao('troca-filial')" class="bg-purple-600 text-white px-4 py-2 rounded">Troca de Filial</button>
+      <button onclick="mostrarSecao('gestao-usuarios')" class="bg-gray-800 text-white px-4 py-2 rounded">Gestão de Usuários</button>
+    </nav>
 
-    <hr class="my-6" />
+    <!-- Seção: Cadastro de Equipamentos -->
+    <section id="cadastro-equipamento" class="hidden bg-white p-6 rounded shadow">
+      <h1 class="text-2xl font-bold mb-4">Cadastro de Equipamento</h1>
+      <form id="cadastro-form" class="space-y-4">
+        <input id="placa" type="text" placeholder="Placa" class="w-full border p-2 rounded" required />
+        <input id="filial" type="text" placeholder="Filial" class="w-full border p-2 rounded" required />
+        <input id="data" type="date" class="w-full border p-2 rounded" required />
+        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Cadastrar</button>
+      </form>
+      <div id="mensagem" class="mt-4 text-center text-sm"></div>
+    </section>
 
-    <h2 class="text-xl font-bold mb-2">Dashboard</h2>
-    <select id="filial-select" class="w-full mb-4 border p-2 rounded">
-      <option value="">Selecione uma Filial</option>
-    </select>
-    <ul id="lista-equipamentos" class="list-disc pl-6 text-gray-700"></ul>
+    <!-- Seção: Cadastro de Filiais -->
+    <section id="cadastro-filial" class="hidden bg-white p-6 rounded shadow">
+      <h1 class="text-2xl font-bold mb-4">Cadastro de Filial</h1>
+      <form id="filial-form" class="space-y-4">
+        <input id="nova-filial" type="text" placeholder="Nome da Filial" class="w-full border p-2 rounded" required />
+        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 rounded">Cadastrar Filial</button>
+      </form>
+      <div id="mensagem-filial" class="mt-4 text-center text-sm"></div>
+    </section>
+
+    <!-- Seção: Dashboard -->
+    <section id="dashboard" class="hidden bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-2">Dashboard</h2>
+      <select id="filial-select" class="w-full mb-4 border p-2 rounded">
+        <option value="">Selecione uma Filial</option>
+      </select>
+      <ul id="lista-equipamentos" class="list-disc pl-6 text-gray-700"></ul>
+    </section>
+
+    <!-- Seção: Troca de Filial -->
+    <section id="troca-filial" class="hidden bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-2">Troca de Filial</h2>
+      <p class="text-gray-600">(Funcionalidade a implementar)</p>
+    </section>
+
+    <!-- Seção: Gestão de Usuários -->
+    <section id="gestao-usuarios" class="hidden bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-2">Gestão de Usuários</h2>
+      <p class="text-gray-600">(Funcionalidade a implementar)</p>
+    </section>
   </div>
 
   <script>
-    // Configure sua URL e chave pública
     const supabase = supabase.createClient(
       'https://zentzsobumuwjmwmqede.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'
     );
+
+    function mostrarSecao(id) {
+      document.querySelectorAll('section').forEach(secao => secao.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
 
     const form = document.getElementById('cadastro-form');
     const placa = document.getElementById('placa');
@@ -43,9 +82,14 @@
     const filialSelect = document.getElementById('filial-select');
     const listaEquipamentos = document.getElementById('lista-equipamentos');
 
+    const formFilial = document.getElementById('filial-form');
+    const novaFilial = document.getElementById('nova-filial');
+    const mensagemFilial = document.getElementById('mensagem-filial');
+
     async function carregarFiliais() {
       const { data, error } = await supabase.from('filiais').select('*');
       if (error) return;
+      filialSelect.innerHTML = '<option value="">Selecione uma Filial</option>';
       data.forEach(f => {
         const option = document.createElement('option');
         option.value = f.nome;
@@ -67,6 +111,22 @@
         mensagem.className = 'text-green-600';
         form.reset();
         listarEquipamentos();
+      }
+    });
+
+    formFilial.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { data, error } = await supabase
+        .from('filiais')
+        .insert([{ nome: novaFilial.value }]);
+      if (error) {
+        mensagemFilial.textContent = 'Erro ao cadastrar filial.';
+        mensagemFilial.className = 'text-red-600';
+      } else {
+        mensagemFilial.textContent = 'Filial cadastrada com sucesso!';
+        mensagemFilial.className = 'text-green-600';
+        novaFilial.value = '';
+        carregarFiliais();
       }
     });
 
@@ -93,6 +153,8 @@
 
     filialSelect.addEventListener('change', listarEquipamentos);
     carregarFiliais();
+    mostrarSecao('cadastro-equipamento'); // seção inicial
   </script>
 </body>
 </html>
+
