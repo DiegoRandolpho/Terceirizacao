@@ -467,7 +467,7 @@
         // Referências aos elementos DOM
         let authSection = null;
         let appLoginForm = null; 
-        let appLoginUsernameInput = null; // Alterado para input de texto (email)
+        let appLoginUsernameInput = null; 
         let appLoginPasswordInput = null; 
         let appLoginMessageDisplay = null; 
 
@@ -481,7 +481,7 @@
         let cadastroFilialSection = null;
         let dashboardSection = null;
         let adminPanelSection = null; 
-        let urlTransformationSection = null; // Novo elemento para a seção de URL Transformation
+        let urlTransformationSection = null; 
 
         let cadastroEquipamentoFormManual = null;
         let cadastroEquipamentoPlateInput = null;
@@ -516,13 +516,13 @@
         let dashboardBackBtn = null;
         let adminPanelBtn = null; 
         let adminPanelBackBtn = null; 
-        let urlTransformationBtn = null; // Novo botão para URL Transformation
-        let urlTransformationBackBtn = null; // Novo botão de voltar para URL Transformation
-
+        let urlTransformationBtn = null; 
+        let urlTransformationBackBtn = null; 
+        
 
         // Elementos do Painel de Administração
         let createUserForm = null; 
-        let newUserNameInput = null; // Usado para email/login
+        let newUserNameInput = null; 
         let newUserDisplayNameInput = null;
         let newUserPasswordInput = null;
         let newUserIsAdminCheckbox = null;
@@ -950,12 +950,14 @@
 
                         if (userError) {
                             console.error("Erro ao buscar usuário na tabela 'usuarios':", userError);
-                            if (userError.code === 'PGRST116') { // No rows found
+                            // PGRST116 indica "no rows found" (usuário não existe)
+                            if (userError.code === 'PGRST116') { 
                                 MessageDisplay(appLoginMessageDisplay, "Usuário ou senha inválidos.", 'error');
                             } else {
-                                MessageDisplay(appLoginMessageDisplay, `Erro ao buscar usuário: ${userError.message}.`, 'error');
+                                // Outros erros (ex: problema de rede, RLS negando SELECT)
+                                MessageDisplay(appLoginMessageDisplay, `Erro de comunicação com o banco de dados: ${userError.message}.`, 'error');
                             }
-                            return;
+                            return; // Interrompe o processo de login
                         }
 
                         // 2. Compara o hash da senha
@@ -976,11 +978,12 @@
                             currentView = null; // Volta para a tela principal
                             renderUI();
                         } else {
+                            // Senha incorreta
                             MessageDisplay(appLoginMessageDisplay, "Usuário ou senha inválidos.", 'error');
                         }
                     } catch (error) {
                         console.error("Erro geral no login:", error);
-                        MessageDisplay(appLoginMessageDisplay, `Erro ao tentar fazer login: ${error.message}. Verifique suas credenciais e as políticas RLS para a tabela 'usuarios'.`, 'error');
+                        MessageDisplay(appLoginMessageDisplay, `Erro ao tentar fazer login: ${error.message}. Por favor, tente novamente.`, 'error');
                     }
                 });
             }
