@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento de Placas e Filiais (Supabase)</title>
+    <title>Gerenciamento de Placas e Filiais (Supabase - Login Personalizado)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons CDN (para ícones) -->
@@ -91,12 +91,12 @@
             <form id="app-login-form" class="w-full max-w-sm p-6 bg-gray-50 rounded-lg shadow-inner" style="display: block;">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Login</h3>
                 <div class="mb-4">
-                    <label for="app-login-username-input" class="block text-sm font-medium text-gray-700 mb-2">Usuário (E-mail)</label>
+                    <label for="app-login-username-input" class="block text-sm font-medium text-gray-700 mb-2">Usuário (Login)</label>
                     <input
-                        type="email"
+                        type="text"
                         id="app-login-username-input"
                         class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out hover:border-blue-400"
-                        placeholder="seu.email@exemplo.com"
+                        placeholder="seu.login"
                         required
                     />
                 </div>
@@ -375,12 +375,12 @@
             <form id="create-user-form" class="w-full max-w-md p-6 bg-gray-50 rounded-lg shadow-inner mb-6">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Criar Novo Usuário</h3>
                 <div class="mb-4">
-                    <label for="new-user-username" class="block text-sm font-medium text-gray-700 mb-2">Nome de Usuário (E-mail)</label>
+                    <label for="new-user-username" class="block text-sm font-medium text-gray-700 mb-2">Nome de Usuário (Login)</label>
                     <input
-                        type="email"
+                        type="text"
                         id="new-user-username"
                         class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out hover:border-blue-400"
-                        placeholder="nome.usuario@exemplo.com"
+                        placeholder="nome.usuario"
                         required
                     />
                 </div>
@@ -539,6 +539,19 @@
 
         // --- Funções de Utilidade ---
 
+        /**
+         * Gera um hash SHA-256 de uma string.
+         * @param {string} message A string para hash.
+         * @returns {Promise<string>} O hash SHA-256 em formato hexadecimal.
+         */
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hexHash;
+        }
+
         function MessageDisplay(targetElement, text, type) {
             if (!targetElement) {
                 console.error("Target element for MessageDisplay is null.");
@@ -647,7 +660,6 @@
             if (!loggedInAppUser) { // Se não há usuário logado no sistema personalizado
                 currentView = 'auth'; // Força a view para autenticação
                 if (authSection) authSection.style.display = 'flex';
-                // Não há select de usuários para popular no Supabase auth
                 if (appLoginPasswordInput) appLoginPasswordInput.value = ''; // Limpa a senha
             } else { // Se há um usuário logado no sistema personalizado
                 if (userInfoBar) userInfoBar.style.display = 'flex';
@@ -718,6 +730,14 @@
 
         async function fetchPlateData() {
             try {
+                // Se o usuário não estiver logado no sistema personalizado, não tenta buscar dados
+                if (!loggedInAppUser) {
+                    plateData = [];
+                    loading = false;
+                    renderUI();
+                    return;
+                }
+
                 const { data, error } = await supabase
                     .from('equipamentos')
                     .select('id, placa, filial, trocas(nova_filial, data, usuario)'); // Inclui o histórico de trocas
@@ -739,9 +759,7 @@
                     } else {
                         // Se não houver trocas, a filial atual é a filial inicial do equipamento
                         currentBranch = item.filial;
-                        // Para a data inicial, precisaria de um campo 'data_cadastro' na tabela equipamentos
-                        // Por enquanto, deixaremos como N/A ou você pode adicionar um campo 'data_cadastro'
-                        currentStartDate = 'N/A'; // Ou uma data padrão
+                        currentStartDate = 'N/A'; // Ou uma data padrão se não tiver campo de data de cadastro
                     }
 
                     return {
@@ -764,6 +782,13 @@
 
         async function fetchBranchesData() {
             try {
+                // Se o usuário não estiver logado no sistema personalizado, não tenta buscar dados
+                if (!loggedInAppUser) {
+                    branchesData = [];
+                    populateDashboardBranches();
+                    return;
+                }
+
                 const { data, error } = await supabase
                     .from('filiais')
                     .select('nome');
@@ -776,65 +801,6 @@
                 if (dashboardMessageDisplay) MessageDisplay(dashboardMessageDisplay, `Erro ao carregar filiais: ${err.message}.`, 'error');
             }
         }
-
-        async function fetchAppUsers() {
-            try {
-                // Busca usuários da sua tabela 'usuarios' personalizada
-                const { data, error } = await supabase
-                    .from('usuarios')
-                    .select('id, login, display_name, is_admin'); // Assumindo display_name e is_admin na sua tabela usuarios
-
-                if (error) throw error;
-                appUsers = data.map(user => ({
-                    id: user.id,
-                    username: user.login,
-                    displayName: user.display_name,
-                    isAdmin: user.is_admin
-                }));
-            } catch (err) {
-                console.error("Erro ao buscar usuários do aplicativo:", err);
-                MessageDisplay(appLoginMessageDisplay, `Erro ao carregar usuários: ${err.message}. Verifique suas políticas RLS para a tabela 'usuarios'.`, 'error');
-            }
-        }
-
-        // Listener para mudanças de autenticação do Supabase
-        supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                // Usuário autenticado pelo Supabase
-                const { data: userData, error: userError } = await supabase
-                    .from('usuarios')
-                    .select('login, display_name, is_admin')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (userError) {
-                    console.error("Erro ao buscar perfil do usuário:", userError);
-                    MessageDisplay(appLoginMessageDisplay, `Erro ao carregar perfil: ${userError.message}`, 'error');
-                    loggedInAppUser = null;
-                    renderUI();
-                    return;
-                }
-
-                loggedInAppUser = {
-                    id: session.user.id,
-                    login: userData.login,
-                    displayName: userData.display_name,
-                    isAdmin: userData.is_admin || false
-                };
-                console.log("Usuário logado:", loggedInAppUser);
-                await fetchPlateData(); // Carrega dados específicos do usuário
-                await fetchBranchesData(); // Carrega filiais
-                currentView = null; // Volta para a tela principal
-                renderUI();
-            } else if (event === 'SIGNED_OUT') {
-                loggedInAppUser = null;
-                plateData = [];
-                branchesData = [];
-                currentView = 'auth';
-                renderUI();
-            }
-        });
-
 
         // --- Funções de Autocomplete ---
         function setupAutocomplete(inputElement, suggestionsContainer, dataArray, keyField) {
@@ -953,91 +919,68 @@
             // Inicializa a UI
             renderUI();
             
-            // Tenta obter a sessão atual do Supabase (se o usuário já estiver logado)
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError) {
-                console.error("Erro ao obter sessão Supabase:", sessionError);
-                MessageDisplay(appLoginMessageDisplay, `Erro de sessão: ${sessionError.message}`, 'error');
-            } else if (session) {
-                // Se houver uma sessão ativa, busca o perfil do usuário
-                const { data: userData, error: userError } = await supabase
-                    .from('usuarios')
-                    .select('login, display_name, is_admin')
-                    .eq('id', session.user.id)
-                    .single();
+            // Tenta carregar os dados iniciais (se já houver um usuário logado na sessão, por exemplo)
+            // Para login personalizado, não há sessão Supabase Auth para verificar aqui.
+            // O estado de login será gerenciado pela variável `loggedInAppUser`.
+            // fetchPlateData(); // Não chamar aqui, só depois do login
+            // fetchBranchesData(); // Não chamar aqui, só depois do login
 
-                if (userError) {
-                    console.error("Erro ao buscar perfil do usuário na inicialização:", userError);
-                    MessageDisplay(appLoginMessageDisplay, `Erro ao carregar perfil: ${userError.message}`, 'error');
-                    loggedInAppUser = null;
-                } else {
-                    loggedInAppUser = {
-                        id: session.user.id,
-                        login: userData.login,
-                        displayName: userData.display_name,
-                        isAdmin: userData.is_admin || false
-                    };
-                    await fetchPlateData();
-                    await fetchBranchesData();
-                    currentView = null; // Vai para a tela principal se já estiver logado
-                }
-            } else {
-                // Não há sessão, permanece na tela de autenticação
-                currentView = 'auth';
-            }
-            renderUI();
+            renderUI(); // Renderiza a tela de login inicialmente
 
 
             // --- Event Listeners de Autenticação Personalizada ---
             if (appLoginForm) {
                 appLoginForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const login = appLoginUsernameInput.value.trim(); // E-mail para Supabase
+                    const login = appLoginUsernameInput.value.trim();
                     const password = appLoginPasswordInput.value;
 
                     if (!login || !password) {
-                        MessageDisplay(appLoginMessageDisplay, "Por favor, insira seu e-mail e senha.", 'info');
+                        MessageDisplay(appLoginMessageDisplay, "Por favor, insira seu login e senha.", 'info');
                         return;
                     }
 
                     try {
-                        const { data, error } = await supabase.auth.signInWithPassword({
-                            email: login,
-                            password: password,
-                        });
-
-                        if (error) {
-                            console.error("Erro no login do Supabase Auth:", error); // Adicionado debug
-                            throw error;
-                        }
-
-                        // Se o login for bem-sucedido, busca os dados da tabela 'usuarios'
-                        const { data: userData, error: userProfileError } = await supabase
+                        // 1. Busca o usuário na tabela 'usuarios'
+                        const { data: userData, error: userError } = await supabase
                             .from('usuarios')
-                            .select('login, display_name, is_admin')
-                            .eq('id', data.user.id)
+                            .select('id, login, display_name, senha, is_admin') // Inclui 'senha' para comparação do hash
+                            .eq('login', login)
                             .single();
 
-                        if (userProfileError) {
-                            console.error("Erro ao buscar perfil do usuário na tabela 'usuarios':", userProfileError); // Adicionado debug
-                            throw userProfileError;
+                        if (userError) {
+                            console.error("Erro ao buscar usuário na tabela 'usuarios':", userError);
+                            if (userError.code === 'PGRST116') { // No rows found
+                                MessageDisplay(appLoginMessageDisplay, "Usuário ou senha inválidos.", 'error');
+                            } else {
+                                MessageDisplay(appLoginMessageDisplay, `Erro ao buscar usuário: ${userError.message}.`, 'error');
+                            }
+                            return;
                         }
 
-                        loggedInAppUser = {
-                            id: data.user.id,
-                            login: userData.login,
-                            displayName: userData.display_name,
-                            isAdmin: userData.is_admin || false
-                        };
-                        MessageDisplay(appLoginMessageDisplay, 'Login bem-sucedido!', 'success');
-                        appLoginForm.reset();
-                        await fetchPlateData();
-                        await fetchBranchesData();
-                        currentView = null; // Volta para a tela principal
-                        renderUI();
+                        // 2. Compara o hash da senha
+                        const hashedPassword = await sha256(password);
+                        if (hashedPassword === userData.senha) { // Compara com o campo 'senha' da sua tabela
+                            loggedInAppUser = {
+                                id: userData.id,
+                                login: userData.login,
+                                displayName: userData.display_name,
+                                isAdmin: userData.is_admin || false
+                            };
+                            MessageDisplay(appLoginMessageDisplay, 'Login bem-sucedido!', 'success');
+                            appLoginForm.reset();
+                            
+                            // Carrega os dados após o login bem-sucedido
+                            await fetchPlateData();
+                            await fetchBranchesData();
+                            currentView = null; // Volta para a tela principal
+                            renderUI();
+                        } else {
+                            MessageDisplay(appLoginMessageDisplay, "Usuário ou senha inválidos.", 'error');
+                        }
                     } catch (error) {
-                        console.error("Erro geral no login:", error); // Adicionado debug
-                        MessageDisplay(appLoginMessageDisplay, `Erro ao tentar fazer login: ${error.message}. Verifique suas credenciais e as políticas RLS para 'auth.users' e 'usuarios'.`, 'error'); // Mensagem mais detalhada
+                        console.error("Erro geral no login:", error);
+                        MessageDisplay(appLoginMessageDisplay, `Erro ao tentar fazer login: ${error.message}. Verifique suas credenciais e as políticas RLS para a tabela 'usuarios'.`, 'error');
                     }
                 });
             }
@@ -1045,9 +988,7 @@
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', async () => {
                     try {
-                        const { error } = await supabase.auth.signOut();
-                        if (error) throw error;
-                        loggedInAppUser = null; 
+                        loggedInAppUser = null; // Limpa o usuário logado
                         plateData = [];
                         branchesData = [];
                         currentView = 'auth'; 
@@ -1082,7 +1023,7 @@
             if (createUserForm) {
                 createUserForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const login = newUserNameInput.value.trim(); // E-mail para Supabase auth
+                    const login = newUserNameInput.value.trim();
                     const displayName = newUserDisplayNameInput.value.trim();
                     const password = newUserPasswordInput.value;
                     const isAdmin = newUserIsAdminCheckbox.checked;
@@ -1098,43 +1039,41 @@
                     }
 
                     try {
-                        // 1. Cria o usuário no sistema de autenticação do Supabase
-                        const { data: authData, error: authError } = await supabase.auth.signUp({
-                            email: login,
-                            password: password,
-                        });
-
-                        if (authError) {
-                            console.error("Erro ao criar usuário no Supabase Auth:", authError); // Adicionado debug
-                            throw authError;
-                        }
-
-                        // 2. Insere os dados adicionais na sua tabela 'usuarios'
-                        const { error: profileError } = await supabase
+                        // Verifica se o login já existe
+                        const { data: existingUser, error: checkError } = await supabase
                             .from('usuarios')
-                            .insert([
-                                { 
-                                    id: authData.user.id, // Vincula ao ID do usuário Supabase Auth
-                                    login: login, 
-                                    display_name: displayName, 
-                                    is_admin: isAdmin 
-                                }
-                            ]);
+                            .select('id')
+                            .eq('login', login)
+                            .single();
 
-                        if (profileError) {
-                            // Se falhar a inserção do perfil, pode ser necessário deletar o usuário do auth
-                            console.error("Erro ao inserir perfil na tabela 'usuarios':", profileError); // Adicionado debug
-                            // A exclusão de usuário via cliente requer a chave de serviço de administrador,
-                            // o que não é seguro para apps de frontend.
-                            // Em um cenário real, isso seria tratado por uma Edge Function ou API de backend.
-                            // await supabase.auth.admin.deleteUser(authData.user.id); // Requer chave de serviço de administrador
-                            throw profileError;
+                        if (checkError && checkError.code === 'PGRST116') { // No rows found, so insert new user
+                            const hashedPassword = await sha256(password);
+                            const { error: insertError } = await supabase
+                                .from('usuarios')
+                                .insert([
+                                    { 
+                                        login: login, 
+                                        display_name: displayName, 
+                                        senha: hashedPassword, // Salva o hash da senha
+                                        is_admin: isAdmin 
+                                    }
+                                ]);
+
+                            if (insertError) {
+                                console.error("Erro ao inserir perfil na tabela 'usuarios':", insertError);
+                                throw insertError;
+                            }
+
+                            MessageDisplay(createUserMessageDisplay, `Usuário "${login}" criado com sucesso!`, 'success');
+                            createUserForm.reset();
+                        } else if (checkError) {
+                            console.error("Erro ao verificar usuário existente:", checkError);
+                            throw checkError;
+                        } else {
+                            MessageDisplay(createUserMessageDisplay, `Nome de usuário "${login}" já existe.`, 'error');
                         }
-
-                        MessageDisplay(createUserMessageDisplay, `Usuário "${login}" criado com sucesso!`, 'success');
-                        createUserForm.reset();
                     } catch (error) {
-                        console.error("Erro geral ao criar usuário:", error); // Adicionado debug
+                        console.error("Erro geral ao criar usuário:", error);
                         MessageDisplay(createUserMessageDisplay, `Erro ao criar usuário: ${error.message}.`, 'error');
                     }
                 });
@@ -1195,7 +1134,7 @@
                             const { error: insertEquipError } = await supabase
                                 .from('equipamentos')
                                 .insert([
-                                    { placa: currentPlate, filial: currentBranch } // Tipo pode ser 'N/A' ou adicionado ao formulário
+                                    { placa: currentPlate, tipo: 'N/A', filial: currentBranch } // Tipo pode ser 'N/A' ou adicionado ao formulário
                                 ]);
                             if (insertEquipError) {
                                 console.error("Erro ao inserir equipamento:", insertEquipError); // Adicionado debug
@@ -1315,7 +1254,7 @@
 
                         // Verifica se a placa já existe
                         if (!existingPlateNames.has(plate)) {
-                            newEquipmentsToInsert.push({ placa: plate, filial: branch }); // Assumindo tipo 'N/A'
+                            newEquipmentsToInsert.push({ placa: plate, tipo: 'N/A', filial: branch }); // Assumindo tipo 'N/A'
                             existingPlateNames.add(plate); // Adiciona à lista de placas existentes para evitar duplicatas no mesmo upload
                         }
 
