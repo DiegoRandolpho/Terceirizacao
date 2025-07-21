@@ -3,339 +3,546 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebApp Interno</title>
-    <link rel="stylesheet" href="https://unpkg.com/purecss@3.0.0/build/pure-min.css" integrity="sha384-X3w6g+RzM8Q7z5Zz+h1PzR0nL+BfM5+L5p1+v9q+0z+w7z+h5+f+e+d+a+b+c+d+e+f+g+h+i+j+k+l+m+n+o+p+q+r+s+t+u+v+w+x+y+z" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://unpkg.com/purecss@3.0.0/build/grids-responsive-min.css">
+    <title>WebApp Interno - Profissional</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-        /* Estilos Personalizados - Adições e Sobrescritas */
-        body {
-            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f2f5; /* Light gray background */
-            color: #333;
-            line-height: 1.6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        :root {
+            --sidebar-width: 250px;
+            --navbar-height: 60px;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --bg-light: #f8f9fa;
+            --bg-body: #e9ecef; /* Um cinza mais claro para o fundo */
         }
 
-        .container {
-            max-width: 960px;
-            margin: 40px auto;
-            background-color: #ffffff;
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-body);
+            display: flex; /* Para o layout principal */
+            min-height: 100vh;
+            overflow-x: hidden; /* Evita scroll horizontal indesejado */
+        }
+
+        /* --- Layout Principal --- */
+        #appContainer {
+            display: flex;
+            width: 100%;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* --- Navbar (Topo) --- */
+        .navbar {
+            height: var(--navbar-height);
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            width: calc(100% - var(--sidebar-width)); /* Ajusta a largura para sidebar aberta */
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            z-index: 1000;
+            transition: left 0.3s ease, width 0.3s ease;
+        }
+
+        .navbar .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .navbar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--secondary-color);
+        }
+        .navbar .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        /* --- Sidebar (Esquerda) --- */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: #2c3e50; /* Darker blue-gray */
+            color: #ecf0f1; /* Light text */
+            position: fixed;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1001; /* Acima da navbar */
+            padding-top: var(--navbar-height); /* Espaço para logo no topo */
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: left 0.3s ease;
+            overflow-y: auto; /* Scrollable sidebar */
+        }
+
+        #sidebar .sidebar-header {
+            padding: 15px;
+            text-align: center;
+            background-color: #34495e; /* Slightly lighter header */
+            position: absolute; /* Para alinhar ao topo da sidebar, se tiver logo fora do padding-top */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--navbar-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        #sidebar .sidebar-header img {
+            max-height: 40px;
+            margin-right: 10px;
+        }
+        #sidebar .sidebar-header span {
+            color: #fff;
+        }
+
+
+        #sidebar .nav-item {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        #sidebar .nav-link {
+            color: #ecf0f1;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.1rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        #sidebar .nav-link:hover,
+        #sidebar .nav-link.active {
+            background-color: #1abc9c; /* Emerald green for active/hover */
+            color: #fff;
+            border-radius: 0;
+        }
+
+        #sidebar .nav-link i {
+            font-size: 1.3rem;
+        }
+
+        /* --- Main Content Area --- */
+        #contentWrapper {
+            margin-left: var(--sidebar-width); /* Espaço para a sidebar */
+            padding-top: var(--navbar-height); /* Espaço para a navbar */
+            flex-grow: 1;
+            width: calc(100% - var(--sidebar-width)); /* Ajusta a largura */
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+
+        #mainContent {
+            padding: 25px;
+        }
+
+        /* --- Cards de Resumo (Widgets) --- */
+        .dashboard-widgets .card {
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            border: none; /* Remove default bootstrap border */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dashboard-widgets .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+        }
+        .dashboard-widgets .card-body {
+            padding: 20px;
+            text-align: center;
+        }
+        .dashboard-widgets .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        .dashboard-widgets .card-text {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+        }
+        .dashboard-widgets .card-footer {
+            background-color: #f7f7f7;
+            border-top: 1px solid #e9ecef;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        /* --- Formulários e Tabelas --- */
+        .form-section, .dashboard-section {
+            background-color: #fff;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .login-container, .main-dashboard, .form-section {
-            width: 100%;
-            max-width: 500px; /* Slightly narrower for focus */
-            margin: 0 auto;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        h1, h2, h3 {
-            color: #007bff; /* Primary blue for headings */
-            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
             font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--primary-color);
         }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
+        .form-label {
+            font-weight: 600;
+            color: #495057;
             margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
         }
 
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        input[type="date"],
-        select {
-            width: calc(100% - 22px); /* Adjusted for padding and border */
-            padding: 12px;
-            border: 1px solid #c9d0d6; /* Softer border */
-            border-radius: 6px;
-            font-size: 16px;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+            border: 1px solid #ced4da;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
         }
 
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="date"]:focus,
-        select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-            outline: none;
+        .btn {
+            border-radius: 0.375rem;
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
-
-        /* Pure CSS buttons for professional look */
-        .pure-button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 16px;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .pure-button:hover {
-            background-color: #0056b3;
-            transform: translateY(-1px);
-        }
-        
-        .pure-button-primary { /* Default for main actions */
-            background-color: #007bff;
-        }
-        .pure-button-success { /* For positive actions like new entry */
-            background-color: #28a745;
-        }
-        .pure-button-success:hover {
-            background-color: #218838;
-        }
-        .pure-button-error { /* For destructive actions or logout */
-            background-color: #dc3545;
-        }
-        .pure-button-error:hover {
-            background-color: #c82333;
-        }
-
+        .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
+        .btn-success { background-color: var(--success-color); border-color: var(--success-color); }
+        .btn-success:hover { background-color: #218838; border-color: #218838; }
+        .btn-danger { background-color: var(--danger-color); border-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #c82333; border-color: #c82333; }
+        .btn-secondary { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+        .btn-secondary:hover { background-color: #5a6268; border-color: #5a6268; }
 
         .message {
             margin-top: 20px;
-            padding: 12px;
-            border-radius: 6px;
+            padding: 15px;
+            border-radius: 8px;
             font-weight: bold;
             text-align: center;
-            border: 1px solid transparent;
+            font-size: 1rem;
+            border: 1px solid transparent; /* Adiciona borda para clareza */
         }
+        .message.alert-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .message.alert-danger { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
 
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border-color: #c3e6cb;
-        }
-
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border-color: #f5c6cb;
-        }
-
-        .nav-links {
-            text-align: center;
-            margin-bottom: 30px;
-            display: flex; /* Use flexbox for spacing */
-            flex-wrap: wrap; /* Allow wrapping on small screens */
-            justify-content: center;
-            gap: 15px; /* Space between buttons */
-        }
-
-        .nav-links button {
-            flex: 1 1 auto; /* Allow buttons to grow and shrink */
-            min-width: 200px; /* Minimum width for buttons */
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .table {
             margin-top: 25px;
-            background-color: #fff;
-            border: 1px solid #e0e0e0;
             border-radius: 8px;
-            overflow: hidden; /* For rounded corners on table */
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-
-        table thead th {
-            background-color: #f2f2f2;
-            color: #555;
+        .table thead th {
+            background-color: #e9ecef; /* Light background for table header */
+            color: #495057;
             font-weight: 600;
+            padding: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table tbody td {
             padding: 12px;
-            text-align: left;
-            border-bottom: 2px solid #e0e0e0;
+            vertical-align: middle;
+            border-bottom: 1px solid #e0e0e0;
         }
-
-        table tbody td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        table tbody tr:hover {
-            background-color: #f9f9f9;
+        .table tbody tr:hover {
+            background-color: #f5f5f5;
         }
 
         .hidden {
-            display: none !important; /* Use !important to override Pure CSS */
+            display: none !important;
         }
 
-        .dashboard-controls {
-            margin-bottom: 25px;
-            text-align: center;
+        /* --- Navbar Toggle para Sidebar --- */
+        .navbar-toggler {
+            border: none;
+            padding: 0;
+            font-size: 1.5rem;
+            color: var(--secondary-color);
         }
-        .filial-section {
-            margin-top: 30px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 25px;
-            background-color: #fdfdfd;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        .filial-section h3 {
-            color: #007bff;
-            margin-top: 0;
-            margin-bottom: 20px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .no-data {
-            text-align: center;
-            color: #666;
-            padding: 20px;
-            font-style: italic;
-        }
-        .back-button {
-            background-color: #6c757d; /* Muted gray for back buttons */
-            margin-bottom: 20px;
-        }
-        .back-button:hover {
-            background-color: #5a6268;
+        .navbar-toggler:focus {
+            box-shadow: none;
         }
 
-        /* Responsive adjustments for Pure CSS grids */
-        @media screen and (max-width: 48em) { /* Pure CSS breakpoint for small screens */
-            .nav-links button {
-                width: 100%; /* Full width on small screens */
+        /* Classes para sidebar recolhida */
+        body.sidebar-collapsed #sidebar {
+            left: -var(--sidebar-width);
+        }
+        body.sidebar-collapsed .navbar {
+            width: 100%;
+            left: 0;
+        }
+        body.sidebar-collapsed #contentWrapper {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        /* Ajustes Responsivos */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 220px;
+            }
+            body #sidebar {
+                left: -var(--sidebar-width); /* Inicia escondida em mobile */
+            }
+            body #navbar {
+                width: 100%;
+                left: 0;
+            }
+            body #contentWrapper {
+                margin-left: 0;
+                width: 100%;
+            }
+            body.sidebar-expanded #sidebar {
+                left: 0; /* Mostra a sidebar */
+            }
+            body.sidebar-expanded #navbar {
+                width: 100%; /* Navbar ainda 100% */
+                left: 0;
+            }
+            body.sidebar-expanded #contentWrapper {
+                margin-left: var(--sidebar-width); /* Conteúdo move para o lado */
+            }
+            .dashboard-widgets .col-md-4 {
+                width: 100%; /* Cards em pilha em mobile */
             }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="appContainer">
-        <div id="loginScreen" class="login-container">
-            <h2>Login</h2>
-            <form id="loginForm" class="pure-form pure-form-stacked">
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" class="pure-input-1" required>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <button class="navbar-toggler me-3 d-lg-none" type="button" id="sidebarToggleBtn">
+                <i class="bi bi-list"></i>
+            </button>
+            <a class="navbar-brand d-none d-lg-block" href="#">
+                <img src="https://via.placeholder.com/30x30/28a745/ffffff?text=P" alt="PuzlMix Logo" class="me-2">
+                PuzlMix
+            </a>
+            <div class="ms-auto d-flex align-items-center">
+                <a class="nav-link me-3" href="#"><i class="bi bi-cloud-fill"></i></a>
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://via.placeholder.com/30x30/007bff/ffffff?text=D" alt="Avatar" class="rounded-circle me-2">
+                        <span id="navUserName">DIEGO RANDOLPHO</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="#">Perfil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item" id="logoutBtnNav">Sair</button></li>
+                    </ul>
                 </div>
-                <div class="form-group">
-                    <label for="password">Senha:</label>
-                    <input type="password" id="password" class="pure-input-1" required>
-                </div>
-                <button type="submit" class="pure-button pure-button-primary pure-input-1">Entrar</button>
-            </form>
-            <div id="loginMessage" class="message"></div>
-        </div>
-
-        <div id="mainDashboardScreen" class="hidden main-dashboard">
-            <h1>Dashboard Principal</h1>
-            <p>Olá, <strong id="userName">Usuário</strong>! Selecione uma opção:</p>
-            <div class="nav-links">
-                <button id="showCadastroFiliais" class="pure-button pure-button-success">Cadastro de Filiais</button>
-                <button id="showCadastroEquipamentos" class="pure-button pure-button-success">Cadastro de Equipamentos</button>
-                <button id="showTrocaFilial" class="pure-button pure-button-primary">Troca de Filial Fixa</button>
-                <button id="showVisualizarDashboard" class="pure-button pure-button-primary">Visualizar Dashboard</button>
-            </div>
-            <button id="logoutBtn" class="pure-button pure-button-error pure-input-1">Sair</button>
-        </div>
-
-        <div id="cadastroFiliaisScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromFiliais" class="pure-button back-button">&larr; Voltar</button>
-            <h2>Cadastro de Filiais</h2>
-            <form id="filialForm" class="pure-form pure-form-stacked">
-                <div class="form-group">
-                    <label for="nomeFilial">Nome da Filial:</label>
-                    <input type="text" id="nomeFilial" class="pure-input-1" required>
-                </div>
-                <div class="form-group">
-                    <label for="responsavelEmail">Responsável (Email):</label>
-                    <input type="email" id="responsavelEmail" placeholder="Email do responsável" class="pure-input-1" required>
-                </div>
-                <button type="submit" class="pure-button pure-button-primary pure-input-1">Cadastrar Filial</button>
-            </form>
-            <div id="filialMessage" class="message"></div>
-        </div>
-
-        <div id="cadastroEquipamentosScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromEquipamentos" class="pure-button back-button">&larr; Voltar</button>
-            <h2>Cadastro de Equipamentos</h2>
-            <form id="equipamentoForm" class="pure-form pure-form-stacked">
-                <div class="form-group">
-                    <label for="placa">Placa do Equipamento:</label>
-                    <input type="text" id="placa" class="pure-input-1" required>
-                </div>
-                <div class="form-group">
-                    <label for="tipoEquipamento">Tipo de Equipamento:</label>
-                    <select id="tipoEquipamento" class="pure-input-1" required>
-                        <option value="">Selecione...</option>
-                        <option value="Bomba Lança">Bomba Lança</option>
-                        <option value="Bomba Estacionária">Bomba Estacionária</option>
-                        <option value="Betoneira">Betoneira</option>
-                    </select>
-                </div>
-                <button type="submit" class="pure-button pure-button-primary pure-input-1">Cadastrar Equipamento</button>
-            </form>
-            <div id="equipamentoMessage" class="message"></div>
-        </div>
-
-        <div id="trocaFilialScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromTroca" class="pure-button back-button">&larr; Voltar</button>
-            <h2>Troca de Filial Fixa de Equipamento</h2>
-            <form id="trocaFilialForm" class="pure-form pure-form-stacked">
-                <div class="form-group">
-                    <label for="placaEquipamento">Placa do Equipamento:</label>
-                    <input type="text" id="placaEquipamento" list="equipamentosList" class="pure-input-1" required>
-                    <datalist id="equipamentosList"></datalist>
-                </div>
-                <div class="form-group">
-                    <label for="novaFilial">Nova Filial:</label>
-                    <select id="novaFilial" class="pure-input-1" required>
-                        <option value="">Selecione...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="dataExecucao">Data de Execução:</label>
-                    <input type="date" id="dataExecucao" class="pure-input-1" required>
-                </div>
-                <button type="submit" class="pure-button pure-button-primary pure-input-1">Registrar Troca</button>
-            </form>
-            <div id="trocaFilialMessage" class="message"></div>
-        </div>
-
-        <div id="visualizarDashboardScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromVisualizar" class="pure-button back-button">&larr; Voltar</button>
-            <h2>Dashboard de Equipamentos</h2>
-            <div class="dashboard-controls">
-                <label for="selectResponsavel">Filtrar por Responsável:</label>
-                <select id="selectResponsavel" class="pure-input-1-2">
-                    <option value="">Todos os Responsáveis</option>
-                </select>
-                <button id="filterDashboardBtn" class="pure-button pure-button-primary">Filtrar</button>
-            </div>
-            <div id="dashboardContent">
-                <p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>
             </div>
         </div>
+    </nav>
+
+    <aside id="sidebar" class="d-flex flex-column">
+        <div class="sidebar-header d-lg-none"> <img src="https://via.placeholder.com/30x30/28a745/ffffff?text=P" alt="PuzlMix Logo">
+            <span>PuzlMix</span>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" id="sidebarDashboardLink">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sidebarCadastroLink" data-bs-toggle="collapse" data-bs-target="#cadastroSubmenu" aria-expanded="false">
+                    <i class="bi bi-plus-circle"></i> Cadastro <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <div class="collapse" id="cadastroSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item"><a class="nav-link" href="#" id="showCadastroFiliais"><i class="bi bi-shop"></i> Filiais</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" id="showCadastroEquipamentos"><i class="bi bi-tools"></i> Equipamentos</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sidebarOperacionalLink" data-bs-toggle="collapse" data-bs-target="#operacionalSubmenu" aria-expanded="false">
+                    <i class="bi bi-gear"></i> Operacional <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <div class="collapse" id="operacionalSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item"><a class="nav-link" href="#" id="showTrocaFilial"><i class="bi bi-arrow-left-right"></i> Troca de Filial</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item mt-auto"> <a class="nav-link" href="#" id="sidebarLogoutLink">
+                    <i class="bi bi-box-arrow-right"></i> Sair
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <div id="contentWrapper" class="flex-grow-1">
+        <main id="mainContent" class="d-flex flex-column h-100">
+
+            <div id="loginScreen" class="d-flex justify-content-center align-items-center flex-grow-1">
+                <div class="card shadow-sm p-4" style="width: 100%; max-width: 400px;">
+                    <h2 class="card-title text-center mb-4">Login</h2>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email:</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Senha:</label>
+                            <input type="password" id="password" class="form-control" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                        </div>
+                    </form>
+                    <div id="loginMessage" class="message mt-3"></div>
+                </div>
+            </div>
+
+            <div id="mainDashboardScreen" class="hidden flex-grow-1">
+                <h1 class="mb-4">Dashboard de Visão Geral</h1>
+
+                <div class="row dashboard-widgets mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">FINANCEIRO</h5>
+                                <p class="card-text">APROVAÇÃO DE ANTECIPAÇÃO</p>
+                                <button class="btn btn-success btn-sm">ADICIONAR</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">COMERCIAL</h5>
+                                <p class="card-text">OPORTUNIDADE DE VENDA</p>
+                                <button class="btn btn-success btn-sm">ADICIONAR</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">OPERAÇÃO</h5>
+                                <p class="card-text">MONTAGEM DE EQUIPAMENTO</p>
+                                <button class="btn btn-success btn-sm">ADICIONAR</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h3 class="mb-3"><i class="bi bi-list-task me-2"></i> Minhas Tarefas <span class="badge bg-secondary ms-2">0</span></h3>
+
+                    <div class="d-flex flex-wrap align-items-center mb-4 gap-3">
+                        <div class="input-group flex-grow-1 me-md-2">
+                            <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                            <input type="date" class="form-control" value="2025-07-14">
+                            <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
+                            <input type="date" class="form-control" value="2025-07-28">
+                        </div>
+                        <div class="input-group flex-grow-1">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Pesquisar...">
+                            <button class="btn btn-outline-secondary" type="button"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                        <button class="btn btn-outline-primary"><i class="bi bi-funnel"></i> Filtros</button>
+                        <button class="btn btn-success ms-auto"><i class="bi bi-plus-lg"></i> NOVO</button>
+                    </div>
+
+                    <div id="dashboardContent" class="no-data">
+                        <p>NENHUM RESULTADO ENCONTRADO COM O FILTRO SELECIONADO!</p>
+                        <img src="https://via.placeholder.com/200x150/f0f2f5/999999?text=Sem Dados" alt="Sem Dados" class="img-fluid my-4">
+                    </div>
+                </div>
+            </div>
+
+            <div id="cadastroFiliaisScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromFiliais" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Cadastro de Filiais</h2>
+                <form id="filialForm">
+                    <div class="mb-3">
+                        <label for="nomeFilial" class="form-label">Nome da Filial:</label>
+                        <input type="text" id="nomeFilial" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsavelEmail" class="form-label">Responsável (Email):</label>
+                        <input type="email" id="responsavelEmail" placeholder="Email do responsável" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Cadastrar Filial</button>
+                    </div>
+                </form>
+                <div id="filialMessage" class="message"></div>
+            </div>
+
+            <div id="cadastroEquipamentosScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromEquipamentos" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Cadastro de Equipamentos</h2>
+                <form id="equipamentoForm">
+                    <div class="mb-3">
+                        <label for="placa" class="form-label">Placa do Equipamento:</label>
+                        <input type="text" id="placa" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipoEquipamento" class="form-label">Tipo de Equipamento:</label>
+                        <select id="tipoEquipamento" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="Bomba Lança">Bomba Lança</option>
+                            <option value="Bomba Estacionária">Bomba Estacionária</option>
+                            <option value="Betoneira">Betoneira</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Cadastrar Equipamento</button>
+                    </div>
+                </form>
+                <div id="equipamentoMessage" class="message"></div>
+            </div>
+
+            <div id="trocaFilialScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromTroca" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Troca de Filial Fixa de Equipamento</h2>
+                <form id="trocaFilialForm">
+                    <div class="mb-3">
+                        <label for="placaEquipamento" class="form-label">Placa do Equipamento:</label>
+                        <input type="text" id="placaEquipamento" list="equipamentosList" class="form-control" required>
+                        <datalist id="equipamentosList"></datalist>
+                    </div>
+                    <div class="mb-3">
+                        <label for="novaFilial" class="form-label">Nova Filial:</label>
+                        <select id="novaFilial" class="form-select" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dataExecucao" class="form-label">Data de Execução:</label>
+                        <input type="date" id="dataExecucao" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Registrar Troca</button>
+                    </div>
+                </form>
+                <div id="trocaFilialMessage" class="message"></div>
+            </div>
+        </main>
     </div>
+
+    <button class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center py-2 px-3"
+            style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
+        <i class="bi bi-question-circle-fill me-2 fs-5"></i> Precisando de ajuda? Clique aqui
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script type="module">
         // public/index.html
@@ -356,14 +563,33 @@
         function showScreen(screenId) {
             const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen', 'visualizarDashboardScreen'];
             screens.forEach(id => {
-                document.getElementById(id).classList.add('hidden');
+                const screenElement = document.getElementById(id);
+                if (screenElement) screenElement.classList.add('hidden');
             });
-            document.getElementById(screenId).classList.remove('hidden');
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) targetScreen.classList.remove('hidden');
+
             // Resetar mensagens
             document.querySelectorAll('.message').forEach(el => {
                 el.textContent = '';
-                el.className = 'message';
+                el.classList.remove('alert-success', 'alert-danger'); // Remove classes Bootstrap
             });
+
+            // Atualiza o estado ativo da sidebar
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            if (screenId === 'mainDashboardScreen') {
+                document.getElementById('sidebarDashboardLink')?.classList.add('active');
+            } else if (['cadastroFiliaisScreen', 'cadastroEquipamentosScreen'].includes(screenId)) {
+                document.getElementById('sidebarCadastroLink')?.classList.add('active');
+                const cadastroSubmenu = new bootstrap.Collapse(document.getElementById('cadastroSubmenu'), { toggle: false });
+                cadastroSubmenu.show();
+            } else if (screenId === 'trocaFilialScreen') {
+                document.getElementById('sidebarOperacionalLink')?.classList.add('active');
+                const operacionalSubmenu = new bootstrap.Collapse(document.getElementById('operacionalSubmenu'), { toggle: false });
+                operacionalSubmenu.show();
+            }
         }
 
         // --- Variáveis Globais de Elementos (para fácil acesso) ---
@@ -372,19 +598,34 @@
         const cadastroFiliaisScreen = document.getElementById('cadastroFiliaisScreen');
         const cadastroEquipamentosScreen = document.getElementById('cadastroEquipamentosScreen');
         const trocaFilialScreen = document.getElementById('trocaFilialScreen');
-        const visualizarDashboardScreen = document.getElementById('visualizarDashboardScreen');
+        const visualizarDashboardScreen = document.getElementById('visualizarDashboardScreen'); // O Dashboard de visualização agora é parte do mainDashboardScreen
 
         const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('loginMessage');
-        const userNameElement = document.getElementById('userName');
-        const logoutBtn = document.getElementById('logoutBtn');
+        const userNameElement = document.getElementById('navUserName'); // Nome no topo da navbar
+        const logoutBtnNav = document.getElementById('logoutBtnNav'); // Botão de sair do dropdown da navbar
+        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink'); // Link de sair na sidebar
 
+        // Botões do menu principal
+        const sidebarDashboardLink = document.getElementById('sidebarDashboardLink');
         const showCadastroFiliaisBtn = document.getElementById('showCadastroFiliais');
         const showCadastroEquipamentosBtn = document.getElementById('showCadastroEquipamentos');
         const showTrocaFilialBtn = document.getElementById('showTrocaFilial');
-        const showVisualizarDashboardBtn = document.getElementById('showVisualizarDashboard');
+        const showVisualizarDashboardBtn = document.getElementById('showVisualizarDashboard'); // Este agora é o link para o dashboard de visualização
 
         const backButtons = document.querySelectorAll('.back-button');
+
+        // Toggle da Sidebar para Mobile
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const body = document.body;
+
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', () => {
+                body.classList.toggle('sidebar-expanded'); // Para mobile
+                body.classList.toggle('sidebar-collapsed'); // Para desktop
+            });
+        }
+
 
         // --- Estado de Autenticação (Simulado com Local Storage) ---
         let loggedInUser = null;
@@ -394,7 +635,9 @@
             if (userString) {
                 loggedInUser = JSON.parse(userString);
                 userNameElement.textContent = loggedInUser.nome;
-                showScreen('mainDashboardScreen');
+                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal com os widgets
+                // Após o login, carregar o dashboard de visualização por padrão (ou deixar como "Minhas Tarefas")
+                loadEquipamentosDashboard(); // Carrega o dashboard de visualização automaticamente
             } else {
                 showScreen('loginScreen');
             }
@@ -426,7 +669,7 @@
 
                         if (error && error.code === 'PGRST116') {
                             loginMessage.textContent = 'Usuário não encontrado.';
-                            loginMessage.classList.add('error');
+                            loginMessage.classList.add('alert-danger'); // Bootstrap class
                             return;
                         } else if (error) {
                             throw error;
@@ -436,34 +679,43 @@
                             loggedInUser = { id: data.id, nome: data.nome, email: data.email };
                             localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
                             loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
-                            loginMessage.classList.add('success');
+                            loginMessage.classList.add('alert-success'); // Bootstrap class
                             setTimeout(() => {
-                                showScreen('mainDashboardScreen');
+                                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal com os widgets
                                 userNameElement.textContent = loggedInUser.nome; // Atualiza nome após login
+                                loadEquipamentosDashboard(); // Carrega o dashboard de visualização
                             }, 500); // Pequeno atraso para ver a mensagem
                         } else {
                             loginMessage.textContent = 'Email ou senha incorretos.';
-                            loginMessage.classList.add('error');
+                            loginMessage.classList.add('alert-danger'); // Bootstrap class
                         }
 
                     } catch (error) {
                         console.error('Erro no login:', error.message);
                         loginMessage.textContent = `Erro no login: ${error.message}`;
-                        loginMessage.classList.add('error');
+                        loginMessage.classList.add('alert-danger'); // Bootstrap class
                     }
                 });
             }
 
-            // Evento de Logout
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', () => {
-                    localStorage.removeItem('loggedInUser');
-                    loggedInUser = null;
-                    showScreen('loginScreen');
-                });
-            }
+            // Eventos de Logout
+            const handleLogout = () => {
+                localStorage.removeItem('loggedInUser');
+                loggedInUser = null;
+                showScreen('loginScreen');
+            };
+            if (logoutBtnNav) logoutBtnNav.addEventListener('click', handleLogout);
+            if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
+
 
             // --- Navegação do Dashboard Principal ---
+            if (sidebarDashboardLink) {
+                sidebarDashboardLink.addEventListener('click', () => {
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+                    showScreen('mainDashboardScreen');
+                    loadEquipamentosDashboard(); // Recarrega o dashboard de visualização
+                });
+            }
             if (showCadastroFiliaisBtn) {
                 showCadastroFiliaisBtn.addEventListener('click', () => {
                     if (!loggedInUser) { checkAuthAndNavigate(); return; }
@@ -484,14 +736,15 @@
                     showScreen('trocaFilialScreen');
                 });
             }
-            if (showVisualizarDashboardBtn) {
-                showVisualizarDashboardBtn.addEventListener('click', async () => {
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
-                    await loadResponsaveisForFilter(document.getElementById('selectResponsavel')); // Carrega para o Dashboard
-                    document.getElementById('dashboardContent').innerHTML = '<p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>'; // Reset
-                    showScreen('visualizarDashboardScreen');
-                });
-            }
+            // O botão "Visualizar Dashboard" agora faz parte do dashboard principal, mas se fosse uma tela separada
+            // if (showVisualizarDashboardBtn) {
+            //     showVisualizarDashboardBtn.addEventListener('click', async () => {
+            //         if (!loggedInUser) { checkAuthAndNavigate(); return; }
+            //         await loadResponsaveisForFilter(document.getElementById('selectResponsavel')); // Carrega para o Dashboard
+            //         document.getElementById('dashboardContent').innerHTML = '<p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>'; // Reset
+            //         showScreen('visualizarDashboardScreen');
+            //     });
+            // }
 
             // Botões de Voltar
             backButtons.forEach(button => {
@@ -522,7 +775,7 @@
 
                         if (responsavelError && responsavelError.code === 'PGRST116') {
                             filialMessage.textContent = 'Responsável não encontrado. Verifique o email.';
-                            filialMessage.classList.add('error');
+                            filialMessage.classList.add('alert-danger');
                             return;
                         } else if (responsavelError) { throw responsavelError; }
 
@@ -533,17 +786,17 @@
                         if (error) {
                             if (error.code === '23505') { filialMessage.textContent = 'Já existe uma filial com este nome.'; }
                             else { filialMessage.textContent = `Erro ao cadastrar filial: ${error.message}`; }
-                            filialMessage.classList.add('error');
+                            filialMessage.classList.add('alert-danger');
                             console.error('Erro ao cadastrar filial:', error);
                         } else {
                             filialMessage.textContent = 'Filial cadastrada com sucesso!';
-                            filialMessage.classList.add('success');
+                            filialMessage.classList.add('alert-success');
                             filialForm.reset();
                         }
                     } catch (error) {
                         console.error('Erro geral no cadastro de filial:', error.message);
                         filialMessage.textContent = `Erro: ${error.message}`;
-                        filialMessage.classList.add('error');
+                        filialMessage.classList.add('alert-danger');
                     }
                 });
             }
@@ -569,17 +822,17 @@
                         if (error) {
                             if (error.code === '23505') { equipamentoMessage.textContent = 'Já existe um equipamento com esta placa.'; }
                             else { equipamentoMessage.textContent = `Erro ao cadastrar equipamento: ${error.message}`; }
-                            equipamentoMessage.classList.add('error');
+                            equipamentoMessage.classList.add('alert-danger');
                             console.error('Erro ao cadastrar equipamento:', error);
                         } else {
                             equipamentoMessage.textContent = 'Equipamento cadastrado com sucesso!';
-                            equipamentoMessage.classList.add('success');
+                            equipamentoMessage.classList.add('alert-success');
                             equipamentoForm.reset();
                         }
                     } catch (error) {
                         console.error('Erro geral no cadastro de equipamento:', error.message);
                         equipamentoMessage.textContent = `Erro: ${error.message}`;
-                        equipamentoMessage.classList.add('error');
+                        equipamentoMessage.classList.add('alert-danger');
                     }
                 });
             }
@@ -635,7 +888,7 @@
 
                         if (equipamentoError && equipamentoError.code === 'PGRST116') {
                             trocaFilialMessage.textContent = 'Equipamento não encontrado com esta placa.';
-                            trocaFilialMessage.classList.add('error');
+                            trocaFilialMessage.classList.add('alert-danger');
                             return;
                         } else if (equipamentoError) { throw equipamentoError; }
                         const equipamentoId = equipamento.id;
@@ -671,18 +924,18 @@
                         if (novoHistoricoError) throw novoHistoricoError;
 
                         trocaFilialMessage.textContent = 'Troca de filial registrada com sucesso!';
-                        trocaFilialMessage.classList.add('success');
+                        trocaFilialMessage.classList.add('alert-success');
                         trocaFilialForm.reset();
                         await loadEquipamentoPlacasIntoDatalist(equipamentosList); // Recarrega para manter datalist atualizado
                     } catch (error) {
                         console.error('Erro na troca de filial:', error.message);
                         trocaFilialMessage.textContent = `Erro: ${error.message}`;
-                        trocaFilialMessage.classList.add('error');
+                        trocaFilialMessage.classList.add('alert-danger');
                     }
                 });
             }
 
-            // --- Dashboard de Visualização ---
+            // --- Dashboard de Visualização (dentro de mainDashboardScreen) ---
             const selectResponsavel = document.getElementById('selectResponsavel');
             const filterDashboardBtn = document.getElementById('filterDashboardBtn');
             const dashboardContent = document.getElementById('dashboardContent');
@@ -744,9 +997,9 @@
                     for (const filialId in equipamentosPorFilial) {
                         const filialData = equipamentosPorFilial[filialId];
                         htmlContent += `
-                            <div class="filial-section">
+                            <div class="filial-section mb-4">
                                 <h3>Filial: ${filialData.nome} (Responsável: ${filialData.responsavel})</h3>
-                                <table class="pure-table pure-table-horizontal">
+                                <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
                                             <th>Placa</th>
@@ -773,7 +1026,7 @@
 
                 } catch (error) {
                     console.error('Erro ao carregar dashboard:', error.message);
-                    dashboardContent.innerHTML = `<p class="no-data error">Erro ao carregar dados do dashboard: ${error.message}</p>`;
+                    dashboardContent.innerHTML = `<p class="no-data alert-danger">Erro ao carregar dados do dashboard: ${error.message}</p>`;
                 }
             }
 
@@ -782,6 +1035,11 @@
                     const selectedResponsavelId = selectResponsavel.value === "" ? null : selectResponsavel.value;
                     loadEquipamentosDashboard(selectedResponsavelId);
                 });
+            }
+
+            // Carrega os responsáveis no filtro ao entrar no dashboard de visualização
+            if (selectResponsavel) {
+                loadResponsaveisForFilter(selectResponsavel);
             }
         });
     </script>
