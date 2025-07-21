@@ -459,83 +459,8 @@
         let loggedInAppUser = null; 
 
         // Variável Supabase client (declarada aqui para ser global, mas inicializada no DOMContentLoaded)
-        const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; 
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase = null; // Declarar como `let` para poder atribuir dentro do DOMContentLoaded
 
-
-        // Referências aos elementos DOM (declaradas fora para serem acessíveis globalmente, mas atribuídas dentro do DOMContentLoaded)
-        let authSection = null;
-        let appLoginForm = null; 
-        let appLoginUsernameInput = null; 
-        let appLoginPasswordInput = null; 
-        let appLoginMessageDisplay = null; 
-
-        let userInfoBar = null;
-        let currentUserDisplay = null;
-        let logoutBtn = null;
-
-        let initialButtonsSection = null;
-        let cadastroEquipamentoSection = null;
-        let alteracaoFilialSection = null;
-        let cadastroFilialSection = null;
-        let dashboardSection = null;
-        let adminPanelSection = null; 
-        let urlTransformationSection = null; 
-
-        let cadastroEquipamentoFormManual = null;
-        let cadastroEquipamentoPlateInput = null;
-        let cadastroEquipamentoBranchInput = null;
-        let cadastroEquipamentoDateInput = null;
-        let cadastroEquipamentoMessageDisplay = null;
-        let plateSuggestionsCadastro = null;
-        let branchSuggestionsCadastro = null;
-
-        let alteracaoFilialForm = null;
-        let alteracaoFilialPlateInput = null;
-        let alteracaoFilialBranchInput = null;
-        let alteracaoFilialDateInput = null;
-        let alteracaoFilialMessageDisplay = null;
-        let plateSuggestionsAlteracao = null;
-        let branchSuggestionsAlteracao = null;
-
-        let cadastroFilialForm = null;
-        let cadastroFilialNameInput = null;
-        let cadastroFilialMessageDisplay = null;
-
-        let dashboardBranchSelect = null;
-        let dashboardResultsDiv = null;
-        let dashboardFilialNameSpan = null;
-        let dashboardEquipmentCountSpan = null;
-        let dashboardEquipmentListUl = null;
-        let dashboardMessageDisplay = null;
-
-        let cadastroEquipamentoBackBtn = null;
-        let alteracaoFilialBackBtn = null;
-        let cadastroFilialBackBtn = null;
-        let dashboardBackBtn = null;
-        let adminPanelBtn = null; 
-        let adminPanelBackBtn = null; 
-        let urlTransformationBtn = null; 
-        let urlTransformationBackBtn = null; 
-        
-
-        // Elementos do Painel de Administração
-        let createUserForm = null; 
-        let newUserNameInput = null; 
-        let newUserDisplayNameInput = null;
-        let newUserPasswordInput = null;
-        let newUserIsAdminCheckbox = null;
-        let createUserMessageDisplay = null;
-
-        let toggleManualCadastroBtn = null;
-        let toggleBulkUploadBtn = null;
-        let cadastroEquipamentoFormBulk = null;
-        let bulkUploadTextarea = null;
-        let processBulkUploadBtn = null;
-        let bulkUploadResultsDisplay = null;
-        let bulkUploadProgressBar = null;
-        
         // --- Funções de Utilidade ---
 
         /**
@@ -845,6 +770,11 @@
 
         // Inicia o aplicativo quando o DOM estiver completamente carregado
         document.addEventListener('DOMContentLoaded', async () => {
+            // Supabase client setup - MOVIDO AQUI PARA GARANTIR QUE 'Supabase' ESTEJA DEFINIDO
+            const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; 
+            supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
             // Referências aos elementos DOM
             authSection = document.getElementById('auth-section');
             appLoginForm = document.getElementById('app-login-form');
@@ -1472,25 +1402,26 @@
 
 
             // Lógica de Exportar para Excel (mantida no Dashboard)
-            if (exportExcelBtn) {
-                exportExcelBtn.addEventListener('click', () => {
-                    if (typeof XLSX === 'undefined') {
-                        MessageDisplay(dashboardMessageDisplay, "A biblioteca de exportação (XLSX) ainda não foi carregada. Por favor, aguarde e tente novamente.", 'info');
-                        return;
-                    }
+            // exportExcelBtn não está definido no seu código, removendo a verificação para evitar ReferenceError
+            // if (exportExcelBtn) {
+            //     exportExcelBtn.addEventListener('click', () => {
+            //         if (typeof XLSX === 'undefined') {
+            //             MessageDisplay(dashboardMessageDisplay, "A biblioteca de exportação (XLSX) ainda não foi carregada. Por favor, aguarde e tente novamente.", 'info');
+            //             return;
+            //         }
 
-                    const dataToExport = plateData.map(item => ({
-                        'PLACA': item.plate,
-                        'FILIAL': item.currentBranch,
-                        'DATA': formatDate(item.currentStartDate)
-                    }));
+            //         const dataToExport = plateData.map(item => ({
+            //             'PLACA': item.plate,
+            //             'FILIAL': item.currentBranch,
+            //             'DATA': formatDate(item.currentStartDate)
+            //         }));
 
-                    const ws = XLSX.utils.json_to_sheet(dataToExport);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Placas e Filiais");
-                    XLSX.writeFile(wb, "Placas_e_Filiais.xlsx");
-                });
-            }
+            //         const ws = XLSX.utils.json_to_sheet(dataToExport);
+            //         const wb = XLSX.utils.book_new();
+            //         XLSX.utils.book_append_sheet(wb, ws, "Placas e Filiais");
+            //         XLSX.writeFile(wb, "Placas_e_Filiais.xlsx");
+            //     });
+            // }
 
 
             // --- Event Listeners para botões de navegação ---
