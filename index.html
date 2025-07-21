@@ -50,6 +50,12 @@
             transition: left 0.3s ease, width 0.3s ease;
         }
 
+        /* Ajuste da navbar quando sidebar está recolhida */
+        body.sidebar-collapsed .navbar {
+            width: 100%;
+            left: 0;
+        }
+
         .navbar .navbar-brand {
             font-weight: 700;
             color: var(--primary-color);
@@ -80,6 +86,11 @@
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             transition: left 0.3s ease;
             overflow-y: auto; /* Scrollable sidebar */
+        }
+
+        /* Sidebar recolhida */
+        body.sidebar-collapsed #sidebar {
+            left: -var(--sidebar-width);
         }
 
         #sidebar .sidebar-header {
@@ -136,6 +147,12 @@
             flex-grow: 1;
             width: calc(100% - var(--sidebar-width)); /* Ajusta a largura */
             transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+
+        /* Conteúdo ocupa toda a largura quando sidebar recolhida */
+        body.sidebar-collapsed #contentWrapper {
+            margin-left: 0;
+            width: 100%;
         }
 
         #mainContent {
@@ -238,28 +255,21 @@
             display: none !important;
         }
 
-        /* --- Navbar Toggle para Sidebar --- */
+        /* --- Navbar Toggle para Sidebar (Ajuste para visibilidade) --- */
         .navbar-toggler {
             border: none;
             padding: 0;
             font-size: 1.5rem;
             color: var(--secondary-color);
+            display: none; /* Esconde por padrão em desktop */
+        }
+        @media (max-width: 768px) {
+            .navbar-toggler {
+                display: block; /* Mostra em mobile */
+            }
         }
         .navbar-toggler:focus {
             box-shadow: none;
-        }
-
-        /* Classes para sidebar recolhida */
-        body.sidebar-collapsed #sidebar {
-            left: -var(--sidebar-width);
-        }
-        body.sidebar-collapsed .navbar {
-            width: 100%;
-            left: 0;
-        }
-        body.sidebar-collapsed #contentWrapper {
-            margin-left: 0;
-            width: 100%;
         }
 
         /* Ajustes Responsivos */
@@ -270,31 +280,21 @@
             body #sidebar {
                 left: -var(--sidebar-width); /* Inicia escondida em mobile */
             }
-            body #navbar {
-                width: 100%;
-                left: 0;
-            }
-            body #contentWrapper {
-                margin-left: 0;
-                width: 100%;
-            }
             body.sidebar-expanded #sidebar {
-                left: 0; /* Mostra a sidebar */
+                left: 0; /* Mostra a sidebar em mobile */
             }
-            body.sidebar-expanded #navbar {
-                width: 100%; /* Navbar ainda 100% */
-                left: 0;
-            }
-            body.sidebar-expanded #contentWrapper {
-                margin-left: var(--sidebar-width); /* Conteúdo move para o lado */
+            /* Em mobile, a navbar e o conteúdo principal sempre ocupam 100% da largura,
+               e a sidebar desliza por cima/lado. */
+            body #navbar, body #contentWrapper {
+                width: 100% !important;
+                margin-left: 0 !important;
+                left: 0 !important;
             }
         }
 
         /* --- Estado de "não logado" --- */
-        /* Esta classe será adicionada ao <body> quando o usuário não estiver logado. */
         body.logged-out #sidebar,
-        body.logged-out .navbar-user-options,
-        body.logged-out .navbar-toggler {
+        body.logged-out .navbar-top-elements { /* Nova classe para os elementos da navbar a serem escondidos */
             display: none !important;
         }
 
@@ -308,27 +308,21 @@
         }
     </style>
 </head>
-<body class="logged-out"> <nav class="navbar navbar-expand-lg">
+<body class="logged-out sidebar-collapsed"> <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-            <button class="navbar-toggler me-3 d-lg-none" type="button" id="sidebarToggleBtn">
+            <button class="btn btn-light d-none d-lg-block me-3" type="button" id="desktopSidebarToggleBtn" title="Ocultar/Exibir Menu">
                 <i class="bi bi-list"></i>
             </button>
-            <a class="navbar-brand d-none d-lg-block" href="#">
+            <button class="navbar-toggler me-3 d-lg-none" type="button" id="mobileSidebarToggleBtn">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <a class="navbar-brand" href="#">
                 TercSistemas
             </a>
-            <div class="ms-auto d-flex align-items-center navbar-user-options">
+            <div class="ms-auto d-flex align-items-center navbar-top-elements">
                 <a class="nav-link me-3" href="#"><i class="bi bi-cloud-fill"></i></a>
-                <div class="dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="https://via.placeholder.com/30x30/007bff/ffffff?text=U" alt="Avatar" class="rounded-circle me-2"> <span id="navUserName">Usuário Logado</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#">Perfil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><button class="dropdown-item" id="logoutBtnNav">Sair</button></li>
-                    </ul>
                 </div>
-            </div>
         </div>
     </nav>
 
@@ -663,6 +657,16 @@
                         <label for="modalUsuarioEmail" class="form-label">Email:</label>
                         <input type="email" id="modalUsuarioEmail" class="form-control" required>
                     </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="modalUsuarioNovaSenha" class="form-label">Nova Senha (opcional):</label>
+                        <input type="password" id="modalUsuarioNovaSenha" class="form-control">
+                        <small class="form-text text-muted">Deixe em branco para não alterar a senha.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalUsuarioConfirmaSenha" class="form-label">Confirmar Nova Senha:</label>
+                        <input type="password" id="modalUsuarioConfirmaSenha" class="form-control">
+                    </div>
                     <div id="modalEditUsuarioMessage" class="message mt-3"></div>
                 </div>
                 <div class="modal-footer">
@@ -757,7 +761,8 @@
              // Esconde a sidebar em telas pequenas após a navegação
             if (window.innerWidth <= 768) {
                 body.classList.remove('sidebar-expanded');
-                body.classList.add('sidebar-collapsed');
+                // Em mobile, `sidebar-collapsed` não é usado para ocultar, `sidebar-expanded` é usado para mostrar.
+                // Não precisamos adicionar sidebar-collapsed aqui, pois em mobile ela sempre começa oculta.
             }
         }
 
@@ -771,15 +776,13 @@
 
         const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('loginMessage');
-        const userNameElement = document.getElementById('navUserName');
-        const logoutBtnNav = document.getElementById('logoutBtnNav');
-        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
         const taskCountBadge = document.getElementById('taskCountBadge');
 
         const body = document.body;
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn'); // Botão mobile
+        const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn'); // Botão desktop
         const sidebarElement = document.getElementById('sidebar');
-        const navbarUserOptions = document.querySelector('.navbar-user-options');
+        const navbarTopElements = document.querySelector('.navbar-top-elements'); // Nova classe para os elementos da navbar
 
         // Elementos da tabela de consulta de filiais
         const filiaisTableBody = document.getElementById('filiaisTableBody');
@@ -826,19 +829,31 @@
         const modalUsuarioId = document.getElementById('modalUsuarioId');
         const modalUsuarioNome = document.getElementById('modalUsuarioNome');
         const modalUsuarioEmail = document.getElementById('modalUsuarioEmail');
+        const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha'); // Novo campo de senha
+        const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha'); // Novo campo de confirmação de senha
         const modalEditUsuarioMessage = document.getElementById('modalEditUsuarioMessage');
         const saveUsuarioBtn = document.getElementById('saveUsuarioBtn');
 
+        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
 
-        if (sidebarToggleBtn) {
-            sidebarToggleBtn.addEventListener('click', () => {
+
+        // --- Lógica do Toggle da Sidebar ---
+        function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+                // Comportamento para mobile: adiciona/remove 'sidebar-expanded' para sobrepor
                 body.classList.toggle('sidebar-expanded');
-                // Em desktop, 'sidebar-collapsed' controla se a sidebar está visível ou escondida
-                // Em mobile, 'sidebar-expanded' controla a sobreposição
-                if (window.innerWidth > 768) {
-                    body.classList.toggle('sidebar-collapsed');
-                }
-            });
+            } else {
+                // Comportamento para desktop: adiciona/remove 'sidebar-collapsed' para mover o conteúdo
+                body.classList.toggle('sidebar-collapsed');
+            }
+        }
+
+        if (mobileSidebarToggleBtn) {
+            mobileSidebarToggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        if (desktopSidebarToggleBtn) {
+            desktopSidebarToggleBtn.addEventListener('click', toggleSidebar);
         }
 
         // --- Estado de Autenticação (Simulado com Local Storage) ---
@@ -848,12 +863,20 @@
             const userString = localStorage.getItem('loggedInUser');
             if (userString) {
                 loggedInUser = JSON.parse(userString);
-                userNameElement.textContent = loggedInUser.nome;
+                // userNameElement.textContent = loggedInUser.nome; // Removido pois o elemento foi removido
                 body.classList.remove('logged-out'); // Remove a classe para mostrar a sidebar e navbar
+                // Garante que a sidebar esteja expandida por padrão em desktop ao logar
+                if (window.innerWidth > 768) {
+                     body.classList.remove('sidebar-collapsed');
+                }
                 showScreen('mainDashboardScreen'); // Vai para o dashboard se logado
             } else {
                 loggedInUser = null;
                 body.classList.add('logged-out'); // Adiciona a classe para esconder a sidebar e navbar
+                // Garante que a sidebar esteja recolhida em desktop ao deslogar
+                if (window.innerWidth > 768) {
+                     body.classList.add('sidebar-collapsed');
+                }
                 showScreen('loginScreen'); // Vai para a tela de login se não logado
             }
         }
@@ -896,8 +919,11 @@
                             loginMessage.classList.add('alert-success');
                             setTimeout(() => {
                                 body.classList.remove('logged-out'); // Mostra sidebar e navbar após login
+                                // Garante que a sidebar esteja expandida por padrão em desktop
+                                if (window.innerWidth > 768) {
+                                     body.classList.remove('sidebar-collapsed');
+                                }
                                 showScreen('mainDashboardScreen');
-                                userNameElement.textContent = loggedInUser.nome;
                             }, 500);
                         } else {
                             loginMessage.textContent = 'Email ou senha incorretos.';
@@ -912,14 +938,17 @@
                 });
             }
 
-            // Eventos de Logout
+            // Eventos de Logout (apenas o da sidebar agora)
             const handleLogout = () => {
                 localStorage.removeItem('loggedInUser');
                 loggedInUser = null;
                 body.classList.add('logged-out'); // Esconde sidebar e navbar ao fazer logout
+                // Garante que a sidebar esteja recolhida em desktop
+                if (window.innerWidth > 768) {
+                     body.classList.add('sidebar-collapsed');
+                }
                 showScreen('loginScreen');
             };
-            if (logoutBtnNav) logoutBtnNav.addEventListener('click', handleLogout);
             if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
 
             // --- Navegação da Sidebar: Delegando eventos para o document ---
@@ -956,7 +985,7 @@
 
             // --- Lógicas dos Formulários ---
 
-            // --- Cadastro de Usuários --- (NOVO)
+            // --- Cadastro de Usuários --- (Modificado para inserir senha em texto puro)
             if (usuarioForm) {
                 usuarioForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
@@ -969,9 +998,10 @@
                     usuarioMessage.textContent = ''; usuarioMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
+                        // Inserir senha em texto simples. Para um sistema real, use criptografia (ex: bcrypt) antes de armazenar.
                         const { data, error } = await supabase
                             .from('usuarios')
-                            .insert({ nome: nome, email: email, senha: senha }); // Inserir senha em texto simples (para fins de exemplo)
+                            .insert({ nome: nome, email: email, senha: senha });
 
                         if (error) {
                             if (error.code === '23505') { usuarioMessage.textContent = 'Já existe um usuário com este email.'; }
@@ -992,7 +1022,7 @@
                 });
             }
 
-            // --- Consulta de Usuários --- (NOVO)
+            // --- Consulta de Usuários ---
             async function loadUsuariosTable(searchTerm = '') {
                 usuariosTableBody.innerHTML = '';
                 usuarioConsultaMessage.textContent = ''; usuarioConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
@@ -1047,12 +1077,14 @@
                 });
             }
 
-            // --- Modal de Edição de Usuário --- (NOVO)
+            // --- Modal de Edição de Usuário --- (Modificado para incluir senha)
             function openEditUsuarioModal(usuario) {
                 modalUsuarioNomeAtual.textContent = usuario.nome;
                 modalUsuarioId.value = usuario.id;
                 modalUsuarioNome.value = usuario.nome;
                 modalUsuarioEmail.value = usuario.email;
+                modalUsuarioNovaSenha.value = ''; // Limpa os campos de senha
+                modalUsuarioConfirmaSenha.value = '';
                 modalEditUsuarioMessage.textContent = '';
                 modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
                 editUsuarioModal.show();
@@ -1063,6 +1095,8 @@
                     const usuarioId = modalUsuarioId.value;
                     const novoNome = modalUsuarioNome.value.trim();
                     const novoEmail = modalUsuarioEmail.value.trim();
+                    const novaSenha = modalUsuarioNovaSenha.value;
+                    const confirmaSenha = modalUsuarioConfirmaSenha.value;
 
                     modalEditUsuarioMessage.textContent = '';
                     modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
@@ -1073,10 +1107,21 @@
                         return;
                     }
 
+                    if (novaSenha && novaSenha !== confirmaSenha) {
+                        modalEditUsuarioMessage.textContent = 'A nova senha e a confirmação não coincidem.';
+                        modalEditUsuarioMessage.classList.add('alert-danger');
+                        return;
+                    }
+
                     try {
+                        const updateData = { nome: novoNome, email: novoEmail };
+                        if (novaSenha) {
+                            updateData.senha = novaSenha; // Atualiza a senha se um valor foi fornecido
+                        }
+
                         const { error } = await supabase
                             .from('usuarios')
-                            .update({ nome: novoNome, email: novoEmail })
+                            .update(updateData)
                             .eq('id', usuarioId);
 
                         if (error) {
