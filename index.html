@@ -447,6 +447,11 @@
 
     <!-- Supabase JS -->
     <script>
+        // Supabase client setup - MOVIDO AQUI PARA GARANTIR QUE 'Supabase' ESTEJA DEFINIDO
+        const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; 
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // Variáveis de estado globais (declaradas fora do DOMContentLoaded para serem globais)
         let plateData = []; 
         let branchesData = []; 
@@ -529,10 +534,7 @@
         let processBulkUploadBtn = null;
         let bulkUploadResultsDisplay = null;
         let bulkUploadProgressBar = null;
-
-        // Variável Supabase client (declarada aqui para ser global, mas inicializada no DOMContentLoaded)
-        let supabase = null;
-
+        
         // --- Funções de Utilidade ---
 
         /**
@@ -842,11 +844,6 @@
 
         // Inicia o aplicativo quando o DOM estiver completamente carregado
         document.addEventListener('DOMContentLoaded', async () => {
-            // Supabase client setup - MOVIDO AQUI
-            const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; 
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; 
-            supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
             // Referências aos elementos DOM
             authSection = document.getElementById('auth-section');
             appLoginForm = document.getElementById('app-login-form');
