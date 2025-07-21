@@ -29,9 +29,12 @@
             overflow-x: hidden; /* Evita scroll horizontal indesejado */
         }
 
-        /* --- Layout Principal (Container para Sidebar + Content) --- */
-        /* #appContainer não é mais necessário aqui com a abordagem fixed/margin */
-
+        /* --- Layout Principal --- */
+        #appContainer {
+            display: flex;
+            width: 100%;
+            /* transition: margin-left 0.3s ease; */ /* Removido para controle mais fino */
+        }
 
         /* --- Navbar (Topo) --- */
         .navbar {
@@ -39,19 +42,18 @@
             background-color: #fff;
             border-bottom: 1px solid #e0e0e0;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            /* Ajusta a largura e posição para sidebar aberta */
-            width: calc(100% - var(--sidebar-width));
+            width: calc(100% - var(--sidebar-width)); /* Ajusta a largura para sidebar aberta */
             position: fixed;
             top: 0;
-            left: var(--sidebar-width);
+            left: var(--sidebar-width); /* Inicia com o tamanho da sidebar */
             z-index: 1000;
             transition: left 0.3s ease, width 0.3s ease;
         }
 
         /* Ajuste da navbar quando sidebar está recolhida (desktop) */
         body.sidebar-collapsed .navbar {
-            width: 100%; /* Ocupa toda a largura */
-            left: 0;     /* Alinha à esquerda */
+            width: 100%;
+            left: 0;
         }
 
         .navbar .navbar-brand {
@@ -75,7 +77,7 @@
             width: var(--sidebar-width);
             background-color: #2c3e50; /* Darker blue-gray */
             color: #ecf0f1; /* Light text */
-            position: fixed; /* Fixa a sidebar na tela */
+            position: fixed;
             height: 100%;
             top: 0;
             left: 0; /* Posição inicial da sidebar */
@@ -139,9 +141,9 @@
 
         /* --- Main Content Area --- */
         #contentWrapper {
-            margin-left: var(--sidebar-width); /* Espaço inicial para a sidebar */
+            margin-left: var(--sidebar-width); /* Espaço para a sidebar */
             padding-top: var(--navbar-height); /* Espaço para a navbar */
-            flex-grow: 1; /* Ocupa o restante do espaço horizontal */
+            flex-grow: 1;
             width: calc(100% - var(--sidebar-width)); /* Ajusta a largura */
             transition: margin-left 0.3s ease, width 0.3s ease;
         }
@@ -154,7 +156,6 @@
 
         #mainContent {
             padding: 25px;
-            min-height: calc(100vh - var(--navbar-height)); /* Garante que o conteúdo tenha pelo menos a altura da tela menos a navbar */
         }
 
         /* --- Formulários e Tabelas --- */
@@ -307,7 +308,7 @@
         }
     </style>
 </head>
-<body class="logged-out sidebar-collapsed"> <nav class="navbar navbar-expand-lg" id="navbar">
+<body class="logged-out sidebar-collapsed"> <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <button class="btn btn-light d-none d-lg-block me-3" type="button" id="desktopSidebarToggleBtn" title="Ocultar/Exibir Menu">
                 <i class="bi bi-list"></i>
@@ -712,7 +713,7 @@
 
         // ATENÇÃO: Substitua pelos seus dados reais do Supabase
         const supabaseUrl = "https://jtikvjomzduvjrrrsfeg.supabase.co";
-        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9 DduvjrrrsfegIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg";
 
         export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
