@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebApp Interno</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@3.0.0/build/pure-min.css" integrity="sha384-X3w6g+RzM8Q7z5Zz+h1PzR0nL+BfM5+L5p1+v9q+0z+w7z+h5+f+e+d+a+b+c+d+e+f+g+h+i+j+k+l+m+n+o+p+q+r+s+t+u+v+w+x+y+z" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@3.0.0/build/grids-responsive-min.css">
+
     <style>
-        /* public/styles.css consolidado aqui */
+        /* Estilos Personalizados - Adições e Sobrescritas */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
+            background-color: #f0f2f5; /* Light gray background */
             color: #333;
             line-height: 1.6;
-            display: flex; /* Para centralizar o login */
+            display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -22,34 +25,36 @@
         .container {
             max-width: 960px;
             margin: 40px auto;
-            background-color: #fff;
+            background-color: #ffffff;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .login-container, .main-dashboard, .form-section {
-            width: 100%; /* Permite ajuste ao container pai */
-            max-width: 600px; /* Limita a largura para melhor leitura */
-            margin: 0 auto; /* Centraliza */
+            width: 100%;
+            max-width: 500px; /* Slightly narrower for focus */
+            margin: 0 auto;
             padding: 20px;
-            box-sizing: border-box; /* Inclui padding na largura total */
+            box-sizing: border-box;
         }
 
         h1, h2, h3 {
-            color: #007bff;
+            color: #007bff; /* Primary blue for headings */
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            font-weight: 600;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: bold;
+            color: #555;
         }
 
         input[type="text"],
@@ -57,35 +62,65 @@
         input[type="password"],
         input[type="date"],
         select {
-            width: calc(100% - 22px);
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            width: calc(100% - 22px); /* Adjusted for padding and border */
+            padding: 12px;
+            border: 1px solid #c9d0d6; /* Softer border */
+            border-radius: 6px;
             font-size: 16px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        button {
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Pure CSS buttons for professional look */
+        .pure-button {
             background-color: #007bff;
             color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
+            padding: 12px 20px;
+            border-radius: 6px;
             font-size: 16px;
-            transition: background-color 0.3s ease;
-            margin-top: 10px; /* Espaçamento para botões */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        button:hover {
+        .pure-button:hover {
             background-color: #0056b3;
+            transform: translateY(-1px);
         }
+        
+        .pure-button-primary { /* Default for main actions */
+            background-color: #007bff;
+        }
+        .pure-button-success { /* For positive actions like new entry */
+            background-color: #28a745;
+        }
+        .pure-button-success:hover {
+            background-color: #218838;
+        }
+        .pure-button-error { /* For destructive actions or logout */
+            background-color: #dc3545;
+        }
+        .pure-button-error:hover {
+            background-color: #c82333;
+        }
+
 
         .message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 4px;
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
             font-weight: bold;
             text-align: center;
+            border: 1px solid transparent;
         }
 
         .message.success {
@@ -103,69 +138,93 @@
         .nav-links {
             text-align: center;
             margin-bottom: 30px;
+            display: flex; /* Use flexbox for spacing */
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            justify-content: center;
+            gap: 15px; /* Space between buttons */
         }
 
         .nav-links button {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            padding: 12px 20px;
-            margin: 10px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 18px;
-            transition: background-color 0.3s ease;
-            width: auto; /* Remove width: 100% */
-        }
-
-        .nav-links button:hover {
-            background-color: #218838;
+            flex: 1 1 auto; /* Allow buttons to grow and shrink */
+            min-width: 200px; /* Minimum width for buttons */
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 25px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden; /* For rounded corners on table */
         }
 
-        table, th, td {
-            border: 1px solid #ddd;
+        table thead th {
+            background-color: #f2f2f2;
+            color: #555;
+            font-weight: 600;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
         }
 
-        th, td {
+        table tbody td {
             padding: 10px;
             text-align: left;
+            border-bottom: 1px solid #f0f0f0;
         }
 
-        th {
-            background-color: #f2f2f2;
+        table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        table tbody tr:hover {
+            background-color: #f9f9f9;
         }
 
         .hidden {
-            display: none;
+            display: none !important; /* Use !important to override Pure CSS */
         }
 
         .dashboard-controls {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: center;
         }
         .filial-section {
             margin-top: 30px;
-            border: 1px solid #ccc;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
-            padding: 20px;
-            background-color: #f9f9f9;
+            padding: 25px;
+            background-color: #fdfdfd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
         .filial-section h3 {
             color: #007bff;
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-align: left;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
         }
         .no-data {
             text-align: center;
             color: #666;
             padding: 20px;
+            font-style: italic;
+        }
+        .back-button {
+            background-color: #6c757d; /* Muted gray for back buttons */
+            margin-bottom: 20px;
+        }
+        .back-button:hover {
+            background-color: #5a6268;
+        }
+
+        /* Responsive adjustments for Pure CSS grids */
+        @media screen and (max-width: 48em) { /* Pure CSS breakpoint for small screens */
+            .nav-links button {
+                width: 100%; /* Full width on small screens */
+            }
         }
     </style>
 </head>
@@ -173,16 +232,16 @@
     <div class="container" id="appContainer">
         <div id="loginScreen" class="login-container">
             <h2>Login</h2>
-            <form id="loginForm">
+            <form id="loginForm" class="pure-form pure-form-stacked">
                 <div class="form-group">
                     <label for="email">Email:</label>
-                    <input type="email" id="email" required>
+                    <input type="email" id="email" class="pure-input-1" required>
                 </div>
                 <div class="form-group">
                     <label for="password">Senha:</label>
-                    <input type="password" id="password" required>
+                    <input type="password" id="password" class="pure-input-1" required>
                 </div>
-                <button type="submit">Entrar</button>
+                <button type="submit" class="pure-button pure-button-primary pure-input-1">Entrar</button>
             </form>
             <div id="loginMessage" class="message"></div>
         </div>
@@ -191,86 +250,86 @@
             <h1>Dashboard Principal</h1>
             <p>Olá, <strong id="userName">Usuário</strong>! Selecione uma opção:</p>
             <div class="nav-links">
-                <button id="showCadastroFiliais">Cadastro de Filiais</button>
-                <button id="showCadastroEquipamentos">Cadastro de Equipamentos</button>
-                <button id="showTrocaFilial">Troca de Filial Fixa</button>
-                <button id="showVisualizarDashboard">Visualizar Dashboard</button>
+                <button id="showCadastroFiliais" class="pure-button pure-button-success">Cadastro de Filiais</button>
+                <button id="showCadastroEquipamentos" class="pure-button pure-button-success">Cadastro de Equipamentos</button>
+                <button id="showTrocaFilial" class="pure-button pure-button-primary">Troca de Filial Fixa</button>
+                <button id="showVisualizarDashboard" class="pure-button pure-button-primary">Visualizar Dashboard</button>
             </div>
-            <button id="logoutBtn">Sair</button>
+            <button id="logoutBtn" class="pure-button pure-button-error pure-input-1">Sair</button>
         </div>
 
         <div id="cadastroFiliaisScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromFiliais" class="back-button">&larr; Voltar</button>
+            <button id="backToMainDashboardFromFiliais" class="pure-button back-button">&larr; Voltar</button>
             <h2>Cadastro de Filiais</h2>
-            <form id="filialForm">
+            <form id="filialForm" class="pure-form pure-form-stacked">
                 <div class="form-group">
                     <label for="nomeFilial">Nome da Filial:</label>
-                    <input type="text" id="nomeFilial" required>
+                    <input type="text" id="nomeFilial" class="pure-input-1" required>
                 </div>
                 <div class="form-group">
                     <label for="responsavelEmail">Responsável (Email):</label>
-                    <input type="email" id="responsavelEmail" placeholder="Email do responsável" required>
+                    <input type="email" id="responsavelEmail" placeholder="Email do responsável" class="pure-input-1" required>
                 </div>
-                <button type="submit">Cadastrar Filial</button>
+                <button type="submit" class="pure-button pure-button-primary pure-input-1">Cadastrar Filial</button>
             </form>
             <div id="filialMessage" class="message"></div>
         </div>
 
         <div id="cadastroEquipamentosScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromEquipamentos" class="back-button">&larr; Voltar</button>
+            <button id="backToMainDashboardFromEquipamentos" class="pure-button back-button">&larr; Voltar</button>
             <h2>Cadastro de Equipamentos</h2>
-            <form id="equipamentoForm">
+            <form id="equipamentoForm" class="pure-form pure-form-stacked">
                 <div class="form-group">
                     <label for="placa">Placa do Equipamento:</label>
-                    <input type="text" id="placa" required>
+                    <input type="text" id="placa" class="pure-input-1" required>
                 </div>
                 <div class="form-group">
                     <label for="tipoEquipamento">Tipo de Equipamento:</label>
-                    <select id="tipoEquipamento" required>
+                    <select id="tipoEquipamento" class="pure-input-1" required>
                         <option value="">Selecione...</option>
                         <option value="Bomba Lança">Bomba Lança</option>
                         <option value="Bomba Estacionária">Bomba Estacionária</option>
                         <option value="Betoneira">Betoneira</option>
                     </select>
                 </div>
-                <button type="submit">Cadastrar Equipamento</button>
+                <button type="submit" class="pure-button pure-button-primary pure-input-1">Cadastrar Equipamento</button>
             </form>
             <div id="equipamentoMessage" class="message"></div>
         </div>
 
         <div id="trocaFilialScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromTroca" class="back-button">&larr; Voltar</button>
+            <button id="backToMainDashboardFromTroca" class="pure-button back-button">&larr; Voltar</button>
             <h2>Troca de Filial Fixa de Equipamento</h2>
-            <form id="trocaFilialForm">
+            <form id="trocaFilialForm" class="pure-form pure-form-stacked">
                 <div class="form-group">
                     <label for="placaEquipamento">Placa do Equipamento:</label>
-                    <input type="text" id="placaEquipamento" list="equipamentosList" required>
+                    <input type="text" id="placaEquipamento" list="equipamentosList" class="pure-input-1" required>
                     <datalist id="equipamentosList"></datalist>
                 </div>
                 <div class="form-group">
                     <label for="novaFilial">Nova Filial:</label>
-                    <select id="novaFilial" required>
+                    <select id="novaFilial" class="pure-input-1" required>
                         <option value="">Selecione...</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="dataExecucao">Data de Execução:</label>
-                    <input type="date" id="dataExecucao" required>
+                    <input type="date" id="dataExecucao" class="pure-input-1" required>
                 </div>
-                <button type="submit">Registrar Troca</button>
+                <button type="submit" class="pure-button pure-button-primary pure-input-1">Registrar Troca</button>
             </form>
             <div id="trocaFilialMessage" class="message"></div>
         </div>
 
         <div id="visualizarDashboardScreen" class="hidden form-section">
-            <button id="backToMainDashboardFromVisualizar" class="back-button">&larr; Voltar</button>
+            <button id="backToMainDashboardFromVisualizar" class="pure-button back-button">&larr; Voltar</button>
             <h2>Dashboard de Equipamentos</h2>
             <div class="dashboard-controls">
                 <label for="selectResponsavel">Filtrar por Responsável:</label>
-                <select id="selectResponsavel">
+                <select id="selectResponsavel" class="pure-input-1-2">
                     <option value="">Todos os Responsáveis</option>
                 </select>
-                <button id="filterDashboardBtn">Filtrar</button>
+                <button id="filterDashboardBtn" class="pure-button pure-button-primary">Filtrar</button>
             </div>
             <div id="dashboardContent">
                 <p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>
@@ -687,7 +746,7 @@
                         htmlContent += `
                             <div class="filial-section">
                                 <h3>Filial: ${filialData.nome} (Responsável: ${filialData.responsavel})</h3>
-                                <table>
+                                <table class="pure-table pure-table-horizontal">
                                     <thead>
                                         <tr>
                                             <th>Placa</th>
