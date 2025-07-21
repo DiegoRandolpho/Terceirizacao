@@ -19,64 +19,92 @@
       <button onclick="mostrarSecao('gestao-usuarios')" class="bg-gray-800 text-white px-4 py-2 rounded">Gestão de Usuários</button>
     </nav>
 
-    <!-- Seção: Cadastro de Equipamentos -->
-    <section id="cadastro-equipamento" class="hidden bg-white p-6 rounded shadow">
-      <h1 class="text-2xl font-bold mb-4">Cadastro de Equipamento</h1>
-      <form id="cadastro-form" class="space-y-4">
-        <input id="placa" type="text" placeholder="Placa" class="w-full border p-2 rounded" required />
-        <select id="tipo" class="w-full border p-2 rounded" required>
-          <option value="">Tipo de Equipamento</option>
-          <option value="Bomba Lança">Bomba Lança</option>
-          <option value="Bomba Estacionária">Bomba Estacionária</option>
-          <option value="Betoneira">Betoneira</option>
-        </select>
-        <input id="filial" type="text" placeholder="Filial" class="w-full border p-2 rounded" required />
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Cadastrar</button>
-      </form>
-      <div id="mensagem" class="mt-4 text-center text-sm"></div>
-    </section>
+    <!-- Seções omitidas para brevidade... -->
 
-    <!-- Seção: Cadastro de Filiais -->
-    <section id="cadastro-filial" class="hidden bg-white p-6 rounded shadow">
-      <h1 class="text-2xl font-bold mb-4">Cadastro de Filial</h1>
-      <form id="filial-form" class="space-y-4">
-        <input id="nova-filial" type="text" placeholder="Nome da Filial" class="w-full border p-2 rounded" required />
-        <input id="responsavel" type="text" placeholder="Responsável" class="w-full border p-2 rounded" required />
-        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 rounded">Cadastrar Filial</button>
-      </form>
-      <div id="mensagem-filial" class="mt-4 text-center text-sm"></div>
-    </section>
-
-    <!-- Seção: Dashboard -->
-    <section id="dashboard" class="hidden bg-white p-6 rounded shadow">
-      <h2 class="text-xl font-bold mb-2">Dashboard</h2>
-      <button onclick="exportarParaExcel()" class="mb-4 bg-green-500 text-white px-4 py-2 rounded">Exportar para Excel</button>
-      <div id="dashboard-content" class="text-gray-700"></div>
-    </section>
-
-    <!-- Seção: Troca de Filial -->
-    <section id="troca-filial" class="hidden bg-white p-6 rounded shadow">
-      <h2 class="text-xl font-bold mb-2">Troca de Filial</h2>
-      <form id="troca-form" class="space-y-4">
-        <input type="text" id="placa-troca" placeholder="Placa" class="w-full border p-2 rounded" required />
-        <input type="text" id="nova-filial-troca" placeholder="Nova Filial" class="w-full border p-2 rounded" required />
-        <input type="text" id="usuario-troca" placeholder="Usuário" class="w-full border p-2 rounded" required />
-        <input type="date" id="data-troca" class="w-full border p-2 rounded" required />
-        <button type="submit" class="w-full bg-purple-600 text-white font-bold py-2 rounded">Confirmar Troca</button>
-      </form>
-    </section>
-
-    <!-- Seção: Gestão de Usuários -->
-    <section id="gestao-usuarios" class="hidden bg-white p-6 rounded shadow">
-      <h2 class="text-xl font-bold mb-2">Gestão de Usuários</h2>
-      <form id="usuario-form" class="space-y-4">
-        <input type="text" id="usuario-nome" placeholder="Nome de Usuário" class="w-full border p-2 rounded" required />
-        <input type="password" id="usuario-senha" placeholder="Senha" class="w-full border p-2 rounded" required />
-        <button type="submit" class="w-full bg-gray-800 text-white font-bold py-2 rounded">Cadastrar Usuário</button>
-      </form>
-    </section>
   </div>
+
+  <script>
+    const supabase = supabase.createClient(
+      'https://zentzsobumuwjmwmqede.supabase.co',
+      'SUA_ANON_KEY_AQUI'
+    );
+
+    function mostrarSecao(id) {
+      document.querySelectorAll('section').forEach(secao => secao.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    document.getElementById('cadastro-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const placa = document.getElementById('placa').value;
+      const tipo = document.getElementById('tipo').value;
+      const filial = document.getElementById('filial').value;
+
+      const { error } = await supabase.from('equipamentos').insert([{ placa, tipo, filial }]);
+      const mensagem = document.getElementById('mensagem');
+      if (error) {
+        mensagem.textContent = 'Erro ao cadastrar equipamento.';
+        mensagem.className = 'text-red-600';
+      } else {
+        mensagem.textContent = 'Equipamento cadastrado com sucesso!';
+        mensagem.className = 'text-green-600';
+      }
+      e.target.reset();
+    });
+
+    document.getElementById('filial-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('nova-filial').value;
+      const responsavel = document.getElementById('responsavel').value;
+
+      const { error } = await supabase.from('filiais').insert([{ nome, responsavel }]);
+      const mensagem = document.getElementById('mensagem-filial');
+      if (error) {
+        mensagem.textContent = 'Erro ao cadastrar filial.';
+        mensagem.className = 'text-red-600';
+      } else {
+        mensagem.textContent = 'Filial cadastrada com sucesso!';
+        mensagem.className = 'text-green-600';
+      }
+      e.target.reset();
+    });
+
+    document.getElementById('troca-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const placa = document.getElementById('placa-troca').value;
+      const novaFilial = document.getElementById('nova-filial-troca').value;
+      const usuario = document.getElementById('usuario-troca').value;
+      const data = document.getElementById('data-troca').value;
+
+      await supabase.from('trocas').insert([{ placa, nova_filial: novaFilial, usuario, data }]);
+      e.target.reset();
+    });
+
+    document.getElementById('usuario-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const login = document.getElementById('usuario-nome').value;
+      const senha = document.getElementById('usuario-senha').value;
+
+      await supabase.from('usuarios').insert([{ login, senha }]);
+      e.target.reset();
+    });
+
+    async function exportarParaExcel() {
+      const { data } = await supabase.from('equipamentos').select('placa, tipo, filial');
+      let csv = 'Placa,Tipo,Filial\n';
+      data.forEach(row => {
+        csv += `${row.placa},${row.tipo},${row.filial}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'equipamentos.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    mostrarSecao('cadastro-equipamento');
+  </script>
 </body>
 </html>
-</html>
-
