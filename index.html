@@ -448,8 +448,8 @@
     <!-- Supabase JS -->
     <script type="module">
         // Supabase client setup
-        const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; // Substitua pela sua URL do Supabase
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; // Substitua pela sua Chave Anon do Supabase
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Substitua pela sua URL do Supabase
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Substitua pela sua Chave Anon do Supabase
 
         const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1006,7 +1006,10 @@
                             password: password,
                         });
 
-                        if (error) throw error;
+                        if (error) {
+                            console.error("Erro no login do Supabase Auth:", error); // Adicionado debug
+                            throw error;
+                        }
 
                         // Se o login for bem-sucedido, busca os dados da tabela 'usuarios'
                         const { data: userData, error: userProfileError } = await supabase
@@ -1015,7 +1018,10 @@
                             .eq('id', data.user.id)
                             .single();
 
-                        if (userProfileError) throw userProfileError;
+                        if (userProfileError) {
+                            console.error("Erro ao buscar perfil do usuário na tabela 'usuarios':", userProfileError); // Adicionado debug
+                            throw userProfileError;
+                        }
 
                         loggedInAppUser = {
                             id: data.user.id,
@@ -1030,8 +1036,8 @@
                         currentView = null; // Volta para a tela principal
                         renderUI();
                     } catch (error) {
-                        console.error("Erro no login do aplicativo:", error);
-                        MessageDisplay(appLoginMessageDisplay, `Erro ao tentar fazer login: ${error.message}.`, 'error');
+                        console.error("Erro geral no login:", error); // Adicionado debug
+                        MessageDisplay(appLoginMessageDisplay, `Erro ao tentar fazer login: ${error.message}. Verifique suas credenciais e as políticas RLS para 'auth.users' e 'usuarios'.`, 'error'); // Mensagem mais detalhada
                     }
                 });
             }
@@ -1098,7 +1104,10 @@
                             password: password,
                         });
 
-                        if (authError) throw authError;
+                        if (authError) {
+                            console.error("Erro ao criar usuário no Supabase Auth:", authError); // Adicionado debug
+                            throw authError;
+                        }
 
                         // 2. Insere os dados adicionais na sua tabela 'usuarios'
                         const { error: profileError } = await supabase
@@ -1114,14 +1123,18 @@
 
                         if (profileError) {
                             // Se falhar a inserção do perfil, pode ser necessário deletar o usuário do auth
-                            await supabase.auth.admin.deleteUser(authData.user.id); // Requer chave de serviço de administrador
+                            console.error("Erro ao inserir perfil na tabela 'usuarios':", profileError); // Adicionado debug
+                            // A exclusão de usuário via cliente requer a chave de serviço de administrador,
+                            // o que não é seguro para apps de frontend.
+                            // Em um cenário real, isso seria tratado por uma Edge Function ou API de backend.
+                            // await supabase.auth.admin.deleteUser(authData.user.id); // Requer chave de serviço de administrador
                             throw profileError;
                         }
 
                         MessageDisplay(createUserMessageDisplay, `Usuário "${login}" criado com sucesso!`, 'success');
                         createUserForm.reset();
                     } catch (error) {
-                        console.error("Erro ao criar usuário:", error);
+                        console.error("Erro geral ao criar usuário:", error); // Adicionado debug
                         MessageDisplay(createUserMessageDisplay, `Erro ao criar usuário: ${error.message}.`, 'error');
                     }
                 });
@@ -1165,7 +1178,7 @@
                         MessageDisplay(cadastroEquipamentoMessageDisplay, `Filial "${currentBranch}" não cadastrada. Por favor, cadastre a filial primeiro.`, 'error');
                         return;
                     } else if (branchError) {
-                        console.error("Erro ao verificar filial:", branchError);
+                        console.error("Erro ao verificar filial:", branchError); // Adicionado debug
                         MessageDisplay(cadastroEquipamentoMessageDisplay, `Erro ao verificar filial: ${branchError.message}.`, 'error');
                         return;
                     }
@@ -1184,7 +1197,10 @@
                                 .insert([
                                     { placa: currentPlate, filial: currentBranch } // Tipo pode ser 'N/A' ou adicionado ao formulário
                                 ]);
-                            if (insertEquipError) throw insertEquipError;
+                            if (insertEquipError) {
+                                console.error("Erro ao inserir equipamento:", insertEquipError); // Adicionado debug
+                                throw insertEquipError;
+                            }
 
                             // Insere a primeira troca na tabela 'trocas'
                             const { error: insertTrocaError } = await supabase
@@ -1197,19 +1213,23 @@
                                         data: currentDate 
                                     }
                                 ]);
-                            if (insertTrocaError) throw insertTrocaError;
+                            if (insertTrocaError) {
+                                console.error("Erro ao inserir troca:", insertTrocaError); // Adicionado debug
+                                throw insertTrocaError;
+                            }
 
                             MessageDisplay(cadastroEquipamentoMessageDisplay, `Equipamento ${currentPlate} cadastrado com sucesso na filial ${currentBranch}.`, 'success');
                             cadastroEquipamentoFormManual.reset();
                             fetchPlateData(); // Atualiza os dados
                         } else if (selectError) {
+                            console.error("Erro ao selecionar placa existente:", selectError); // Adicionado debug
                             throw selectError; // Outro erro de seleção
                         } else {
                             // Placa já existe
                             MessageDisplay(cadastroEquipamentoMessageDisplay, `Placa "${currentPlate}" já cadastrada. Utilize a opção 'Alteração de Filial' para modificá-la.`, 'error');
                         }
                     } catch (e) {
-                        console.error("Erro ao cadastrar equipamento:", e);
+                        console.error("Erro geral ao cadastrar equipamento:", e); // Adicionado debug
                         MessageDisplay(cadastroEquipamentoMessageDisplay, `Erro ao cadastrar equipamento: ${e.message}. Por favor, tente novamente.`, 'error');
                     }
                 });
@@ -1250,7 +1270,7 @@
                         .from('filiais')
                         .select('nome');
                     if (existingBranchesError) {
-                        console.error("Erro ao buscar filiais existentes:", existingBranchesError);
+                        console.error("Erro ao buscar filiais existentes:", existingBranchesError); // Adicionado debug
                         MessageDisplay(cadastroEquipamentoMessageDisplay, `Erro ao preparar upload: ${existingBranchesError.message}.`, 'error');
                         return;
                     }
@@ -1261,7 +1281,7 @@
                         .from('equipamentos')
                         .select('placa');
                     if (existingEquipmentsError) {
-                        console.error("Erro ao buscar equipamentos existentes:", existingEquipmentsError);
+                        console.error("Erro ao buscar equipamentos existentes:", existingEquipmentsError); // Adicionado debug
                         MessageDisplay(cadastroEquipamentoMessageDisplay, `Erro ao preparar upload: ${existingEquipmentsError.message}.`, 'error');
                         return;
                     }
@@ -1318,7 +1338,10 @@
                             const { error: insertBranchesError } = await supabase
                                 .from('filiais')
                                 .insert(branchesArray);
-                            if (insertBranchesError) throw insertBranchesError;
+                            if (insertBranchesError) {
+                                console.error("Erro ao inserir filiais em massa:", insertBranchesError); // Adicionado debug
+                                throw insertBranchesError;
+                            }
                             branchesArray.forEach(b => results.success.push(`Filial "${b.nome}" adicionada.`));
                         }
 
@@ -1327,7 +1350,10 @@
                             const { error: insertEquipmentsError } = await supabase
                                 .from('equipamentos')
                                 .insert(newEquipmentsToInsert);
-                            if (insertEquipmentsError) throw insertEquipmentsError;
+                            if (insertEquipmentsError) {
+                                console.error("Erro ao inserir equipamentos em massa:", insertEquipmentsError); // Adicionado debug
+                                throw insertEquipmentsError;
+                            }
                             newEquipmentsToInsert.forEach(e => results.success.push(`Equipamento "${e.placa}" cadastrado.`));
                         }
 
@@ -1336,7 +1362,10 @@
                             const { error: insertTrocasError } = await supabase
                                 .from('trocas')
                                 .insert(newTrocasToInsert);
-                            if (insertTrocasError) throw insertTrocasError;
+                            if (insertTrocasError) {
+                                console.error("Erro ao inserir trocas em massa:", insertTrocasError); // Adicionado debug
+                                throw insertTrocasError;
+                            }
                             newTrocasToInsert.forEach(t => results.success.push(`Troca para "${t.placa}" registrada.`));
                         }
 
@@ -1355,7 +1384,7 @@
                         bulkUploadResultsDisplay.innerHTML = outputHtml;
                         fetchPlateData(); // Re-fetch all data to update UI
                     } catch (e) {
-                        console.error("Erro ao commitar upload em massa:", e);
+                        console.error("Erro geral ao commitar upload em massa:", e); // Adicionado debug
                         bulkUploadResultsDisplay.innerHTML = `<p class="font-bold text-red-700">Erro fatal no upload em massa: ${e.message}</p>`;
                     }
                 });
@@ -1391,7 +1420,7 @@
                         MessageDisplay(alteracaoFilialMessageDisplay, `Nova filial "${newBranch}" não cadastrada. Por favor, cadastre a filial primeiro.`, 'error');
                         return;
                     } else if (branchError) {
-                        console.error("Erro ao verificar filial:", branchError);
+                        console.error("Erro ao verificar filial:", branchError); // Adicionado debug
                         MessageDisplay(alteracaoFilialMessageDisplay, `Erro ao verificar filial: ${branchError.message}.`, 'error');
                         return;
                     }
@@ -1408,6 +1437,7 @@
                             MessageDisplay(alteracaoFilialMessageDisplay, `Placa "${currentPlate}" não encontrada. Cadastre o equipamento primeiro.`, 'error');
                             return;
                         } else if (equipSelectError) {
+                            console.error("Erro ao selecionar equipamento para alteração:", equipSelectError); // Adicionado debug
                             throw equipSelectError;
                         }
 
@@ -1423,13 +1453,16 @@
                                 }
                             ]);
 
-                        if (insertTrocaError) throw insertTrocaError;
+                        if (insertTrocaError) {
+                            console.error("Erro ao inserir troca para alteração:", insertTrocaError); // Adicionado debug
+                            throw insertTrocaError;
+                        }
 
                         MessageDisplay(alteracaoFilialMessageDisplay, `Filial do equipamento ${currentPlate} atualizada para ${newBranch} com sucesso.`, 'success');
                         alteracaoFilialForm.reset();
                         fetchPlateData(); // Atualiza os dados
                     } catch (e) {
-                        console.error("Erro ao alterar filial:", e);
+                        console.error("Erro geral ao alterar filial:", e); // Adicionado debug
                         MessageDisplay(alteracaoFilialMessageDisplay, `Erro ao alterar filial: ${e.message}. Por favor, tente novamente.`, 'error');
                     }
                 });
@@ -1466,19 +1499,23 @@
                                 .insert([
                                     { nome: branchName }
                                 ]);
-                            if (insertError) throw insertError;
+                            if (insertError) {
+                                console.error("Erro ao inserir filial:", insertError); // Adicionado debug
+                                throw insertError;
+                            }
 
                             MessageDisplay(cadastroFilialMessageDisplay, `Filial "${branchName}" cadastrada com sucesso.`, 'success');
                             cadastroFilialForm.reset();
                             fetchBranchesData(); // Atualiza a lista de filiais
                         } else if (selectError) {
+                            console.error("Erro ao selecionar filial existente:", selectError); // Adicionado debug
                             throw selectError; // Outro erro de seleção
                         } else {
                             // Filial já existe
                             MessageDisplay(cadastroFilialMessageDisplay, `Filial "${branchName}" já cadastrada.`, 'info');
                         }
                     } catch (e) {
-                        console.error("Erro ao cadastrar filial:", e);
+                        console.error("Erro geral ao cadastrar filial:", e); // Adicionado debug
                         MessageDisplay(cadastroFilialMessageDisplay, `Erro ao cadastrar filial: ${e.message}. Por favor, tente novamente.`, 'error');
                     }
                 });
