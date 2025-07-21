@@ -33,7 +33,7 @@
         #appContainer {
             display: flex;
             width: 100%;
-            transition: margin-left 0.3s ease;
+            /* transition: margin-left 0.3s ease; */ /* Removido para controle mais fino */
         }
 
         /* --- Navbar (Topo) --- */
@@ -45,12 +45,12 @@
             width: calc(100% - var(--sidebar-width)); /* Ajusta a largura para sidebar aberta */
             position: fixed;
             top: 0;
-            left: var(--sidebar-width);
+            left: var(--sidebar-width); /* Inicia com o tamanho da sidebar */
             z-index: 1000;
             transition: left 0.3s ease, width 0.3s ease;
         }
 
-        /* Ajuste da navbar quando sidebar está recolhida */
+        /* Ajuste da navbar quando sidebar está recolhida (desktop) */
         body.sidebar-collapsed .navbar {
             width: 100%;
             left: 0;
@@ -80,17 +80,17 @@
             position: fixed;
             height: 100%;
             top: 0;
-            left: 0;
+            left: 0; /* Posição inicial da sidebar */
             z-index: 1001; /* Acima da navbar */
             padding-top: var(--navbar-height); /* Espaço para logo no topo */
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            transition: left 0.3s ease;
+            transition: left 0.3s ease; /* Transição apenas para 'left' */
             overflow-y: auto; /* Scrollable sidebar */
         }
 
-        /* Sidebar recolhida */
+        /* Sidebar recolhida (desktop) */
         body.sidebar-collapsed #sidebar {
-            left: -var(--sidebar-width);
+            left: -var(--sidebar-width); /* Esconde completamente à esquerda */
         }
 
         #sidebar .sidebar-header {
@@ -114,7 +114,6 @@
         #sidebar .sidebar-header span {
             color: #fff;
         }
-
 
         #sidebar .nav-item {
             border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -149,10 +148,10 @@
             transition: margin-left 0.3s ease, width 0.3s ease;
         }
 
-        /* Conteúdo ocupa toda a largura quando sidebar recolhida */
+        /* Conteúdo ocupa toda a largura quando sidebar recolhida (desktop) */
         body.sidebar-collapsed #contentWrapper {
-            margin-left: 0;
-            width: 100%;
+            margin-left: 0; /* Remove margem */
+            width: 100%; /* Ocupa toda a largura */
         }
 
         #mainContent {
@@ -277,14 +276,15 @@
             :root {
                 --sidebar-width: 220px;
             }
+            /* Sidebar em mobile: inicia escondida à esquerda, quando expandida, desliza para 0 */
             body #sidebar {
-                left: -var(--sidebar-width); /* Inicia escondida em mobile */
+                left: -var(--sidebar-width);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.2); /* Sombra para destacar que está "por cima" */
             }
             body.sidebar-expanded #sidebar {
-                left: 0; /* Mostra a sidebar em mobile */
+                left: 0;
             }
-            /* Em mobile, a navbar e o conteúdo principal sempre ocupam 100% da largura,
-               e a sidebar desliza por cima/lado. */
+            /* Navbar e Content Wrapper sempre ocupam 100% da largura em mobile */
             body #navbar, body #contentWrapper {
                 width: 100% !important;
                 margin-left: 0 !important;
@@ -322,7 +322,7 @@
             </a>
             <div class="ms-auto d-flex align-items-center navbar-top-elements">
                 <a class="nav-link me-3" href="#"><i class="bi bi-cloud-fill"></i></a>
-                </div>
+            </div>
         </div>
     </nav>
 
@@ -341,7 +341,7 @@
                 </a>
                 <div class="collapse" id="cadastroSubmenu">
                     <ul class="nav flex-column ms-3">
-                        <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroUsuariosScreen" id="showCadastroUsuarios"><i class="bi bi-person-fill-add"></i> Usuários</a></li>
+                        <li class="nav-item" id="cadastroUsuariosNavItem"><a class="nav-link" href="#" data-screen="cadastroUsuariosScreen" id="showCadastroUsuarios"><i class="bi bi-person-fill-add"></i> Usuários</a></li>
                         <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroFiliaisScreen" id="showCadastroFiliais"><i class="bi bi-shop"></i> Filiais</a></li>
                         <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroEquipamentosScreen" id="showCadastroEquipamentos"><i class="bi bi-tools"></i> Equipamentos</a></li>
                     </ul>
@@ -438,6 +438,15 @@
                         <label for="senhaUsuario" class="form-label">Senha:</label>
                         <input type="password" id="senhaUsuario" class="form-control" required>
                     </div>
+                    <div class="mb-3">
+                        <label for="categoriaUsuario" class="form-label">Categoria:</label>
+                        <select id="categoriaUsuario" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="admin">Administrador</option>
+                            <option value="operador">Operador</option>
+                            <option value="visualizador">Visualizador</option>
+                        </select>
+                    </div>
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary">Cadastrar Usuário</button>
                     </div>
@@ -459,6 +468,7 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>Email</th>
+                                    <th>Categoria</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -657,6 +667,15 @@
                         <label for="modalUsuarioEmail" class="form-label">Email:</label>
                         <input type="email" id="modalUsuarioEmail" class="form-control" required>
                     </div>
+                    <div class="mb-3">
+                        <label for="modalUsuarioCategoria" class="form-label">Categoria:</label>
+                        <select id="modalUsuarioCategoria" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="admin">Administrador</option>
+                            <option value="operador">Operador</option>
+                            <option value="visualizador">Visualizador</option>
+                        </select>
+                    </div>
                     <hr>
                     <div class="mb-3">
                         <label for="modalUsuarioNovaSenha" class="form-label">Nova Senha (opcional):</label>
@@ -769,7 +788,7 @@
         // --- Variáveis Globais de Elementos (para fácil acesso) ---
         const loginScreen = document.getElementById('loginScreen');
         const mainDashboardScreen = document.getElementById('mainDashboardScreen');
-        const cadastroUsuariosScreen = document.getElementById('cadastroUsuariosScreen'); // Nova tela
+        const cadastroUsuariosScreen = document.getElementById('cadastroUsuariosScreen');
         const cadastroFiliaisScreen = document.getElementById('cadastroFiliaisScreen');
         const cadastroEquipamentosScreen = document.getElementById('cadastroEquipamentosScreen');
         const trocaFilialScreen = document.getElementById('trocaFilialScreen');
@@ -779,10 +798,10 @@
         const taskCountBadge = document.getElementById('taskCountBadge');
 
         const body = document.body;
-        const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn'); // Botão mobile
-        const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn'); // Botão desktop
+        const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn');
+        const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn');
         const sidebarElement = document.getElementById('sidebar');
-        const navbarTopElements = document.querySelector('.navbar-top-elements'); // Nova classe para os elementos da navbar
+        const navbarTopElements = document.querySelector('.navbar-top-elements');
 
         // Elementos da tabela de consulta de filiais
         const filiaisTableBody = document.getElementById('filiaisTableBody');
@@ -799,14 +818,14 @@
         const modalEditFilialMessage = document.getElementById('modalEditFilialMessage');
         const saveFilialResponsavelBtn = document.getElementById('saveFilialResponsavelBtn');
 
-        // Elementos da tabela de consulta de equipamentos (NOVOS)
+        // Elementos da tabela de consulta de equipamentos
         const equipamentosTableBody = document.getElementById('equipamentosTableBody');
         const equipamentoSearchInput = document.getElementById('equipamentoSearchInput');
         const equipamentoSearchBtn = document.getElementById('equipamentoSearchBtn');
         const equipamentoClearSearchBtn = document.getElementById('equipamentoClearSearchBtn');
         const equipamentoConsultaMessage = document.getElementById('equipamentoConsultaMessage');
 
-        // Elementos do Modal de Edição de Equipamento (NOVOS)
+        // Elementos do Modal de Edição de Equipamento
         const editEquipamentoModal = new bootstrap.Modal(document.getElementById('editEquipamentoModal'));
         const modalEquipamentoPlaca = document.getElementById('modalEquipamentoPlaca');
         const modalEquipamentoId = document.getElementById('modalEquipamentoId');
@@ -814,23 +833,26 @@
         const modalEditEquipamentoMessage = document.getElementById('modalEditEquipamentoMessage');
         const saveEquipamentoBtn = document.getElementById('saveEquipamentoBtn');
 
-        // Elementos da tela de cadastro de usuários (NOVOS)
+        // Elementos da tela de cadastro de usuários
         const usuarioForm = document.getElementById('usuarioForm');
         const usuarioMessage = document.getElementById('usuarioMessage');
+        const categoriaUsuarioSelect = document.getElementById('categoriaUsuario'); // Novo select de categoria
         const usuariosTableBody = document.getElementById('usuariosTableBody');
         const usuarioSearchInput = document.getElementById('usuarioSearchInput');
         const usuarioSearchBtn = document.getElementById('usuarioSearchBtn');
         const usuarioClearSearchBtn = document.getElementById('usuarioClearSearchBtn');
         const usuarioConsultaMessage = document.getElementById('usuarioConsultaMessage');
+        const cadastroUsuariosNavItem = document.getElementById('cadastroUsuariosNavItem'); // Li do menu de usuários
 
-        // Elementos do Modal de Edição de Usuário (NOVOS)
+        // Elementos do Modal de Edição de Usuário
         const editUsuarioModal = new bootstrap.Modal(document.getElementById('editUsuarioModal'));
         const modalUsuarioNomeAtual = document.getElementById('modalUsuarioNomeAtual');
         const modalUsuarioId = document.getElementById('modalUsuarioId');
         const modalUsuarioNome = document.getElementById('modalUsuarioNome');
         const modalUsuarioEmail = document.getElementById('modalUsuarioEmail');
-        const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha'); // Novo campo de senha
-        const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha'); // Novo campo de confirmação de senha
+        const modalUsuarioCategoria = document.getElementById('modalUsuarioCategoria'); // Novo select de categoria no modal
+        const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha');
+        const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha');
         const modalEditUsuarioMessage = document.getElementById('modalEditUsuarioMessage');
         const saveUsuarioBtn = document.getElementById('saveUsuarioBtn');
 
@@ -843,7 +865,7 @@
                 // Comportamento para mobile: adiciona/remove 'sidebar-expanded' para sobrepor
                 body.classList.toggle('sidebar-expanded');
             } else {
-                // Comportamento para desktop: adiciona/remove 'sidebar-collapsed' para mover o conteúdo
+                // Comportamento para desktop: adiciona/remove 'sidebar-collapsed' para ocultar/exibir
                 body.classList.toggle('sidebar-collapsed');
             }
         }
@@ -863,8 +885,15 @@
             const userString = localStorage.getItem('loggedInUser');
             if (userString) {
                 loggedInUser = JSON.parse(userString);
-                // userNameElement.textContent = loggedInUser.nome; // Removido pois o elemento foi removido
                 body.classList.remove('logged-out'); // Remove a classe para mostrar a sidebar e navbar
+
+                // Define a visibilidade do item de menu de usuários
+                if (loggedInUser.categoria === 'admin') {
+                    cadastroUsuariosNavItem.classList.remove('hidden');
+                } else {
+                    cadastroUsuariosNavItem.classList.add('hidden');
+                }
+
                 // Garante que a sidebar esteja expandida por padrão em desktop ao logar
                 if (window.innerWidth > 768) {
                      body.classList.remove('sidebar-collapsed');
@@ -900,7 +929,7 @@
                     try {
                         const { data, error } = await supabase
                             .from('usuarios')
-                            .select('id, email, nome, senha')
+                            .select('id, email, nome, senha, categoria') // Inclui a categoria na seleção
                             .eq('email', email)
                             .single();
 
@@ -913,7 +942,7 @@
                         }
 
                         if (data && data.senha === password) {
-                            loggedInUser = { id: data.id, nome: data.nome, email: data.email };
+                            loggedInUser = { id: data.id, nome: data.nome, email: data.email, categoria: data.categoria }; // Armazena a categoria
                             localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
                             loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
                             loginMessage.classList.add('alert-success');
@@ -922,6 +951,12 @@
                                 // Garante que a sidebar esteja expandida por padrão em desktop
                                 if (window.innerWidth > 768) {
                                      body.classList.remove('sidebar-collapsed');
+                                }
+                                // Define a visibilidade do item de menu de usuários após login
+                                if (loggedInUser.categoria === 'admin') {
+                                    cadastroUsuariosNavItem.classList.remove('hidden');
+                                } else {
+                                    cadastroUsuariosNavItem.classList.add('hidden');
                                 }
                                 showScreen('mainDashboardScreen');
                             }, 500);
@@ -947,6 +982,7 @@
                 if (window.innerWidth > 768) {
                      body.classList.add('sidebar-collapsed');
                 }
+                cadastroUsuariosNavItem.classList.add('hidden'); // Esconde o link de usuários ao deslogar
                 showScreen('loginScreen');
             };
             if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
@@ -967,6 +1003,12 @@
                     event.preventDefault(); // Impede o comportamento padrão do link
                     if (!loggedInUser) { checkAuthAndNavigate(); return; }
 
+                    // Verifica permissão para Cadastro de Usuários
+                    if (screenId === 'cadastroUsuariosScreen' && loggedInUser.categoria !== 'admin') {
+                        alert('Você não tem permissão para acessar esta funcionalidade.');
+                        return;
+                    }
+
                     // Lógicas específicas antes de mostrar a tela (apenas para links sem data-screen definidos)
                     // Para os links com data-screen, showScreen() já cuida de carregar os dados
                     if (screenId) {
@@ -985,23 +1027,23 @@
 
             // --- Lógicas dos Formulários ---
 
-            // --- Cadastro de Usuários --- (Modificado para inserir senha em texto puro)
+            // --- Cadastro de Usuários --- (Modificado para inserir senha em texto puro e categoria)
             if (usuarioForm) {
                 usuarioForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; } // Verifica permissão
 
                     const nome = usuarioForm.nomeUsuario.value;
                     const email = usuarioForm.emailUsuario.value;
                     const senha = usuarioForm.senhaUsuario.value;
+                    const categoria = categoriaUsuarioSelect.value; // Pega a categoria
 
                     usuarioMessage.textContent = ''; usuarioMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
-                        // Inserir senha em texto simples. Para um sistema real, use criptografia (ex: bcrypt) antes de armazenar.
                         const { data, error } = await supabase
                             .from('usuarios')
-                            .insert({ nome: nome, email: email, senha: senha });
+                            .insert({ nome: nome, email: email, senha: senha, categoria: categoria }); // Inclui categoria
 
                         if (error) {
                             if (error.code === '23505') { usuarioMessage.textContent = 'Já existe um usuário com este email.'; }
@@ -1022,13 +1064,19 @@
                 });
             }
 
-            // --- Consulta de Usuários ---
+            // --- Consulta de Usuários --- (Modificado para exibir categoria)
             async function loadUsuariosTable(searchTerm = '') {
                 usuariosTableBody.innerHTML = '';
                 usuarioConsultaMessage.textContent = ''; usuarioConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
 
+                if (!loggedInUser || loggedInUser.categoria !== 'admin') {
+                    usuarioConsultaMessage.textContent = 'Você não tem permissão para visualizar esta tabela.';
+                    usuarioConsultaMessage.classList.add('alert-danger');
+                    return;
+                }
+
                 try {
-                    let query = supabase.from('usuarios').select('id, nome, email');
+                    let query = supabase.from('usuarios').select('id, nome, email, categoria'); // Seleciona categoria
 
                     if (searchTerm) {
                         query = query.or(`nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
@@ -1048,7 +1096,8 @@
                         const row = usuariosTableBody.insertRow();
                         row.insertCell(0).textContent = usuario.nome;
                         row.insertCell(1).textContent = usuario.email;
-                        const actionsCell = row.insertCell(2);
+                        row.insertCell(2).textContent = usuario.categoria || 'Não Definida'; // Exibe categoria
+                        const actionsCell = row.insertCell(3); // Ações agora na 4ª coluna
                         const editButton = document.createElement('button');
                         editButton.classList.add('btn', 'btn-sm', 'btn-info', 'me-2');
                         editButton.innerHTML = '<i class="bi bi-pencil"></i> Editar';
@@ -1077,12 +1126,13 @@
                 });
             }
 
-            // --- Modal de Edição de Usuário --- (Modificado para incluir senha)
+            // --- Modal de Edição de Usuário --- (Modificado para incluir senha e categoria)
             function openEditUsuarioModal(usuario) {
                 modalUsuarioNomeAtual.textContent = usuario.nome;
                 modalUsuarioId.value = usuario.id;
                 modalUsuarioNome.value = usuario.nome;
                 modalUsuarioEmail.value = usuario.email;
+                modalUsuarioCategoria.value = usuario.categoria || ''; // Preenche a categoria
                 modalUsuarioNovaSenha.value = ''; // Limpa os campos de senha
                 modalUsuarioConfirmaSenha.value = '';
                 modalEditUsuarioMessage.textContent = '';
@@ -1092,17 +1142,20 @@
 
             if (saveUsuarioBtn) {
                 saveUsuarioBtn.addEventListener('click', async () => {
+                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; } // Verifica permissão
+
                     const usuarioId = modalUsuarioId.value;
                     const novoNome = modalUsuarioNome.value.trim();
                     const novoEmail = modalUsuarioEmail.value.trim();
+                    const novaCategoria = modalUsuarioCategoria.value; // Pega a nova categoria
                     const novaSenha = modalUsuarioNovaSenha.value;
                     const confirmaSenha = modalUsuarioConfirmaSenha.value;
 
                     modalEditUsuarioMessage.textContent = '';
                     modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
 
-                    if (!novoNome || !novoEmail) {
-                        modalEditUsuarioMessage.textContent = 'Nome e email são obrigatórios.';
+                    if (!novoNome || !novoEmail || !novaCategoria) {
+                        modalEditUsuarioMessage.textContent = 'Nome, email e categoria são obrigatórios.';
                         modalEditUsuarioMessage.classList.add('alert-danger');
                         return;
                     }
@@ -1114,7 +1167,7 @@
                     }
 
                     try {
-                        const updateData = { nome: novoNome, email: novoEmail };
+                        const updateData = { nome: novoNome, email: novoEmail, categoria: novaCategoria }; // Inclui categoria
                         if (novaSenha) {
                             updateData.senha = novaSenha; // Atualiza a senha se um valor foi fornecido
                         }
@@ -1133,6 +1186,11 @@
                             setTimeout(() => {
                                 editUsuarioModal.hide();
                                 loadUsuariosTable(); // Recarrega a tabela para mostrar a atualização
+                                // Se o usuário logado editar a própria categoria, recarrega a página para aplicar as permissões
+                                if (loggedInUser.id == usuarioId && loggedInUser.categoria !== novaCategoria) {
+                                    alert('Sua categoria foi alterada. Por favor, faça login novamente.');
+                                    handleLogout(); // Força o logout para recarregar as permissões
+                                }
                             }, 1000);
                         }
                     } catch (error) {
