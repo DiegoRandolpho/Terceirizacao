@@ -282,34 +282,25 @@
             }
         }
 
-        /* Esconder sidebar e itens da navbar antes do login */
-        body.logged-out #sidebar {
-            display: none;
-        }
-        body.logged-out .navbar {
-            width: 100%;
-            left: 0;
-        }
-        body.logged-out #contentWrapper {
-            margin-left: 0;
-            width: 100%;
-        }
-        body.logged-out .navbar-user-options { /* Classe para esconder avatar e sair */
+        /* --- Estado de "não logado" --- */
+        /* Esta classe será adicionada ao <body> quando o usuário não estiver logado. */
+        body.logged-out #sidebar,
+        body.logged-out .navbar-user-options,
+        body.logged-out .navbar-toggler {
             display: none !important;
         }
-        body.logged-out .navbar-toggler {
-             display: none !important; /* Esconde o botão de toggle da sidebar no login */
+
+        body.logged-out .navbar { /* Garante que a navbar ocupe toda a largura */
+            width: 100% !important;
+            left: 0 !important;
         }
-        body:not(.logged-out) .navbar-user-options { /* Garante que aparece quando logado */
-            display: flex !important;
-        }
-        body:not(.logged-out) .navbar-toggler { /* Garante que aparece quando logado */
-             display: block !important;
+        body.logged-out #contentWrapper { /* Garante que o conteúdo ocupe toda a largura */
+            margin-left: 0 !important;
+            width: 100% !important;
         }
     </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg">
+<body class="logged-out"> <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <button class="navbar-toggler me-3 d-lg-none" type="button" id="sidebarToggleBtn">
                 <i class="bi bi-list"></i>
@@ -627,6 +618,7 @@
 
         // --- Lógica de Eventos ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Chamada inicial para verificar autenticação e ajustar UI
             checkAuthAndNavigate();
 
             // Evento de Login
