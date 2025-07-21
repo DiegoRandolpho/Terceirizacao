@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebApp Interno</title>
+    <style>
+        /* public/styles.css consolidado aqui */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            display: flex; /* Para centralizar o login */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 40px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .login-container, .main-dashboard, .form-section {
+            width: 100%; /* Permite ajuste ao container pai */
+            max-width: 600px; /* Limita a largura para melhor leitura */
+            margin: 0 auto; /* Centraliza */
+            padding: 20px;
+            box-sizing: border-box; /* Inclui padding na largura total */
+        }
+
+        h1, h2, h3 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="date"],
+        select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-top: 10px; /* Espaçamento para botões */
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .nav-links {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-links button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            width: auto; /* Remove width: 100% */
+        }
+
+        .nav-links button:hover {
+            background-color: #218838;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .dashboard-controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .filial-section {
+            margin-top: 30px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .filial-section h3 {
+            color: #007bff;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="appContainer">
+        <div id="loginScreen" class="login-container">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+            <div id="loginMessage" class="message"></div>
+        </div>
+
+        <div id="mainDashboardScreen" class="hidden main-dashboard">
+            <h1>Dashboard Principal</h1>
+            <p>Olá, <strong id="userName">Usuário</strong>! Selecione uma opção:</p>
+            <div class="nav-links">
+                <button id="showCadastroFiliais">Cadastro de Filiais</button>
+                <button id="showCadastroEquipamentos">Cadastro de Equipamentos</button>
+                <button id="showTrocaFilial">Troca de Filial Fixa</button>
+                <button id="showVisualizarDashboard">Visualizar Dashboard</button>
+            </div>
+            <button id="logoutBtn">Sair</button>
+        </div>
+
+        <div id="cadastroFiliaisScreen" class="hidden form-section">
+            <button id="backToMainDashboardFromFiliais" class="back-button">&larr; Voltar</button>
+            <h2>Cadastro de Filiais</h2>
+            <form id="filialForm">
+                <div class="form-group">
+                    <label for="nomeFilial">Nome da Filial:</label>
+                    <input type="text" id="nomeFilial" required>
+                </div>
+                <div class="form-group">
+                    <label for="responsavelEmail">Responsável (Email):</label>
+                    <input type="email" id="responsavelEmail" placeholder="Email do responsável" required>
+                </div>
+                <button type="submit">Cadastrar Filial</button>
+            </form>
+            <div id="filialMessage" class="message"></div>
+        </div>
+
+        <div id="cadastroEquipamentosScreen" class="hidden form-section">
+            <button id="backToMainDashboardFromEquipamentos" class="back-button">&larr; Voltar</button>
+            <h2>Cadastro de Equipamentos</h2>
+            <form id="equipamentoForm">
+                <div class="form-group">
+                    <label for="placa">Placa do Equipamento:</label>
+                    <input type="text" id="placa" required>
+                </div>
+                <div class="form-group">
+                    <label for="tipoEquipamento">Tipo de Equipamento:</label>
+                    <select id="tipoEquipamento" required>
+                        <option value="">Selecione...</option>
+                        <option value="Bomba Lança">Bomba Lança</option>
+                        <option value="Bomba Estacionária">Bomba Estacionária</option>
+                        <option value="Betoneira">Betoneira</option>
+                    </select>
+                </div>
+                <button type="submit">Cadastrar Equipamento</button>
+            </form>
+            <div id="equipamentoMessage" class="message"></div>
+        </div>
+
+        <div id="trocaFilialScreen" class="hidden form-section">
+            <button id="backToMainDashboardFromTroca" class="back-button">&larr; Voltar</button>
+            <h2>Troca de Filial Fixa de Equipamento</h2>
+            <form id="trocaFilialForm">
+                <div class="form-group">
+                    <label for="placaEquipamento">Placa do Equipamento:</label>
+                    <input type="text" id="placaEquipamento" list="equipamentosList" required>
+                    <datalist id="equipamentosList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="novaFilial">Nova Filial:</label>
+                    <select id="novaFilial" required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dataExecucao">Data de Execução:</label>
+                    <input type="date" id="dataExecucao" required>
+                </div>
+                <button type="submit">Registrar Troca</button>
+            </form>
+            <div id="trocaFilialMessage" class="message"></div>
+        </div>
+
+        <div id="visualizarDashboardScreen" class="hidden form-section">
+            <button id="backToMainDashboardFromVisualizar" class="back-button">&larr; Voltar</button>
+            <h2>Dashboard de Equipamentos</h2>
+            <div class="dashboard-controls">
+                <label for="selectResponsavel">Filtrar por Responsável:</label>
+                <select id="selectResponsavel">
+                    <option value="">Todos os Responsáveis</option>
+                </select>
+                <button id="filterDashboardBtn">Filtrar</button>
+            </div>
+            <div id="dashboardContent">
+                <p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // public/index.html
+
+        // Supabase Client (consolidado)
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.5';
+
+        // ATENÇÃO: PARA USAR VARIÁVEIS DE AMBIENTE DIRETAMENTE NO HTML SEM UM BUNDLER,
+        // VOCÊ PRECISARIA DE UM PROCESSO DE BUILD QUE AS INJETE AQUI.
+        // PARA TESTE LOCAL RÁPIDO, VOCÊ PODE COLOCAR AS CHAVES DIRETAMENTE AQUI,
+        // MAS NUNCA FAÇA ISSO EM PRODUÇÃO OU EM UM REPOSITÓRIO PÚBLICO!
+        const supabaseUrl = "https://jtikvjomzduvjrrrsfeg.supabase.co"; // Substitua pelo seu URL
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg"; // Substitua pela sua chave pública anon
+
+        export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // --- Funções de Navegação de Tela ---
+        function showScreen(screenId) {
+            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen', 'visualizarDashboardScreen'];
+            screens.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+            // Resetar mensagens
+            document.querySelectorAll('.message').forEach(el => {
+                el.textContent = '';
+                el.className = 'message';
+            });
+        }
+
+        // --- Variáveis Globais de Elementos (para fácil acesso) ---
+        const loginScreen = document.getElementById('loginScreen');
+        const mainDashboardScreen = document.getElementById('mainDashboardScreen');
+        const cadastroFiliaisScreen = document.getElementById('cadastroFiliaisScreen');
+        const cadastroEquipamentosScreen = document.getElementById('cadastroEquipamentosScreen');
+        const trocaFilialScreen = document.getElementById('trocaFilialScreen');
+        const visualizarDashboardScreen = document.getElementById('visualizarDashboardScreen');
+
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const userNameElement = document.getElementById('userName');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        const showCadastroFiliaisBtn = document.getElementById('showCadastroFiliais');
+        const showCadastroEquipamentosBtn = document.getElementById('showCadastroEquipamentos');
+        const showTrocaFilialBtn = document.getElementById('showTrocaFilial');
+        const showVisualizarDashboardBtn = document.getElementById('showVisualizarDashboard');
+
+        const backButtons = document.querySelectorAll('.back-button');
+
+        // --- Estado de Autenticação (Simulado com Local Storage) ---
+        let loggedInUser = null;
+
+        function checkAuthAndNavigate() {
+            const userString = localStorage.getItem('loggedInUser');
+            if (userString) {
+                loggedInUser = JSON.parse(userString);
+                userNameElement.textContent = loggedInUser.nome;
+                showScreen('mainDashboardScreen');
+            } else {
+                showScreen('loginScreen');
+            }
+        }
+
+        // --- Lógica de Eventos ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndNavigate(); // Verifica autenticação ao carregar a página
+
+            // Evento de Login
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const email = loginForm.email.value;
+                    const password = loginForm.password.value;
+
+                    loginMessage.textContent = '';
+                    loginMessage.className = 'message';
+
+                    try {
+                        // ATENÇÃO DE SEGURANÇA: Esta comparação é INSEGURA!
+                        // Implemente validação de senha hasheada no backend.
+                        const { data, error } = await supabase
+                            .from('usuarios')
+                            .select('id, email, nome, senha')
+                            .eq('email', email)
+                            .single();
+
+                        if (error && error.code === 'PGRST116') {
+                            loginMessage.textContent = 'Usuário não encontrado.';
+                            loginMessage.classList.add('error');
+                            return;
+                        } else if (error) {
+                            throw error;
+                        }
+
+                        if (data && data.senha === password) { // Comparação INSEGURA
+                            loggedInUser = { id: data.id, nome: data.nome, email: data.email };
+                            localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+                            loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
+                            loginMessage.classList.add('success');
+                            setTimeout(() => {
+                                showScreen('mainDashboardScreen');
+                                userNameElement.textContent = loggedInUser.nome; // Atualiza nome após login
+                            }, 500); // Pequeno atraso para ver a mensagem
+                        } else {
+                            loginMessage.textContent = 'Email ou senha incorretos.';
+                            loginMessage.classList.add('error');
+                        }
+
+                    } catch (error) {
+                        console.error('Erro no login:', error.message);
+                        loginMessage.textContent = `Erro no login: ${error.message}`;
+                        loginMessage.classList.add('error');
+                    }
+                });
+            }
+
+            // Evento de Logout
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('loggedInUser');
+                    loggedInUser = null;
+                    showScreen('loginScreen');
+                });
+            }
+
+            // --- Navegação do Dashboard Principal ---
+            if (showCadastroFiliaisBtn) {
+                showCadastroFiliaisBtn.addEventListener('click', () => {
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+                    showScreen('cadastroFiliaisScreen');
+                });
+            }
+            if (showCadastroEquipamentosBtn) {
+                showCadastroEquipamentosBtn.addEventListener('click', () => {
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+                    showScreen('cadastroEquipamentosScreen');
+                });
+            }
+            if (showTrocaFilialBtn) {
+                showTrocaFilialBtn.addEventListener('click', async () => {
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+                    await loadFiliaisIntoSelect(document.getElementById('novaFilial')); // Carrega para a Troca de Filial
+                    await loadEquipamentoPlacasIntoDatalist(document.getElementById('equipamentosList')); // Carrega para a Troca de Filial
+                    showScreen('trocaFilialScreen');
+                });
+            }
+            if (showVisualizarDashboardBtn) {
+                showVisualizarDashboardBtn.addEventListener('click', async () => {
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+                    await loadResponsaveisForFilter(document.getElementById('selectResponsavel')); // Carrega para o Dashboard
+                    document.getElementById('dashboardContent').innerHTML = '<p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>'; // Reset
+                    showScreen('visualizarDashboardScreen');
+                });
+            }
+
+            // Botões de Voltar
+            backButtons.forEach(button => {
+                button.addEventListener('click', () => showScreen('mainDashboardScreen'));
+            });
+
+            // --- Lógicas dos Formulários ---
+
+            // --- Cadastro de Filiais ---
+            const filialForm = document.getElementById('filialForm');
+            const filialMessage = document.getElementById('filialMessage');
+            if (filialForm) {
+                filialForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+
+                    const nomeFilial = filialForm.nomeFilial.value;
+                    const responsavelEmail = filialForm.responsavelEmail.value;
+
+                    filialMessage.textContent = ''; filialMessage.className = 'message';
+
+                    try {
+                        const { data: responsavel, error: responsavelError } = await supabase
+                            .from('usuarios')
+                            .select('id')
+                            .eq('email', responsavelEmail)
+                            .single();
+
+                        if (responsavelError && responsavelError.code === 'PGRST116') {
+                            filialMessage.textContent = 'Responsável não encontrado. Verifique o email.';
+                            filialMessage.classList.add('error');
+                            return;
+                        } else if (responsavelError) { throw responsavelError; }
+
+                        const { data, error } = await supabase
+                            .from('filiais')
+                            .insert({ nome_filial: nomeFilial, responsavel_id: responsavel.id });
+
+                        if (error) {
+                            if (error.code === '23505') { filialMessage.textContent = 'Já existe uma filial com este nome.'; }
+                            else { filialMessage.textContent = `Erro ao cadastrar filial: ${error.message}`; }
+                            filialMessage.classList.add('error');
+                            console.error('Erro ao cadastrar filial:', error);
+                        } else {
+                            filialMessage.textContent = 'Filial cadastrada com sucesso!';
+                            filialMessage.classList.add('success');
+                            filialForm.reset();
+                        }
+                    } catch (error) {
+                        console.error('Erro geral no cadastro de filial:', error.message);
+                        filialMessage.textContent = `Erro: ${error.message}`;
+                        filialMessage.classList.add('error');
+                    }
+                });
+            }
+
+            // --- Cadastro de Equipamentos ---
+            const equipamentoForm = document.getElementById('equipamentoForm');
+            const equipamentoMessage = document.getElementById('equipamentoMessage');
+            if (equipamentoForm) {
+                equipamentoForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+
+                    const placa = equipamentoForm.placa.value;
+                    const tipoEquipamento = equipamentoForm.tipoEquipamento.value;
+
+                    equipamentoMessage.textContent = ''; equipamentoMessage.className = 'message';
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('equipamentos')
+                            .insert({ placa: placa, tipo_equipamento: tipoEquipamento });
+
+                        if (error) {
+                            if (error.code === '23505') { equipamentoMessage.textContent = 'Já existe um equipamento com esta placa.'; }
+                            else { equipamentoMessage.textContent = `Erro ao cadastrar equipamento: ${error.message}`; }
+                            equipamentoMessage.classList.add('error');
+                            console.error('Erro ao cadastrar equipamento:', error);
+                        } else {
+                            equipamentoMessage.textContent = 'Equipamento cadastrado com sucesso!';
+                            equipamentoMessage.classList.add('success');
+                            equipamentoForm.reset();
+                        }
+                    } catch (error) {
+                        console.error('Erro geral no cadastro de equipamento:', error.message);
+                        equipamentoMessage.textContent = `Erro: ${error.message}`;
+                        equipamentoMessage.classList.add('error');
+                    }
+                });
+            }
+
+            // --- Troca de Filial Fixa ---
+            const trocaFilialForm = document.getElementById('trocaFilialForm');
+            const placaEquipamentoInput = document.getElementById('placaEquipamento');
+            const equipamentosList = document.getElementById('equipamentosList');
+            const novaFilialSelect = document.getElementById('novaFilial');
+            const trocaFilialMessage = document.getElementById('trocaFilialMessage');
+            const dataExecucaoInput = document.getElementById('dataExecucao');
+
+            async function loadFiliaisIntoSelect(selectElement) {
+                const { data, error } = await supabase.from('filiais').select('id, nome_filial');
+                if (error) { console.error('Erro ao carregar filiais:', error.message); return; }
+                selectElement.innerHTML = '<option value="">Selecione...</option>';
+                data.forEach(filial => {
+                    const option = document.createElement('option');
+                    option.value = filial.id;
+                    option.textContent = filial.nome_filial;
+                    selectElement.appendChild(option);
+                });
+            }
+
+            async function loadEquipamentoPlacasIntoDatalist(datalistElement) {
+                const { data, error } = await supabase.from('equipamentos').select('placa');
+                if (error) { console.error('Erro ao carregar placas:', error.message); return; }
+                datalistElement.innerHTML = '';
+                data.forEach(equipamento => {
+                    const option = document.createElement('option');
+                    option.value = equipamento.placa;
+                    datalistElement.appendChild(option);
+                });
+            }
+
+            if (trocaFilialForm) {
+                trocaFilialForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+
+                    const placa = placaEquipamentoInput.value;
+                    const novaFilialId = novaFilialSelect.value;
+                    const dataExecucao = dataExecucaoInput.value;
+
+                    trocaFilialMessage.textContent = ''; trocaFilialMessage.className = 'message';
+
+                    try {
+                        const { data: equipamento, error: equipamentoError } = await supabase
+                            .from('equipamentos')
+                            .select('id')
+                            .eq('placa', placa)
+                            .single();
+
+                        if (equipamentoError && equipamentoError.code === 'PGRST116') {
+                            trocaFilialMessage.textContent = 'Equipamento não encontrado com esta placa.';
+                            trocaFilialMessage.classList.add('error');
+                            return;
+                        } else if (equipamentoError) { throw equipamentoError; }
+                        const equipamentoId = equipamento.id;
+
+                        const { data: historicoAntigo, error: historicoAntigoError } = await supabase
+                            .from('historico_filiais_equipamentos')
+                            .select('id')
+                            .eq('equipamento_id', equipamentoId)
+                            .is('data_fim', null)
+                            .single();
+
+                        if (historicoAntigoError && historicoAntigoError.code !== 'PGRST116') {
+                            throw historicoAntigoError;
+                        }
+
+                        if (historicoAntigo) {
+                            const { error: updateError } = await supabase
+                                .from('historico_filiais_equipamentos')
+                                .update({ data_fim: new Date(dataExecucao).toISOString().split('T')[0] })
+                                .eq('id', historicoAntigo.id);
+                            if (updateError) throw updateError;
+                        }
+
+                        const { data: novoHistorico, error: novoHistoricoError } = await supabase
+                            .from('historico_filiais_equipamentos')
+                            .insert({
+                                equipamento_id: equipamentoId,
+                                filial_id: novaFilialId,
+                                data_inicio: dataExecucao,
+                                data_fim: null
+                            });
+
+                        if (novoHistoricoError) throw novoHistoricoError;
+
+                        trocaFilialMessage.textContent = 'Troca de filial registrada com sucesso!';
+                        trocaFilialMessage.classList.add('success');
+                        trocaFilialForm.reset();
+                        await loadEquipamentoPlacasIntoDatalist(equipamentosList); // Recarrega para manter datalist atualizado
+                    } catch (error) {
+                        console.error('Erro na troca de filial:', error.message);
+                        trocaFilialMessage.textContent = `Erro: ${error.message}`;
+                        trocaFilialMessage.classList.add('error');
+                    }
+                });
+            }
+
+            // --- Dashboard de Visualização ---
+            const selectResponsavel = document.getElementById('selectResponsavel');
+            const filterDashboardBtn = document.getElementById('filterDashboardBtn');
+            const dashboardContent = document.getElementById('dashboardContent');
+
+            async function loadResponsaveisForFilter(selectElement) {
+                const { data, error } = await supabase.from('usuarios').select('id, nome');
+                if (error) { console.error('Erro ao carregar responsáveis:', error.message); return; }
+                selectElement.innerHTML = '<option value="">Todos os Responsáveis</option>';
+                data.forEach(responsavel => {
+                    const option = document.createElement('option');
+                    option.value = responsavel.id;
+                    option.textContent = responsavel.nome;
+                    selectElement.appendChild(option);
+                });
+            }
+
+            async function loadEquipamentosDashboard(responsavelId = null) {
+                dashboardContent.innerHTML = '<p class="no-data">Carregando dados...</p>';
+
+                try {
+                    let query = supabase
+                        .from('historico_filiais_equipamentos')
+                        .select(`
+                            *,
+                            equipamentos:equipamento_id (placa, tipo_equipamento),
+                            filiais:filial_id (id, nome_filial, responsavel:responsavel_id (id, nome))
+                        `)
+                        .is('data_fim', null);
+
+                    if (responsavelId) {
+                        query = query.eq('filiais.responsavel_id', responsavelId);
+                    }
+
+                    const { data: historicoEquipamentos, error } = await query;
+
+                    if (error) { throw error; }
+
+                    if (!historicoEquipamentos || historicoEquipamentos.length === 0) {
+                        dashboardContent.innerHTML = '<p class="no-data">Nenhum equipamento ativo encontrado para esta seleção.</p>';
+                        return;
+                    }
+
+                    const equipamentosPorFilial = historicoEquipamentos.reduce((acc, item) => {
+                        const filialId = item.filial_id;
+                        const filialNome = item.filiais?.nome_filial || 'Filial Desconhecida';
+                        const responsavelNome = item.filiais?.responsavel?.nome || 'Responsável Desconhecido';
+
+                        if (!acc[filialId]) {
+                            acc[filialId] = { nome: filialNome, responsavel: responsavelNome, equipamentos: [] };
+                        }
+                        acc[filialId].equipamentos.push({
+                            placa: item.equipamentos?.placa || 'N/A',
+                            tipo_equipamento: item.equipamentos?.tipo_equipamento || 'N/A'
+                        });
+                        return acc;
+                    }, {});
+
+                    let htmlContent = '';
+                    for (const filialId in equipamentosPorFilial) {
+                        const filialData = equipamentosPorFilial[filialId];
+                        htmlContent += `
+                            <div class="filial-section">
+                                <h3>Filial: ${filialData.nome} (Responsável: ${filialData.responsavel})</h3>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Placa</th>
+                                            <th>Tipo de Equipamento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        filialData.equipamentos.forEach(eq => {
+                            htmlContent += `
+                                        <tr>
+                                            <td>${eq.placa}</td>
+                                            <td>${eq.tipo_equipamento}</td>
+                                        </tr>
+                            `;
+                        });
+                        htmlContent += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                    dashboardContent.innerHTML = htmlContent;
+
+                } catch (error) {
+                    console.error('Erro ao carregar dashboard:', error.message);
+                    dashboardContent.innerHTML = `<p class="no-data error">Erro ao carregar dados do dashboard: ${error.message}</p>`;
+                }
+            }
+
+            if (filterDashboardBtn) {
+                filterDashboardBtn.addEventListener('click', () => {
+                    const selectedResponsavelId = selectResponsavel.value === "" ? null : selectResponsavel.value;
+                    loadEquipamentosDashboard(selectedResponsavelId);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
