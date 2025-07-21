@@ -447,24 +447,18 @@
 
     <!-- Supabase JS -->
     <script type="module">
-        // Supabase client setup
-        const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; // Substituído pela sua URL do Supabase
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; // Substituído pela sua Chave Anon do Supabase
-
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // Variáveis de estado globais
-        let plateData = []; // Dados de placas e histórico
-        let branchesData = []; // Lista de filiais cadastradas
-        let appUsers = []; // Lista de usuários do aplicativo (login, displayName, isAdmin)
+        // Variáveis de estado globais (declaradas fora do DOMContentLoaded para serem globais)
+        let plateData = []; 
+        let branchesData = []; 
+        let appUsers = []; 
         let loading = true;
         let error = null;
-        let message = { text: '', type: '' }; // { text: '...', type: 'success' | 'error' | 'info' }
-        let currentView = 'auth'; // 'auth', null (main buttons), 'cadastroEquipamento', 'alteracaoFilial', 'cadastroFilial', 'dashboard', 'adminPanel', 'urlTransformation'
-        let currentCadastroMode = 'manual'; // 'manual' ou 'bulk'
-        let loggedInAppUser = null; // Armazena o usuário logado no sistema personalizado (id, login, displayName, isAdmin)
+        let message = { text: '', type: '' }; 
+        let currentView = 'auth'; 
+        let currentCadastroMode = 'manual'; 
+        let loggedInAppUser = null; 
 
-        // Referências aos elementos DOM
+        // Referências aos elementos DOM (declaradas fora para serem acessíveis globalmente, mas atribuídas dentro do DOMContentLoaded)
         let authSection = null;
         let appLoginForm = null; 
         let appLoginUsernameInput = null; 
@@ -536,6 +530,8 @@
         let bulkUploadResultsDisplay = null;
         let bulkUploadProgressBar = null;
 
+        // Variável Supabase client (declarada aqui para ser global, mas inicializada no DOMContentLoaded)
+        let supabase = null;
 
         // --- Funções de Utilidade ---
 
@@ -846,6 +842,11 @@
 
         // Inicia o aplicativo quando o DOM estiver completamente carregado
         document.addEventListener('DOMContentLoaded', async () => {
+            // Supabase client setup - MOVIDO AQUI
+            const SUPABASE_URL = 'https://zentzsobumuwjmwmqede.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'; 
+            supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
             // Referências aos elementos DOM
             authSection = document.getElementById('auth-section');
             appLoginForm = document.getElementById('app-login-form');
@@ -955,7 +956,7 @@
                                 MessageDisplay(appLoginMessageDisplay, "Usuário ou senha inválidos.", 'error');
                             } else {
                                 // Outros erros (ex: problema de rede, RLS negando SELECT)
-                                MessageDisplay(appLoginMessageDisplay, `Erro de comunicação com o banco de dados: ${userError.message}.`, 'error');
+                                MessageDisplay(appLoginMessageDisplay, `Erro de comunicação com o banco de dados: ${userError.message}. Verifique sua conexão e políticas RLS para 'usuarios'.`, 'error');
                             }
                             return; // Interrompe o processo de login
                         }
