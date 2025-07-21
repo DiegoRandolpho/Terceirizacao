@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebApp Interno - Profissional</title>
+    <title>WebApp Interno - Ajustes Finais</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -85,7 +85,7 @@
             padding: 15px;
             text-align: center;
             background-color: #34495e; /* Slightly lighter header */
-            position: absolute; /* Para alinhar ao topo da sidebar, se tiver logo fora do padding-top */
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
@@ -96,9 +96,8 @@
             font-size: 1.5rem;
             font-weight: bold;
         }
-        #sidebar .sidebar-header img {
-            max-height: 40px;
-            margin-right: 10px;
+        #sidebar .sidebar-header img { /* Removido para remover logo */
+            display: none;
         }
         #sidebar .sidebar-header span {
             color: #fff;
@@ -140,39 +139,6 @@
 
         #mainContent {
             padding: 25px;
-        }
-
-        /* --- Cards de Resumo (Widgets) --- */
-        .dashboard-widgets .card {
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            border: none; /* Remove default bootstrap border */
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .dashboard-widgets .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
-        }
-        .dashboard-widgets .card-body {
-            padding: 20px;
-            text-align: center;
-        }
-        .dashboard-widgets .card-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-        .dashboard-widgets .card-text {
-            font-size: 1.1rem;
-            color: var(--secondary-color);
-        }
-        .dashboard-widgets .card-footer {
-            background-color: #f7f7f7;
-            border-top: 1px solid #e9ecef;
-            padding: 10px 20px;
-            font-size: 0.9rem;
-            color: #888;
         }
 
         /* --- Formulários e Tabelas --- */
@@ -313,9 +279,6 @@
             body.sidebar-expanded #contentWrapper {
                 margin-left: var(--sidebar-width); /* Conteúdo move para o lado */
             }
-            .dashboard-widgets .col-md-4 {
-                width: 100%; /* Cards em pilha em mobile */
-            }
         }
     </style>
 </head>
@@ -326,15 +289,13 @@
                 <i class="bi bi-list"></i>
             </button>
             <a class="navbar-brand d-none d-lg-block" href="#">
-                <img src="https://via.placeholder.com/30x30/28a745/ffffff?text=P" alt="PuzlMix Logo" class="me-2">
                 PuzlMix
             </a>
             <div class="ms-auto d-flex align-items-center">
                 <a class="nav-link me-3" href="#"><i class="bi bi-cloud-fill"></i></a>
                 <div class="dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="https://via.placeholder.com/30x30/007bff/ffffff?text=D" alt="Avatar" class="rounded-circle me-2">
-                        <span id="navUserName">DIEGO RANDOLPHO</span>
+                        <img src="https://via.placeholder.com/30x30/007bff/ffffff?text=U" alt="Avatar" class="rounded-circle me-2"> <span id="navUserName">Usuário Logado</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="#">Perfil</a></li>
@@ -347,33 +308,32 @@
     </nav>
 
     <aside id="sidebar" class="d-flex flex-column">
-        <div class="sidebar-header d-lg-none"> <img src="https://via.placeholder.com/30x30/28a745/ffffff?text=P" alt="PuzlMix Logo">
-            <span>PuzlMix</span>
+        <div class="sidebar-header d-lg-none"> <span>PuzlMix</span>
         </div>
         <ul class="nav flex-column mt-3">
             <li class="nav-item">
-                <a class="nav-link active" href="#" id="sidebarDashboardLink">
+                <a class="nav-link active" href="#" data-screen="mainDashboardScreen" id="sidebarDashboardLink">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" id="sidebarCadastroLink" data-bs-toggle="collapse" data-bs-target="#cadastroSubmenu" aria-expanded="false">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#cadastroSubmenu" aria-expanded="false">
                     <i class="bi bi-plus-circle"></i> Cadastro <i class="bi bi-chevron-down ms-auto"></i>
                 </a>
                 <div class="collapse" id="cadastroSubmenu">
                     <ul class="nav flex-column ms-3">
-                        <li class="nav-item"><a class="nav-link" href="#" id="showCadastroFiliais"><i class="bi bi-shop"></i> Filiais</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" id="showCadastroEquipamentos"><i class="bi bi-tools"></i> Equipamentos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroFiliaisScreen" id="showCadastroFiliais"><i class="bi bi-shop"></i> Filiais</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroEquipamentosScreen" id="showCadastroEquipamentos"><i class="bi bi-tools"></i> Equipamentos</a></li>
                     </ul>
                 </div>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" id="sidebarOperacionalLink" data-bs-toggle="collapse" data-bs-target="#operacionalSubmenu" aria-expanded="false">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#operacionalSubmenu" aria-expanded="false">
                     <i class="bi bi-gear"></i> Operacional <i class="bi bi-chevron-down ms-auto"></i>
                 </a>
                 <div class="collapse" id="operacionalSubmenu">
                     <ul class="nav flex-column ms-3">
-                        <li class="nav-item"><a class="nav-link" href="#" id="showTrocaFilial"><i class="bi bi-arrow-left-right"></i> Troca de Filial</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-screen="trocaFilialScreen" id="showTrocaFilial"><i class="bi bi-arrow-left-right"></i> Troca de Filial</a></li>
                     </ul>
                 </div>
             </li>
@@ -410,52 +370,28 @@
             <div id="mainDashboardScreen" class="hidden flex-grow-1">
                 <h1 class="mb-4">Dashboard de Visão Geral</h1>
 
-                <div class="row dashboard-widgets mb-4">
-                    <div class="col-md-4 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">FINANCEIRO</h5>
-                                <p class="card-text">APROVAÇÃO DE ANTECIPAÇÃO</p>
-                                <button class="btn btn-success btn-sm">ADICIONAR</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">COMERCIAL</h5>
-                                <p class="card-text">OPORTUNIDADE DE VENDA</p>
-                                <button class="btn btn-success btn-sm">ADICIONAR</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">OPERAÇÃO</h5>
-                                <p class="card-text">MONTAGEM DE EQUIPAMENTO</p>
-                                <button class="btn btn-success btn-sm">ADICIONAR</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="dashboard-section">
-                    <h3 class="mb-3"><i class="bi bi-list-task me-2"></i> Minhas Tarefas <span class="badge bg-secondary ms-2">0</span></h3>
+                    <h3 class="mb-3"><i class="bi bi-list-task me-2"></i> Minhas Tarefas <span class="badge bg-secondary ms-2" id="taskCountBadge">0</span></h3>
 
                     <div class="d-flex flex-wrap align-items-center mb-4 gap-3">
                         <div class="input-group flex-grow-1 me-md-2">
                             <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
-                            <input type="date" class="form-control" value="2025-07-14">
+                            <input type="date" class="form-control" id="filterStartDate">
                             <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                            <input type="date" class="form-control" value="2025-07-28">
+                            <input type="date" class="form-control" id="filterEndDate">
                         </div>
                         <div class="input-group flex-grow-1">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" placeholder="Pesquisar...">
-                            <button class="btn btn-outline-secondary" type="button"><i class="bi bi-x-lg"></i></button>
+                            <input type="text" class="form-control" id="filterSearchInput" placeholder="Pesquisar...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn"><i class="bi bi-x-lg"></i></button>
                         </div>
-                        <button class="btn btn-outline-primary"><i class="bi bi-funnel"></i> Filtros</button>
+                        <div class="input-group flex-grow-1">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <select id="selectResponsavel" class="form-select">
+                                <option value="">Todos os Responsáveis</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="filterDashboardBtn"><i class="bi bi-funnel"></i> Aplicar Filtros</button>
                         <button class="btn btn-success ms-auto"><i class="bi bi-plus-lg"></i> NOVO</button>
                     </div>
 
@@ -561,7 +497,7 @@
 
         // --- Funções de Navegação de Tela ---
         function showScreen(screenId) {
-            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen', 'visualizarDashboardScreen'];
+            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen']; // 'visualizarDashboardScreen' removida
             screens.forEach(id => {
                 const screenElement = document.getElementById(id);
                 if (screenElement) screenElement.classList.add('hidden');
@@ -575,20 +511,43 @@
                 el.classList.remove('alert-success', 'alert-danger'); // Remove classes Bootstrap
             });
 
-            // Atualiza o estado ativo da sidebar
+            // Atualiza o estado ativo da sidebar e colapsa outros submenus
             document.querySelectorAll('#sidebar .nav-link').forEach(link => {
                 link.classList.remove('active');
             });
+
+            // Fecha todos os colapsos
+            document.querySelectorAll('.collapse.show').forEach(collapseEl => {
+                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
+                if (bsCollapse) bsCollapse.hide();
+            });
+
             if (screenId === 'mainDashboardScreen') {
                 document.getElementById('sidebarDashboardLink')?.classList.add('active');
-            } else if (['cadastroFiliaisScreen', 'cadastroEquipamentosScreen'].includes(screenId)) {
-                document.getElementById('sidebarCadastroLink')?.classList.add('active');
+                loadEquipamentosDashboard(); // Carrega o dashboard automaticamente ao ir para a tela principal
+            } else if (screenId === 'cadastroFiliaisScreen') {
+                document.getElementById('showCadastroFiliais')?.classList.add('active');
+                const cadastroSubmenu = new bootstrap.Collapse(document.getElementById('cadastroSubmenu'), { toggle: false });
+                cadastroSubmenu.show();
+            } else if (screenId === 'cadastroEquipamentosScreen') {
+                document.getElementById('showCadastroEquipamentos')?.classList.add('active');
                 const cadastroSubmenu = new bootstrap.Collapse(document.getElementById('cadastroSubmenu'), { toggle: false });
                 cadastroSubmenu.show();
             } else if (screenId === 'trocaFilialScreen') {
-                document.getElementById('sidebarOperacionalLink')?.classList.add('active');
+                document.getElementById('showTrocaFilial')?.classList.add('active');
                 const operacionalSubmenu = new bootstrap.Collapse(document.getElementById('operacionalSubmenu'), { toggle: false });
                 operacionalSubmenu.show();
+            }
+             // Para qualquer link clicado na sidebar que tenha um `data-screen`
+             const clickedLink = document.querySelector(`[data-screen="${screenId}"]`);
+             if (clickedLink) {
+                 clickedLink.classList.add('active');
+             }
+
+             // Esconde a sidebar em telas pequenas após a navegação
+            if (window.innerWidth <= 768) {
+                body.classList.remove('sidebar-expanded');
+                body.classList.add('sidebar-collapsed');
             }
         }
 
@@ -598,22 +557,22 @@
         const cadastroFiliaisScreen = document.getElementById('cadastroFiliaisScreen');
         const cadastroEquipamentosScreen = document.getElementById('cadastroEquipamentosScreen');
         const trocaFilialScreen = document.getElementById('trocaFilialScreen');
-        const visualizarDashboardScreen = document.getElementById('visualizarDashboardScreen'); // O Dashboard de visualização agora é parte do mainDashboardScreen
+        // visualizarDashboardScreen foi removido, seu conteúdo está em mainDashboardScreen
 
         const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('loginMessage');
         const userNameElement = document.getElementById('navUserName'); // Nome no topo da navbar
         const logoutBtnNav = document.getElementById('logoutBtnNav'); // Botão de sair do dropdown da navbar
         const sidebarLogoutLink = document.getElementById('sidebarLogoutLink'); // Link de sair na sidebar
+        const taskCountBadge = document.getElementById('taskCountBadge');
 
-        // Botões do menu principal
+        // Botões do menu principal (agora links da sidebar com data-screen)
         const sidebarDashboardLink = document.getElementById('sidebarDashboardLink');
         const showCadastroFiliaisBtn = document.getElementById('showCadastroFiliais');
         const showCadastroEquipamentosBtn = document.getElementById('showCadastroEquipamentos');
         const showTrocaFilialBtn = document.getElementById('showTrocaFilial');
-        const showVisualizarDashboardBtn = document.getElementById('showVisualizarDashboard'); // Este agora é o link para o dashboard de visualização
 
-        const backButtons = document.querySelectorAll('.back-button');
+        const backButtons = document.querySelectorAll('.btn-secondary'); // Todos os botões "Voltar"
 
         // Toggle da Sidebar para Mobile
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
@@ -626,7 +585,6 @@
             });
         }
 
-
         // --- Estado de Autenticação (Simulado com Local Storage) ---
         let loggedInUser = null;
 
@@ -635,9 +593,7 @@
             if (userString) {
                 loggedInUser = JSON.parse(userString);
                 userNameElement.textContent = loggedInUser.nome;
-                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal com os widgets
-                // Após o login, carregar o dashboard de visualização por padrão (ou deixar como "Minhas Tarefas")
-                loadEquipamentosDashboard(); // Carrega o dashboard de visualização automaticamente
+                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal
             } else {
                 showScreen('loginScreen');
             }
@@ -656,7 +612,7 @@
                     const password = loginForm.password.value;
 
                     loginMessage.textContent = '';
-                    loginMessage.className = 'message';
+                    loginMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
                         // ATENÇÃO DE SEGURANÇA: Esta comparação é INSEGURA!
@@ -681,9 +637,7 @@
                             loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
                             loginMessage.classList.add('alert-success'); // Bootstrap class
                             setTimeout(() => {
-                                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal com os widgets
-                                userNameElement.textContent = loggedInUser.nome; // Atualiza nome após login
-                                loadEquipamentosDashboard(); // Carrega o dashboard de visualização
+                                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal
                             }, 500); // Pequeno atraso para ver a mensagem
                         } else {
                             loginMessage.textContent = 'Email ou senha incorretos.';
@@ -708,43 +662,27 @@
             if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
 
 
-            // --- Navegação do Dashboard Principal ---
-            if (sidebarDashboardLink) {
-                sidebarDashboardLink.addEventListener('click', () => {
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
-                    showScreen('mainDashboardScreen');
-                    loadEquipamentosDashboard(); // Recarrega o dashboard de visualização
-                });
-            }
-            if (showCadastroFiliaisBtn) {
-                showCadastroFiliaisBtn.addEventListener('click', () => {
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
-                    showScreen('cadastroFiliaisScreen');
-                });
-            }
-            if (showCadastroEquipamentosBtn) {
-                showCadastroEquipamentosBtn.addEventListener('click', () => {
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
-                    showScreen('cadastroEquipamentosScreen');
-                });
-            }
-            if (showTrocaFilialBtn) {
-                showTrocaFilialBtn.addEventListener('click', async () => {
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
-                    await loadFiliaisIntoSelect(document.getElementById('novaFilial')); // Carrega para a Troca de Filial
-                    await loadEquipamentoPlacasIntoDatalist(document.getElementById('equipamentosList')); // Carrega para a Troca de Filial
-                    showScreen('trocaFilialScreen');
-                });
-            }
-            // O botão "Visualizar Dashboard" agora faz parte do dashboard principal, mas se fosse uma tela separada
-            // if (showVisualizarDashboardBtn) {
-            //     showVisualizarDashboardBtn.addEventListener('click', async () => {
-            //         if (!loggedInUser) { checkAuthAndNavigate(); return; }
-            //         await loadResponsaveisForFilter(document.getElementById('selectResponsavel')); // Carrega para o Dashboard
-            //         document.getElementById('dashboardContent').innerHTML = '<p class="no-data">Selecione um responsável e clique em Filtrar para ver os dados.</p>'; // Reset
-            //         showScreen('visualizarDashboardScreen');
-            //     });
-            // }
+            // --- Navegação da Sidebar (Delegando eventos para o contêiner principal) ---
+            document.getElementById('sidebar').addEventListener('click', async (event) => {
+                const targetLink = event.target.closest('.nav-link');
+                if (targetLink && targetLink.hasAttribute('data-screen')) {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; } // Checa auth antes de navegar
+
+                    const screenId = targetLink.getAttribute('data-screen');
+
+                    // Lógicas específicas antes de mostrar a tela
+                    if (screenId === 'trocaFilialScreen') {
+                        await loadFiliaisIntoSelect(document.getElementById('novaFilial'));
+                        await loadEquipamentoPlacasIntoDatalist(document.getElementById('equipamentosList'));
+                    }
+
+                    showScreen(screenId);
+                } else if (targetLink && targetLink.id === 'sidebarLogoutLink') {
+                    // O logout já é tratado acima, este é apenas para garantir que o click não propague
+                    event.preventDefault();
+                }
+            });
 
             // Botões de Voltar
             backButtons.forEach(button => {
@@ -764,7 +702,7 @@
                     const nomeFilial = filialForm.nomeFilial.value;
                     const responsavelEmail = filialForm.responsavelEmail.value;
 
-                    filialMessage.textContent = ''; filialMessage.className = 'message';
+                    filialMessage.textContent = ''; filialMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
                         const { data: responsavel, error: responsavelError } = await supabase
@@ -812,7 +750,7 @@
                     const placa = equipamentoForm.placa.value;
                     const tipoEquipamento = equipamentoForm.tipoEquipamento.value;
 
-                    equipamentoMessage.textContent = ''; equipamentoMessage.className = 'message';
+                    equipamentoMessage.textContent = ''; equipamentoMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
                         const { data, error } = await supabase
@@ -877,7 +815,7 @@
                     const novaFilialId = novaFilialSelect.value;
                     const dataExecucao = dataExecucaoInput.value;
 
-                    trocaFilialMessage.textContent = ''; trocaFilialMessage.className = 'message';
+                    trocaFilialMessage.textContent = ''; trocaFilialMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
                         const { data: equipamento, error: equipamentoError } = await supabase
@@ -939,6 +877,18 @@
             const selectResponsavel = document.getElementById('selectResponsavel');
             const filterDashboardBtn = document.getElementById('filterDashboardBtn');
             const dashboardContent = document.getElementById('dashboardContent');
+            const filterStartDateInput = document.getElementById('filterStartDate');
+            const filterEndDateInput = document.getElementById('filterEndDate');
+            const filterSearchInput = document.getElementById('filterSearchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+            // Set default dates for the filter (e.g., last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            filterEndDateInput.value = today.toISOString().split('T')[0];
+            filterStartDateInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+
 
             async function loadResponsaveisForFilter(selectElement) {
                 const { data, error } = await supabase.from('usuarios').select('id, nome');
@@ -952,10 +902,16 @@
                 });
             }
 
-            async function loadEquipamentosDashboard(responsavelId = null) {
+            async function loadEquipamentosDashboard() {
                 dashboardContent.innerHTML = '<p class="no-data">Carregando dados...</p>';
+                taskCountBadge.textContent = '...';
 
                 try {
+                    const selectedResponsavelId = selectResponsavel.value === "" ? null : selectResponsavel.value;
+                    const startDate = filterStartDateInput.value;
+                    const endDate = filterEndDateInput.value;
+                    const searchTerm = filterSearchInput.value.toLowerCase();
+
                     let query = supabase
                         .from('historico_filiais_equipamentos')
                         .select(`
@@ -963,22 +919,47 @@
                             equipamentos:equipamento_id (placa, tipo_equipamento),
                             filiais:filial_id (id, nome_filial, responsavel:responsavel_id (id, nome))
                         `)
-                        .is('data_fim', null);
+                        .is('data_fim', null); // Apenas equipamentos ativos (com data_fim nula)
 
-                    if (responsavelId) {
-                        query = query.eq('filiais.responsavel_id', responsavelId);
+                    // Filtra por responsável, se selecionado
+                    if (selectedResponsavelId) {
+                        query = query.eq('filiais.responsavel_id', selectedResponsavelId);
+                    }
+
+                    // Filtra por data_inicio dentro do período, se preenchido
+                    if (startDate) {
+                        query = query.gte('data_inicio', startDate);
+                    }
+                    if (endDate) {
+                        query = query.lte('data_inicio', endDate);
                     }
 
                     const { data: historicoEquipamentos, error } = await query;
 
                     if (error) { throw error; }
 
-                    if (!historicoEquipamentos || historicoEquipamentos.length === 0) {
-                        dashboardContent.innerHTML = '<p class="no-data">Nenhum equipamento ativo encontrado para esta seleção.</p>';
+                    let filteredData = historicoEquipamentos || [];
+
+                    // Filtro por termo de pesquisa (placa ou tipo de equipamento ou filial)
+                    if (searchTerm) {
+                        filteredData = filteredData.filter(item =>
+                            item.equipamentos?.placa?.toLowerCase().includes(searchTerm) ||
+                            item.equipamentos?.tipo_equipamento?.toLowerCase().includes(searchTerm) ||
+                            item.filiais?.nome_filial?.toLowerCase().includes(searchTerm)
+                        );
+                    }
+
+                    taskCountBadge.textContent = filteredData.length;
+
+                    if (!filteredData || filteredData.length === 0) {
+                        dashboardContent.innerHTML = `
+                            <p class="no-data">NENHUM RESULTADO ENCONTRADO COM O FILTRO SELECIONADO!</p>
+                            <img src="https://via.placeholder.com/200x150/f0f2f5/999999?text=Sem Dados" alt="Sem Dados" class="img-fluid my-4 mx-auto d-block">
+                        `;
                         return;
                     }
 
-                    const equipamentosPorFilial = historicoEquipamentos.reduce((acc, item) => {
+                    const equipamentosPorFilial = filteredData.reduce((acc, item) => {
                         const filialId = item.filial_id;
                         const filialNome = item.filiais?.nome_filial || 'Filial Desconhecida';
                         const responsavelNome = item.filiais?.responsavel?.nome || 'Responsável Desconhecido';
@@ -988,7 +969,8 @@
                         }
                         acc[filialId].equipamentos.push({
                             placa: item.equipamentos?.placa || 'N/A',
-                            tipo_equipamento: item.equipamentos?.tipo_equipamento || 'N/A'
+                            tipo_equipamento: item.equipamentos?.tipo_equipamento || 'N/A',
+                            data_inicio: item.data_inicio // Inclui a data de início
                         });
                         return acc;
                     }, {});
@@ -998,21 +980,26 @@
                         const filialData = equipamentosPorFilial[filialId];
                         htmlContent += `
                             <div class="filial-section mb-4">
-                                <h3>Filial: ${filialData.nome} (Responsável: ${filialData.responsavel})</h3>
+                                <h4 class="mb-3">Filial: ${filialData.nome} (Responsável: ${filialData.responsavel})</h4>
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
                                             <th>Placa</th>
                                             <th>Tipo de Equipamento</th>
+                                            <th>Data de Início (Filial)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                         `;
+                        // Ordena os equipamentos por data de início (mais recente primeiro)
+                        filialData.equipamentos.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
+
                         filialData.equipamentos.forEach(eq => {
                             htmlContent += `
                                         <tr>
                                             <td>${eq.placa}</td>
                                             <td>${eq.tipo_equipamento}</td>
+                                            <td>${new Date(eq.data_inicio).toLocaleDateString('pt-BR')}</td>
                                         </tr>
                             `;
                         });
@@ -1027,19 +1014,24 @@
                 } catch (error) {
                     console.error('Erro ao carregar dashboard:', error.message);
                     dashboardContent.innerHTML = `<p class="no-data alert-danger">Erro ao carregar dados do dashboard: ${error.message}</p>`;
+                    taskCountBadge.textContent = 'Erro';
                 }
             }
 
             if (filterDashboardBtn) {
-                filterDashboardBtn.addEventListener('click', () => {
-                    const selectedResponsavelId = selectResponsavel.value === "" ? null : selectResponsavel.value;
-                    loadEquipamentosDashboard(selectedResponsavelId);
+                filterDashboardBtn.addEventListener('click', loadEquipamentosDashboard);
+            }
+            if (clearSearchBtn) {
+                clearSearchBtn.addEventListener('click', () => {
+                    filterSearchInput.value = '';
+                    loadEquipamentosDashboard();
                 });
             }
 
-            // Carrega os responsáveis no filtro ao entrar no dashboard de visualização
+            // Carrega os responsáveis no filtro e o dashboard ao iniciar (após login)
             if (selectResponsavel) {
                 loadResponsaveisForFilter(selectResponsavel);
+                // loadEquipamentosDashboard() é chamado em showScreen('mainDashboardScreen')
             }
         });
     </script>
