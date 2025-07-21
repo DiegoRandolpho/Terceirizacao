@@ -1,0 +1,98 @@
+<!-- index.html - Versão adaptada para Supabase -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciamento de Equipamentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-2xl mx-auto bg-white shadow p-6 rounded-lg">
+    <h1 class="text-2xl font-bold mb-4">Cadastro de Equipamento</h1>
+    <form id="cadastro-form" class="space-y-4">
+      <input id="placa" type="text" placeholder="Placa" class="w-full border p-2 rounded" required />
+      <input id="filial" type="text" placeholder="Filial" class="w-full border p-2 rounded" required />
+      <input id="data" type="date" class="w-full border p-2 rounded" required />
+      <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Cadastrar</button>
+    </form>
+    <div id="mensagem" class="mt-4 text-center text-sm"></div>
+
+    <hr class="my-6" />
+
+    <h2 class="text-xl font-bold mb-2">Dashboard</h2>
+    <select id="filial-select" class="w-full mb-4 border p-2 rounded">
+      <option value="">Selecione uma Filial</option>
+    </select>
+    <ul id="lista-equipamentos" class="list-disc pl-6 text-gray-700"></ul>
+  </div>
+
+  <script>
+    // Configure sua URL e chave pública
+    const supabase = supabase.createClient(
+      'https://zentzsobumuwjmwmqede.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnR6c29idW11d2ptd21xZWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ4NDksImV4cCI6MjA2ODY5MDg0OX0.L4sPMZkqFXfSCUDxnde6_Odm18jlhc-7MMDjfjiJAgg'
+    );
+
+    const form = document.getElementById('cadastro-form');
+    const placa = document.getElementById('placa');
+    const filial = document.getElementById('filial');
+    const data = document.getElementById('data');
+    const mensagem = document.getElementById('mensagem');
+    const filialSelect = document.getElementById('filial-select');
+    const listaEquipamentos = document.getElementById('lista-equipamentos');
+
+    async function carregarFiliais() {
+      const { data, error } = await supabase.from('filiais').select('*');
+      if (error) return;
+      data.forEach(f => {
+        const option = document.createElement('option');
+        option.value = f.nome;
+        option.textContent = f.nome;
+        filialSelect.appendChild(option);
+      });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { data: insertData, error } = await supabase
+        .from('equipamentos')
+        .insert([{ placa: placa.value, filial: filial.value, data: data.value }]);
+      if (error) {
+        mensagem.textContent = 'Erro ao cadastrar.';
+        mensagem.className = 'text-red-600';
+      } else {
+        mensagem.textContent = 'Equipamento cadastrado com sucesso!';
+        mensagem.className = 'text-green-600';
+        form.reset();
+        listarEquipamentos();
+      }
+    });
+
+    async function listarEquipamentos() {
+      const filialSelecionada = filialSelect.value;
+      if (!filialSelecionada) return;
+      const { data, error } = await supabase
+        .from('equipamentos')
+        .select('*')
+        .eq('filial', filialSelecionada);
+      listaEquipamentos.innerHTML = '';
+      if (data && data.length > 0) {
+        data.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = `${item.placa} - ${item.data}`;
+          listaEquipamentos.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = 'Nenhum equipamento encontrado.';
+        listaEquipamentos.appendChild(li);
+      }
+    }
+
+    filialSelect.addEventListener('change', listarEquipamentos);
+    carregarFiliais();
+  </script>
+</body>
+</html>
