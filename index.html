@@ -397,7 +397,7 @@
 
                     <div id="dashboardContent" class="no-data">
                         <p>NENHUM RESULTADO ENCONTRADO COM O FILTRO SELECIONADO!</p>
-                        <img src="https://via.placeholder.com/200x150/f0f2f5/999999?text=Sem Dados" alt="Sem Dados" class="img-fluid my-4">
+                        <img src="https://via.placeholder.com/200x150/f0f2f5/999999?text=Sem Dados" alt="Sem Dados" class="img-fluid my-4 mx-auto d-block">
                     </div>
                 </div>
             </div>
@@ -473,10 +473,11 @@
         </main>
     </div>
 
-    <button class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center py-2 px-3"
-            style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
+    <a href="https://wa.me/5522992075244?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%21"
+       class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center py-2 px-3"
+       style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;" target="_blank">
         <i class="bi bi-question-circle-fill me-2 fs-5"></i> Precisando de ajuda? Clique aqui
-    </button>
+    </a>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
@@ -497,7 +498,7 @@
 
         // --- Funções de Navegação de Tela ---
         function showScreen(screenId) {
-            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen']; // 'visualizarDashboardScreen' removida
+            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen'];
             screens.forEach(id => {
                 const screenElement = document.getElementById(id);
                 if (screenElement) screenElement.classList.add('hidden');
@@ -508,7 +509,7 @@
             // Resetar mensagens
             document.querySelectorAll('.message').forEach(el => {
                 el.textContent = '';
-                el.classList.remove('alert-success', 'alert-danger'); // Remove classes Bootstrap
+                el.classList.remove('alert-success', 'alert-danger');
             });
 
             // Atualiza o estado ativo da sidebar e colapsa outros submenus
@@ -516,33 +517,35 @@
                 link.classList.remove('active');
             });
 
-            // Fecha todos os colapsos
+            // Fecha todos os colapsos, exceto o que está sendo aberto (se houver)
             document.querySelectorAll('.collapse.show').forEach(collapseEl => {
                 const bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
-                if (bsCollapse) bsCollapse.hide();
+                if (bsCollapse) {
+                    const toggleLink = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
+                    // Só esconde se não for o pai do link clicado atualmente
+                    if (!toggleLink || !toggleLink.contains(document.querySelector(`[data-screen="${screenId}"]`))) {
+                         bsCollapse.hide();
+                    }
+                }
             });
 
-            if (screenId === 'mainDashboardScreen') {
-                document.getElementById('sidebarDashboardLink')?.classList.add('active');
-                loadEquipamentosDashboard(); // Carrega o dashboard automaticamente ao ir para a tela principal
-            } else if (screenId === 'cadastroFiliaisScreen') {
-                document.getElementById('showCadastroFiliais')?.classList.add('active');
-                const cadastroSubmenu = new bootstrap.Collapse(document.getElementById('cadastroSubmenu'), { toggle: false });
-                cadastroSubmenu.show();
-            } else if (screenId === 'cadastroEquipamentosScreen') {
-                document.getElementById('showCadastroEquipamentos')?.classList.add('active');
-                const cadastroSubmenu = new bootstrap.Collapse(document.getElementById('cadastroSubmenu'), { toggle: false });
-                cadastroSubmenu.show();
-            } else if (screenId === 'trocaFilialScreen') {
-                document.getElementById('showTrocaFilial')?.classList.add('active');
-                const operacionalSubmenu = new bootstrap.Collapse(document.getElementById('operacionalSubmenu'), { toggle: false });
-                operacionalSubmenu.show();
+            const clickedLink = document.querySelector(`[data-screen="${screenId}"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+                // Se o link está dentro de um collapse, garante que o collapse pai esteja aberto
+                const parentCollapse = clickedLink.closest('.collapse');
+                if (parentCollapse) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(parentCollapse);
+                    if (bsCollapse && !parentCollapse.classList.contains('show')) {
+                        bsCollapse.show();
+                    }
+                }
             }
-             // Para qualquer link clicado na sidebar que tenha um `data-screen`
-             const clickedLink = document.querySelector(`[data-screen="${screenId}"]`);
-             if (clickedLink) {
-                 clickedLink.classList.add('active');
-             }
+
+
+            if (screenId === 'mainDashboardScreen') {
+                loadEquipamentosDashboard(); // Carrega o dashboard automaticamente ao ir para a tela principal
+            }
 
              // Esconde a sidebar em telas pequenas após a navegação
             if (window.innerWidth <= 768) {
@@ -557,31 +560,25 @@
         const cadastroFiliaisScreen = document.getElementById('cadastroFiliaisScreen');
         const cadastroEquipamentosScreen = document.getElementById('cadastroEquipamentosScreen');
         const trocaFilialScreen = document.getElementById('trocaFilialScreen');
-        // visualizarDashboardScreen foi removido, seu conteúdo está em mainDashboardScreen
 
         const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('loginMessage');
-        const userNameElement = document.getElementById('navUserName'); // Nome no topo da navbar
-        const logoutBtnNav = document.getElementById('logoutBtnNav'); // Botão de sair do dropdown da navbar
-        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink'); // Link de sair na sidebar
+        const userNameElement = document.getElementById('navUserName');
+        const logoutBtnNav = document.getElementById('logoutBtnNav');
+        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
         const taskCountBadge = document.getElementById('taskCountBadge');
 
-        // Botões do menu principal (agora links da sidebar com data-screen)
-        const sidebarDashboardLink = document.getElementById('sidebarDashboardLink');
-        const showCadastroFiliaisBtn = document.getElementById('showCadastroFiliais');
-        const showCadastroEquipamentosBtn = document.getElementById('showCadastroEquipamentos');
-        const showTrocaFilialBtn = document.getElementById('showTrocaFilial');
-
-        const backButtons = document.querySelectorAll('.btn-secondary'); // Todos os botões "Voltar"
-
-        // Toggle da Sidebar para Mobile
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         const body = document.body;
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
 
         if (sidebarToggleBtn) {
             sidebarToggleBtn.addEventListener('click', () => {
-                body.classList.toggle('sidebar-expanded'); // Para mobile
-                body.classList.toggle('sidebar-collapsed'); // Para desktop
+                body.classList.toggle('sidebar-expanded');
+                // Em desktop, 'sidebar-collapsed' controla se a sidebar está visível ou escondida
+                // Em mobile, 'sidebar-expanded' controla a sobreposição
+                if (window.innerWidth > 768) {
+                    body.classList.toggle('sidebar-collapsed');
+                }
             });
         }
 
@@ -593,7 +590,7 @@
             if (userString) {
                 loggedInUser = JSON.parse(userString);
                 userNameElement.textContent = loggedInUser.nome;
-                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal
+                showScreen('mainDashboardScreen');
             } else {
                 showScreen('loginScreen');
             }
@@ -601,7 +598,7 @@
 
         // --- Lógica de Eventos ---
         document.addEventListener('DOMContentLoaded', () => {
-            checkAuthAndNavigate(); // Verifica autenticação ao carregar a página
+            checkAuthAndNavigate();
 
             // Evento de Login
             if (loginForm) {
@@ -615,8 +612,6 @@
                     loginMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
-                        // ATENÇÃO DE SEGURANÇA: Esta comparação é INSEGURA!
-                        // Implemente validação de senha hasheada no backend.
                         const { data, error } = await supabase
                             .from('usuarios')
                             .select('id, email, nome, senha')
@@ -625,29 +620,30 @@
 
                         if (error && error.code === 'PGRST116') {
                             loginMessage.textContent = 'Usuário não encontrado.';
-                            loginMessage.classList.add('alert-danger'); // Bootstrap class
+                            loginMessage.classList.add('alert-danger');
                             return;
                         } else if (error) {
                             throw error;
                         }
 
-                        if (data && data.senha === password) { // Comparação INSEGURA
+                        if (data && data.senha === password) {
                             loggedInUser = { id: data.id, nome: data.nome, email: data.email };
                             localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
                             loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
-                            loginMessage.classList.add('alert-success'); // Bootstrap class
+                            loginMessage.classList.add('alert-success');
                             setTimeout(() => {
-                                showScreen('mainDashboardScreen'); // Mostra o Dashboard Principal
-                            }, 500); // Pequeno atraso para ver a mensagem
+                                showScreen('mainDashboardScreen');
+                                userNameElement.textContent = loggedInUser.nome;
+                            }, 500);
                         } else {
                             loginMessage.textContent = 'Email ou senha incorretos.';
-                            loginMessage.classList.add('alert-danger'); // Bootstrap class
+                            loginMessage.classList.add('alert-danger');
                         }
 
                     } catch (error) {
                         console.error('Erro no login:', error.message);
                         loginMessage.textContent = `Erro no login: ${error.message}`;
-                        loginMessage.classList.add('alert-danger'); // Bootstrap class
+                        loginMessage.classList.add('alert-danger');
                     }
                 });
             }
@@ -661,15 +657,21 @@
             if (logoutBtnNav) logoutBtnNav.addEventListener('click', handleLogout);
             if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
 
+            // --- Navegação da Sidebar: Delegando eventos para o document ---
+            document.addEventListener('click', async (event) => {
+                const targetLink = event.target.closest('#sidebar .nav-link');
 
-            // --- Navegação da Sidebar (Delegando eventos para o contêiner principal) ---
-            document.getElementById('sidebar').addEventListener('click', async (event) => {
-                const targetLink = event.target.closest('.nav-link');
-                if (targetLink && targetLink.hasAttribute('data-screen')) {
-                    event.preventDefault();
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; } // Checa auth antes de navegar
-
+                if (targetLink) {
                     const screenId = targetLink.getAttribute('data-screen');
+                    const isToggle = targetLink.hasAttribute('data-bs-toggle') && targetLink.getAttribute('data-bs-toggle') === 'collapse';
+
+                    // Evita que o clique no "toggle" também mude de tela se ele não tiver data-screen
+                    if (isToggle && !screenId) {
+                        return; // Apenas deixa o collapse funcionar
+                    }
+
+                    event.preventDefault(); // Impede o comportamento padrão do link
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
 
                     // Lógicas específicas antes de mostrar a tela
                     if (screenId === 'trocaFilialScreen') {
@@ -677,19 +679,19 @@
                         await loadEquipamentoPlacasIntoDatalist(document.getElementById('equipamentosList'));
                     }
 
-                    showScreen(screenId);
-                } else if (targetLink && targetLink.id === 'sidebarLogoutLink') {
-                    // O logout já é tratado acima, este é apenas para garantir que o click não propague
-                    event.preventDefault();
+                    // Se for um link de navegação para uma tela
+                    if (screenId) {
+                         showScreen(screenId);
+                    }
                 }
             });
 
             // Botões de Voltar
-            backButtons.forEach(button => {
+            document.querySelectorAll('.btn-secondary').forEach(button => {
                 button.addEventListener('click', () => showScreen('mainDashboardScreen'));
             });
 
-            // --- Lógicas dos Formulários ---
+            // --- Lógicas dos Formulários (Mantidas as mesmas do último código) ---
 
             // --- Cadastro de Filiais ---
             const filialForm = document.getElementById('filialForm');
@@ -970,7 +972,7 @@
                         acc[filialId].equipamentos.push({
                             placa: item.equipamentos?.placa || 'N/A',
                             tipo_equipamento: item.equipamentos?.tipo_equipamento || 'N/A',
-                            data_inicio: item.data_inicio // Inclui a data de início
+                            data_inicio: item.data_inicio
                         });
                         return acc;
                     }, {});
@@ -991,7 +993,6 @@
                                     </thead>
                                     <tbody>
                         `;
-                        // Ordena os equipamentos por data de início (mais recente primeiro)
                         filialData.equipamentos.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
 
                         filialData.equipamentos.forEach(eq => {
@@ -1031,7 +1032,6 @@
             // Carrega os responsáveis no filtro e o dashboard ao iniciar (após login)
             if (selectResponsavel) {
                 loadResponsaveisForFilter(selectResponsavel);
-                // loadEquipamentosDashboard() é chamado em showScreen('mainDashboardScreen')
             }
         });
     </script>
