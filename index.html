@@ -1,151 +1,2187 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WebApp Interno - TercSistemas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebApp Interno - TercSistemas</title>
 
-  <!-- CSS Libraries -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-  <style>
-    :root {
-      --sidebar-width: 250px;
-      --navbar-height: 60px;
-      --primary-color: #007bff;
-      --secondary-color: #6c757d;
-      --success-color: #28a745;
-      --danger-color: #dc3545;
-      --info-color: #17a2b8;
-      --bg-light: #f8f9fa;
-      --bg-body: #e9ecef;
-    }
-
-    body {
-      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: var(--bg-body);
-      display: flex;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    .hidden { display: none !important; }
-    .message {
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 0.375rem;
-      text-align: center;
-      font-weight: 500;
-    }
-    .message.alert-success { background-color: #d4edda; color: #155724; }
-    .message.alert-danger { background-color: #f8d7da; color: #721c24; }
-  </style>
-</head>
-<body class="logged-out">
-  <main class="container py-5">
-    <div id="loginScreen">
-      <div class="card mx-auto" style="max-width: 400px;">
-        <div class="card-body">
-          <h2 class="card-title text-center">Login - TercSistemas</h2>
-          <form id="loginForm">
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" id="email" class="form-control" required />
-            </div>
-            <div class="mb-3">
-              <label for="password" class="form-label">Senha</label>
-              <input type="password" id="password" class="form-control" required />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Entrar</button>
-          </form>
-          <div id="loginMessage" class="message"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="mainDashboardScreen" class="hidden">
-      <h1>Bem-vindo ao sistema TercSistemas</h1>
-      <button class="btn btn-danger" id="logoutBtn">Sair</button>
-    </div>
-  </main>
-
-  <!-- JS Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.5'
-
-    const supabase = createClient(
-      'https://jtikvjomzduvjrrrsfeg.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg'
-    );
-
-    const $ = (id) => document.getElementById(id);
-    const showMessage = (el, msg, type = 'success') => {
-      el.textContent = msg;
-      el.className = `message alert-${type}`;
-    };
-    const clearMessage = (el) => {
-      el.textContent = '';
-      el.className = 'message';
-    };
-
-    let loggedInUser = null;
-
-    function showScreen(id) {
-      ['loginScreen', 'mainDashboardScreen'].forEach(s => $(s).classList.add('hidden'));
-      $(id).classList.remove('hidden');
-    }
-
-    function checkAuth() {
-      const user = localStorage.getItem('loggedInUser');
-      if (user) {
-        loggedInUser = JSON.parse(user);
-        document.body.classList.remove('logged-out');
-        showScreen('mainDashboardScreen');
-      } else {
-        document.body.classList.add('logged-out');
-        showScreen('loginScreen');
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
-
-      $('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearMessage($('loginMessage'));
-
-        const { value: email } = $('email');
-        const { value: password } = $('password');
-
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('email', email)
-          .single();
-
-        if (error || !data || data.senha !== password) {
-          showMessage($('loginMessage'), 'Email ou senha incorretos.', 'danger');
-          return;
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --navbar-height: 60px;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --bg-light: #f8f9fa;
+            --bg-body: #e9ecef; /* Um cinza mais claro para o fundo */
         }
 
-        loggedInUser = data;
-        localStorage.setItem('loggedInUser', JSON.stringify(data));
-        showMessage($('loginMessage'), 'Login bem-sucedido! Redirecionando...');
-        setTimeout(() => showScreen('mainDashboardScreen'), 800);
-      });
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-body);
+            display: flex; /* Para o layout principal (flexbox para sidebar e contentWrapper) */
+            min-height: 100vh;
+            overflow-x: hidden; /* Evita scroll horizontal indesejado */
+        }
 
-      $('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('loggedInUser');
-        loggedInUser = null;
-        checkAuth();
-      });
-    });
-  </script>
+        /* --- Navbar (Topo) --- */
+        #navbar {
+            height: var(--navbar-height);
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            /* Ajusta a largura e posição para sidebar aberta */
+            width: calc(100% - var(--sidebar-width));
+            position: fixed; /* Fixa a navbar no topo */
+            top: 0;
+            left: var(--sidebar-width); /* Inicia com o espaço da sidebar */
+            z-index: 1000; /* Acima do conteúdo, abaixo da sidebar (em z-index) */
+            transition: left 0.3s ease, width 0.3s ease; /* Transição suave para movimentação */
+        }
+
+        /* Ajuste da navbar quando sidebar está recolhida (desktop) */
+        body.sidebar-collapsed #navbar {
+            width: 100%; /* Ocupa toda a largura */
+            left: 0; /* Alinha à esquerda */
+        }
+
+        .navbar .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.8rem; /* Aumentado um pouco */
+        }
+
+        .navbar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--secondary-color);
+        }
+        .navbar .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        /* --- Sidebar (Esquerda) --- */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: #2c3e50; /* Darker blue-gray */
+            color: #ecf0f1; /* Light text */
+            position: fixed; /* Fixa a sidebar na tela */
+            height: 100%;
+            top: 0;
+            left: 0; /* Posição inicial da sidebar */
+            z-index: 1001; /* Acima da navbar e do conteúdo */
+            padding-top: var(--navbar-height); /* Espaço para logo/header no topo */
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: left 0.3s ease; /* Transição apenas para 'left' */
+            overflow-y: auto; /* Scrollable sidebar */
+            flex-shrink: 0; /* Impede que a sidebar diminua em layouts flex */
+        }
+
+        /* Sidebar recolhida (desktop) */
+        body.sidebar-collapsed #sidebar {
+            left: -var(--sidebar-width); /* Esconde completamente à esquerda */
+        }
+
+        #sidebar .sidebar-header {
+            padding: 15px;
+            text-align: center;
+            background-color: #34495e; /* Slightly lighter header */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--navbar-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem; /* Aumentado um pouco */
+            font-weight: bold;
+        }
+        #sidebar .sidebar-header img { /* Removido para remover logo */
+            display: none;
+        }
+        #sidebar .sidebar-header span {
+            color: #fff;
+        }
+
+        #sidebar .nav-item {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        #sidebar .nav-link {
+            color: #ecf0f1;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.1rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        #sidebar .nav-link:hover,
+        #sidebar .nav-link.active {
+            background-color: #1abc9c; /* Emerald green for active/hover */
+            color: #fff;
+            border-radius: 0;
+        }
+
+        #sidebar .nav-link i {
+            font-size: 1.3rem;
+        }
+
+        /* --- Main Content Area --- */
+        #contentWrapper {
+            margin-left: var(--sidebar-width); /* Espaço inicial para a sidebar */
+            padding-top: var(--navbar-height); /* Espaço para a navbar */
+            flex-grow: 1; /* Ocupa o restante do espaço horizontal */
+            width: calc(100% - var(--sidebar-width)); /* Ajusta a largura */
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+
+        /* Conteúdo ocupa toda a largura quando sidebar recolhida (desktop) */
+        body.sidebar-collapsed #contentWrapper {
+            margin-left: 0; /* Remove margem */
+            width: 100%; /* Ocupa toda a largura */
+        }
+
+        #mainContent {
+            padding: 25px;
+            min-height: calc(100vh - var(--navbar-height)); /* Garante que o conteúdo tenha pelo menos a altura da tela menos a navbar */
+        }
+
+        /* --- Formulários e Tabelas --- */
+        .form-section, .dashboard-section {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+            border: 1px solid #ced4da;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+
+        .btn {
+            border-radius: 0.375rem;
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
+        .btn-success { background-color: var(--success-color); border-color: var(--success-color); }
+        .btn-success:hover { background-color: #218838; border-color: #218838; }
+        .btn-danger { background-color: var(--danger-color); border-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #c82333; border-color: #c82333; }
+        .btn-info { background-color: var(--info-color); border-color: var(--info-color); }
+        .btn-info:hover { background-color: #138496; border-color: #138496; }
+        .btn-secondary { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+        .btn-secondary:hover { background-color: #5a6268; border-color: #5a6268; }
+
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1rem;
+            border: 1px solid transparent; /* Adiciona borda para clareza */
+        }
+        .message.alert-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .message.alert-danger { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .message.alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+
+
+        .table {
+            margin-top: 25px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .table thead th {
+            background-color: #e9ecef; /* Light background for table header */
+            color: #495057;
+            font-weight: 600;
+            padding: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table tbody td {
+            padding: 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Navbar Toggle para Sidebar (Ajuste para visibilidade) --- */
+        .navbar-toggler {
+            border: none;
+            padding: 0;
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            display: none; /* Esconde por padrão em desktop */
+        }
+        @media (max-width: 768px) {
+            .navbar-toggler {
+                display: block; /* Mostra em mobile */
+            }
+        }
+        .navbar-toggler:focus {
+            box-shadow: none;
+        }
+
+        /* --- Estado de "não logado" --- */
+        body.logged-out #sidebar,
+        body.logged-out .navbar-top-elements { /* Nova classe para os elementos da navbar a serem escondidos */
+            display: none !important;
+        }
+
+        body.logged-out #navbar { /* Garante que a navbar ocupe toda a largura */
+            width: 100% !important;
+            left: 0 !important;
+        }
+        body.logged-out #contentWrapper { /* Garante que o conteúdo ocupe toda a largura */
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        /* Ajustes Responsivos */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 220px;
+            }
+            /* Sidebar em mobile: inicia escondida à esquerda, quando expandida, desliza para 0 */
+            body #sidebar {
+                left: -var(--sidebar-width);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.2); /* Sombra para destacar que está "por cima" */
+            }
+            body.sidebar-expanded #sidebar {
+                left: 0;
+            }
+            /* Navbar e Content Wrapper sempre ocupam 100% da largura em mobile */
+            body #navbar, body #contentWrapper {
+                width: 100% !important;
+                margin-left: 0 !important;
+                left: 0 !important;
+            }
+        }
+
+        /* --- Kanban Board Styles --- */
+        #kanbanBoard {
+            gap: 15px; /* Espaçamento entre as colunas */
+            align-items: flex-start; /* Alinha as colunas ao topo */
+            min-height: 400px; /* Altura mínima para o board */
+        }
+
+        .kanban-column {
+            background-color: #ebecf0; /* Cor de fundo da coluna (cinza claro do Trello) */
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 280px; /* Largura mínima para cada coluna */
+            max-width: 300px; /* Largura máxima para cada coluna */
+            flex-shrink: 0; /* Impede que a coluna encolha */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-height: calc(100vh - var(--navbar-height) - 160px); /* Ajusta altura para caber na tela */
+            overflow-y: auto; /* Scroll para colunas longas */
+        }
+
+        .kanban-column-header {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kanban-card {
+            background-color: #fff;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+            cursor: grab;
+            transition: background-color 0.2s ease;
+        }
+
+        .kanban-card:hover {
+            background-color: #f5f5f5;
+        }
+
+        .kanban-card-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .kanban-card-meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 3px;
+        }
+
+        .kanban-card-date {
+            font-size: 0.8em;
+            color: #888;
+            text-align: right;
+            margin-top: 8px;
+        }
+
+        .kanban-empty-message {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px 0;
+        }
+        .no-data {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Estilos para Select2 */
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: calc(2.25em + 0.75rem + 2px); /* Adjusted for Bootstrap 5 form-control height */
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            display: flex; /* Align items correctly for tags */
+            align-items: center;
+        }
+        .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+        .select2-container--bootstrap-5.select2-container--open .select2-selection {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: 1px solid var(--primary-color);
+            border-radius: 0.2rem;
+            padding: 0.2rem 0.5rem;
+            margin-top: 0.25rem;
+            margin-right: 0.25rem;
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+            color: rgba(255,255,255,0.7);
+            float: right;
+            margin-left: 0.2rem;
+        }
+        .select2-container--bootstrap-5 .select2-dropdown {
+            border-color: #ced4da;
+            border-radius: 0.375rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        }
+        .select2-container--bootstrap-5 .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .select2-container--bootstrap-5 .select2-results__option--selected {
+            background-color: #e9ecef; /* Light gray for selected in dropdown */
+            color: #495057;
+        }
+
+    </style>
+</head>
+<body class="sidebar-collapsed"> <nav class="navbar navbar-expand-lg" id="navbar">
+        <div class="container-fluid">
+            <button class="btn btn-light d-none d-lg-block me-3" type="button" id="desktopSidebarToggleBtn" title="Ocultar/Exibir Menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <button class="navbar-toggler me-3 d-lg-none" type="button" id="mobileSidebarToggleBtn">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <a class="navbar-brand" href="#">
+                TercSistemas
+            </a>
+            <div class="ms-auto d-flex align-items-center navbar-top-elements">
+                <a class="nav-link me-3" href="#"><i class="bi bi-cloud-fill"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <aside id="sidebar" class="d-flex flex-column">
+        <div class="sidebar-header d-lg-none">
+            <span>TercSistemas</span>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-screen="mainDashboardScreen" id="sidebarDashboardLink">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#cadastroSubmenu" aria-expanded="false">
+                    <i class="bi bi-plus-circle"></i> Cadastro <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <div class="collapse" id="cadastroSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item" id="cadastroUsuariosNavItem"><a class="nav-link" href="#" data-screen="cadastroUsuariosScreen" id="showCadastroUsuarios"><i class="bi bi-person-fill-add"></i> Usuários</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroFiliaisScreen" id="showCadastroFiliais"><i class="bi bi-shop"></i> Filiais</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-screen="cadastroEquipamentosScreen" id="showCadastroEquipamentos"><i class="bi bi-tools"></i> Equipamentos</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#operacionalSubmenu" aria-expanded="false">
+                    <i class="bi bi-gear"></i> Operacional <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <div class="collapse" id="operacionalSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item"><a class="nav-link" href="#" data-screen="trocaFilialScreen" id="showTrocaFilial"><i class="bi bi-arrow-left-right"></i> Troca de Filial</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item mt-auto">
+                <a class="nav-link" href="#" id="sidebarLogoutLink">
+                    <i class="bi bi-box-arrow-right"></i> Sair
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <div id="contentWrapper" class="flex-grow-1">
+        <main id="mainContent" class="d-flex flex-column h-100">
+
+            <div id="loginScreen" class="d-flex justify-content-center align-items-center flex-grow-1 hidden"> <div class="card shadow-sm p-4" style="width: 100%; max-width: 400px;">
+                    <h2 class="card-title text-center mb-4">Login - TercSistemas</h2>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email:</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Senha:</label>
+                            <input type="password" id="password" class="form-control" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                        </div>
+                    </form>
+                    <div id="loginMessage" class="message mt-3"></div>
+                </div>
+            </div>
+
+            <div id="mainDashboardScreen" class="flex-grow-1"> <h1 class="mb-4">Dashboard de Equipamentos Ativos</h1>
+
+                <div class="dashboard-controls-kanban">
+                    <div class="d-flex flex-wrap align-items-center mb-4 gap-3">
+                        <div class="input-group flex-grow-1 me-md-2">
+                            <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                            <input type="date" class="form-control" id="filterStartDate">
+                            <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
+                            <input type="date" class="form-control" id="filterEndDate">
+                        </div>
+                        <div class="input-group flex-grow-1">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="filterSearchInput" placeholder="Pesquisar placa, tipo ou filial...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                        <div class="input-group flex-grow-1">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <select id="selectResponsavel" class="form-select">
+                                <option value="">Todos os Responsáveis</option>
+                            </select>
+                        </div>
+                        <div class="input-group flex-grow-1">
+                            <span class="input-group-text"><i class="bi bi-shop"></i></span>
+                            <select id="selectFiliais" class="form-select" multiple data-placeholder="Selecione as Filiais">
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="filterDashboardBtn"><i class="bi bi-funnel"></i> Aplicar Filtros</button>
+                    </div>
+                </div>
+
+                <div id="kanbanBoard" class="d-flex flex-nowrap overflow-auto py-3">
+                    <p id="kanbanMessage" class="no-data text-center w-100">NENHUM RESULTADO ENCONTRADO COM O FILTRO SELECIONADO!</p>
+                </div>
+            </div>
+
+            <div id="cadastroUsuariosScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromUsuarios" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Cadastro de Usuários</h2>
+                <form id="usuarioForm">
+                    <div class="mb-3">
+                        <label for="nomeUsuario" class="form-label">Nome Completo:</label>
+                        <input type="text" id="nomeUsuario" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailUsuario" class="form-label">Email:</label>
+                        <input type="email" id="emailUsuario" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="senhaUsuario" class="form-label">Senha:</label>
+                        <input type="password" id="senhaUsuario" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoriaUsuario" class="form-label">Categoria:</label>
+                        <select id="categoriaUsuario" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="admin">Administrador</option>
+                            <option value="operador">Operador</option>
+                            <option value="visualizador">Visualizador</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Cadastrar Usuário</button>
+                    </div>
+                </form>
+                <div id="usuarioMessage" class="message"></div>
+
+                <hr class="my-4">
+
+                <div class="usuario-consulta-section">
+                    <h3 class="mb-3"><i class="bi bi-search me-2"></i> Consulta de Usuários</h3>
+                    <div class="input-group mb-3">
+                        <input type="text" id="usuarioSearchInput" class="form-control" placeholder="Pesquisar por Nome ou Email">
+                        <button class="btn btn-outline-secondary" type="button" id="usuarioSearchBtn"><i class="bi bi-search"></i> Buscar</button>
+                        <button class="btn btn-outline-danger" type="button" id="usuarioClearSearchBtn"><i class="bi bi-x-lg"></i> Limpar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Categoria</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuariosTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="usuarioConsultaMessage" class="message mt-3"></div>
+                </div>
+            </div>
+
+
+            <div id="cadastroFiliaisScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromFiliais" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Cadastro de Filiais</h2>
+                <form id="filialForm">
+                    <div class="mb-3">
+                        <label for="nomeFilial" class="form-label">Nome da Filial:</label>
+                        <input type="text" id="nomeFilial" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsavelEmail" class="form-label">Responsável (Email ou Nome):</label>
+                        <input type="text" id="responsavelEmail" placeholder="Email ou nome do responsável" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Cadastrar Filial</button>
+                    </div>
+                </form>
+                <div id="filialMessage" class="message"></div>
+
+                <hr class="my-4">
+                <div class="filial-consulta-section">
+                    <h3 class="mb-3"><i class="bi bi-search me-2"></i> Consulta de Filiais</h3>
+                    <div class="input-group mb-3">
+                        <input type="text" id="filialSearchInput" class="form-control" placeholder="Pesquisar por Filial ou Responsável">
+                        <button class="btn btn-outline-secondary" type="button" id="filialSearchBtn"><i class="bi bi-search"></i> Buscar</button>
+                        <button class="btn btn-outline-danger" type="button" id="filialClearSearchBtn"><i class="bi bi-x-lg"></i> Limpar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Filial</th>
+                                    <th>Responsável</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filiaisTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                    <div id="filialConsultaMessage" class="message mt-3"></div>
+                </div>
+            </div>
+
+            <div id="cadastroEquipamentosScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromEquipamentos" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Cadastro de Equipamentos</h2>
+                <form id="equipamentoForm">
+                    <div class="mb-3">
+                        <label for="placa" class="form-label">Placa do Equipamento:</label>
+                        <input type="text" id="placa" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipoEquipamento" class="form-label">Tipo de Equipamento:</label>
+                        <select id="tipoEquipamento" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="Bomba Lança">Bomba Lança</option>
+                            <option value="Bomba Estacionária">Bomba Estacionária</option>
+                            <option value="Betoneira">Betoneira</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Cadastrar Equipamento</button>
+                    </div>
+                </form>
+                <div id="equipamentoMessage" class="message"></div>
+
+                <hr class="my-4">
+
+                <div class="equipamento-consulta-section">
+                    <h3 class="mb-3"><i class="bi bi-search me-2"></i> Consulta de Equipamentos</h3>
+                    <div class="input-group mb-3">
+                        <input type="text" id="equipamentoSearchInput" class="form-control" placeholder="Pesquisar por Placa ou Tipo">
+                        <button class="btn btn-outline-secondary" type="button" id="equipamentoSearchBtn"><i class="bi bi-search"></i> Buscar</button>
+                        <button class="btn btn-outline-danger" type="button" id="equipamentoClearSearchBtn"><i class="bi bi-x-lg"></i> Limpar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Placa</th>
+                                    <th>Tipo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="equipamentosTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="equipamentoConsultaMessage" class="message mt-3"></div>
+                </div>
+            </div>
+
+            <div id="trocaFilialScreen" class="hidden form-section">
+                <button id="backToMainDashboardFromTroca" class="btn btn-secondary mb-3">&larr; Voltar</button>
+                <h2>Troca de Filial Fixa de Equipamento</h2>
+                <form id="trocaFilialForm">
+                    <div class="mb-3">
+                        <label for="placaEquipamento" class="form-label">Placa do Equipamento:</label>
+                        <input type="text" id="placaEquipamento" list="equipamentosList" class="form-control" required>
+                        <datalist id="equipamentosList"></datalist>
+                    </div>
+                    <div class="mb-3">
+                        <label for="novaFilial" class="form-label">Nova Filial:</label>
+                        <select id="novaFilial" class="form-select" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dataExecucao" class="form-label">Data de Execução:</label>
+                        <input type="date" id="dataExecucao" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Registrar Troca</button>
+                    </div>
+                </form>
+                <div id="trocaFilialMessage" class="message"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <div class="modal fade" id="editFilialResponsavelModal" tabindex="-1" aria-labelledby="editFilialResponsavelModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editFilialResponsavelModalLabel">Editar Responsável da Filial: <span id="modalFilialNome"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modalFilialId">
+                    <div class="mb-3">
+                        <label for="modalResponsavelEmail" class="form-label">Novo Responsável (Email ou Nome):</label>
+                        <input type="text" id="modalResponsavelEmail" class="form-control" placeholder="Email ou nome do novo responsável" required>
+                        <small id="modalResponsavelHelper" class="form-text text-muted">Digite o email ou o nome do usuário.</small>
+                    </div>
+                    <div id="modalEditFilialMessage" class="message mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveFilialResponsavelBtn">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editEquipamentoModal" tabindex="-1" aria-labelledby="editEquipamentoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editEquipamentoModalLabel">Editar Equipamento: <span id="modalEquipamentoPlaca"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modalEquipamentoId">
+                    <div class="mb-3">
+                        <label for="modalEquipamentoTipo" class="form-label">Tipo de Equipamento:</label>
+                        <select id="modalEquipamentoTipo" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="Bomba Lança">Bomba Lança</option>
+                            <option value="Bomba Estacionária">Bomba Estacionária</option>
+                            <option value="Betoneira">Betoneira</option>
+                        </select>
+                    </div>
+                    <div id="modalEditEquipamentoMessage" class="message mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveEquipamentoBtn">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editUsuarioModal" tabindex="-1" aria-labelledby="editUsuarioModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUsuarioModalLabel">Editar Usuário: <span id="modalUsuarioNomeAtual"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modalUsuarioId">
+                    <div class="mb-3">
+                        <label for="modalUsuarioNome" class="form-label">Nome:</label>
+                        <input type="text" id="modalUsuarioNome" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalUsuarioEmail" class="form-label">Email:</label>
+                        <input type="email" id="modalUsuarioEmail" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalUsuarioCategoria" class="form-label">Categoria:</label>
+                        <select id="modalUsuarioCategoria" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="admin">Administrador</option>
+                            <option value="operador">Operador</option>
+                            <option value="visualizador">Visualizador</option>
+                        </select>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="modalUsuarioNovaSenha" class="form-label">Nova Senha (opcional):</label>
+                        <input type="password" id="modalUsuarioNovaSenha" class="form-control">
+                        <small class="form-text text-muted">Deixe em branco para não alterar a senha.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalUsuarioConfirmaSenha" class="form-label">Confirmar Nova Senha:</label>
+                        <input type="password" id="modalUsuarioConfirmaSenha" class="form-control">
+                    </div>
+                    <div id="modalEditUsuarioMessage" class="message mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveUsuarioBtn">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="https://wa.me/5522992075244?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%21" class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center py-2 px-3" style="position: fixed; bottom: 20px; right: 20px; z-index: 1060;" target="_blank">
+        <i class="bi bi-question-circle-fill me-2 fs-5"></i> Precisando de ajuda? Clique aqui
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/pt-BR.js"></script>
+    <script type="module">
+        // public/index.html
+
+        // Supabase Client (consolidado)
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.5';
+
+        // ATENÇÃO: Substitua pelos seus dados reais do Supabase
+        // O URL do seu projeto Supabase (encontrado em Project Settings -> API)
+        const supabaseUrl = "https://jtikvjomzduvjrrrsfeg.supabase.co"; // SEU URL REAL AQUI
+        // A sua chave "anon" ou "public" do Supabase (encontrada em Project Settings -> API)
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5NzU4NjYsImV4cCI6MjAzMTU1MTg2Nn0.2-1UeR_S0z9aB-g6G2h7L2g10mPzXm410W1F6Q0W0G0"; // SUA CHAVE REAL AQUI
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // Referências a elementos do DOM
+        const screens = {
+            loginScreen: document.getElementById('loginScreen'),
+            mainDashboardScreen: document.getElementById('mainDashboardScreen'),
+            cadastroUsuariosScreen: document.getElementById('cadastroUsuariosScreen'),
+            cadastroFiliaisScreen: document.getElementById('cadastroFiliaisScreen'),
+            cadastroEquipamentosScreen: document.getElementById('cadastroEquipamentosScreen'),
+            trocaFilialScreen: document.getElementById('trocaFilialScreen')
+        };
+
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginMessage = document.getElementById('loginMessage');
+        const sidebar = document.getElementById('sidebar');
+        const navbar = document.getElementById('navbar');
+        const contentWrapper = document.getElementById('contentWrapper');
+        const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn');
+        const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn');
+        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
+        const navbarTopElements = document.querySelector('.navbar-top-elements'); // Nova referência
+
+        // Formulário de Usuários
+        const usuarioForm = document.getElementById('usuarioForm');
+        const nomeUsuarioInput = document.getElementById('nomeUsuario');
+        const emailUsuarioInput = document.getElementById('emailUsuario');
+        const senhaUsuarioInput = document.getElementById('senhaUsuario');
+        const categoriaUsuarioSelect = document.getElementById('categoriaUsuario');
+        const usuarioMessage = document.getElementById('usuarioMessage');
+        const usuariosTableBody = document.getElementById('usuariosTableBody');
+        const usuarioSearchInput = document.getElementById('usuarioSearchInput');
+        const usuarioSearchBtn = document.getElementById('usuarioSearchBtn');
+        const usuarioClearSearchBtn = document.getElementById('usuarioClearSearchBtn');
+        const usuarioConsultaMessage = document.getElementById('usuarioConsultaMessage');
+        const editUsuarioModal = new bootstrap.Modal(document.getElementById('editUsuarioModal'));
+        const modalUsuarioId = document.getElementById('modalUsuarioId');
+        const modalUsuarioNomeAtual = document.getElementById('modalUsuarioNomeAtual');
+        const modalUsuarioNome = document.getElementById('modalUsuarioNome');
+        const modalUsuarioEmail = document.getElementById('modalUsuarioEmail');
+        const modalUsuarioCategoria = document.getElementById('modalUsuarioCategoria');
+        const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha');
+        const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha');
+        const saveUsuarioBtn = document.getElementById('saveUsuarioBtn');
+        const modalEditUsuarioMessage = document.getElementById('modalEditUsuarioMessage');
+
+
+        // Formulário de Filiais
+        const filialForm = document.getElementById('filialForm');
+        const nomeFilialInput = document.getElementById('nomeFilial');
+        const responsavelEmailInput = document.getElementById('responsavelEmail');
+        const filialMessage = document.getElementById('filialMessage');
+        const filiaisTableBody = document.getElementById('filiaisTableBody');
+        const filialSearchInput = document.getElementById('filialSearchInput');
+        const filialSearchBtn = document.getElementById('filialSearchBtn');
+        const filialClearSearchBtn = document.getElementById('filialClearSearchBtn');
+        const filialConsultaMessage = document.getElementById('filialConsultaMessage');
+        const editFilialResponsavelModal = new bootstrap.Modal(document.getElementById('editFilialResponsavelModal'));
+        const modalFilialId = document.getElementById('modalFilialId');
+        const modalFilialNome = document.getElementById('modalFilialNome');
+        const modalResponsavelEmail = document.getElementById('modalResponsavelEmail');
+        const modalResponsavelHelper = document.getElementById('modalResponsavelHelper');
+        const saveFilialResponsavelBtn = document.getElementById('saveFilialResponsavelBtn');
+        const modalEditFilialMessage = document.getElementById('modalEditFilialMessage');
+
+
+        // Formulário de Equipamentos
+        const equipamentoForm = document.getElementById('equipamentoForm');
+        const placaInput = document.getElementById('placa');
+        const tipoEquipamentoSelect = document.getElementById('tipoEquipamento');
+        const equipamentoMessage = document.getElementById('equipamentoMessage');
+        const equipamentosTableBody = document.getElementById('equipamentosTableBody');
+        const equipamentoSearchInput = document.getElementById('equipamentoSearchInput');
+        const equipamentoSearchBtn = document.getElementById('equipamentoSearchBtn');
+        const equipamentoClearSearchBtn = document.getElementById('equipamentoClearSearchBtn');
+        const equipamentoConsultaMessage = document.getElementById('equipamentoConsultaMessage');
+        const editEquipamentoModal = new bootstrap.Modal(document.getElementById('editEquipamentoModal'));
+        const modalEquipamentoId = document.getElementById('modalEquipamentoId');
+        const modalEquipamentoPlaca = document.getElementById('modalEquipamentoPlaca');
+        const modalEquipamentoTipo = document.getElementById('modalEquipamentoTipo');
+        const saveEquipamentoBtn = document.getElementById('saveEquipamentoBtn');
+        const modalEditEquipamentoMessage = document.getElementById('modalEditEquipamentoMessage');
+
+
+        // Formulário de Troca de Filial
+        const trocaFilialForm = document.getElementById('trocaFilialForm');
+        const placaEquipamentoInput = document.getElementById('placaEquipamento');
+        const equipamentosListDatalist = document.getElementById('equipamentosList');
+        const novaFilialSelect = document.getElementById('novaFilial');
+        const dataExecucaoInput = document.getElementById('dataExecucao');
+        const trocaFilialMessage = document.getElementById('trocaFilialMessage');
+
+        // Elementos do Dashboard
+        const kanbanBoard = document.getElementById('kanbanBoard');
+        const kanbanMessage = document.getElementById('kanbanMessage');
+        const filterStartDateInput = document.getElementById('filterStartDate');
+        const filterEndDateInput = document.getElementById('filterEndDate');
+        const filterSearchInput = document.getElementById('filterSearchInput');
+        const selectResponsavelFilter = document.getElementById('selectResponsavel');
+        const selectFiliaisFilter = document.getElementById('selectFiliais');
+        const filterDashboardBtn = document.getElementById('filterDashboardBtn');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+
+        let userRole = 'admin'; // Variável global para a categoria do usuário logado (DEFINIDA COMO 'admin' PARA TESTES)
+
+        // --- Funções Auxiliares ---
+
+        /**
+         * Exibe uma mensagem de feedback na tela.
+         * @param {HTMLElement} element O elemento onde a mensagem será exibida.
+         * @param {string} message O texto da mensagem.
+         * @param {string} type O tipo da mensagem ('success', 'danger', 'info').
+         * @param {number} duration O tempo em milissegundos para a mensagem desaparecer (opcional).
+         */
+        function showMessage(element, message, type, duration = 5000) {
+            element.textContent = message;
+            element.className = `message alert-${type}`;
+            element.classList.remove('hidden');
+            if (duration) {
+                setTimeout(() => {
+                    element.classList.add('hidden');
+                }, duration);
+            }
+        }
+
+        /**
+         * Oculta todas as telas e exibe a tela especificada.
+         * @param {HTMLElement} screenToShow O elemento da tela a ser exibida.
+         */
+        function showScreen(screenToShow) {
+            Object.values(screens).forEach(screen => {
+                screen.classList.add('hidden');
+                screen.classList.remove('flex-grow-1'); // Remove flex-grow-1 de todos
+            });
+
+            screenToShow.classList.remove('hidden');
+            if (screenToShow === screens.mainDashboardScreen || screenToShow === screens.loginScreen) {
+                screenToShow.classList.add('flex-grow-1');
+            }
+
+            // Remove a classe 'active' de todos os links da sidebar
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Adiciona a classe 'active' ao link correspondente, se houver
+            const activeLink = document.querySelector(`#sidebar a[data-screen="${screenToShow.id}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // Esconde sidebar em mobile após a navegação
+            if (window.innerWidth <= 768) {
+                document.body.classList.remove('sidebar-expanded');
+            }
+        }
+
+        /**
+         * Verifica se o usuário tem a permissão necessária para acessar uma funcionalidade.
+         * @param {string[]} allowedRoles Array de categorias permitidas (ex: ['admin', 'operador']).
+         * @returns {boolean} True se o usuário tiver permissão, false caso contrário.
+         */
+        function checkPermission(allowedRoles) {
+            if (!userRole) { // Se não houver role, não está logado
+                showMessage(loginMessage, 'Acesso negado. Por favor, faça login.', 'danger');
+                showScreen(screens.loginScreen);
+                return false;
+            }
+            if (!allowedRoles.includes(userRole)) {
+                alert('Você não tem permissão para acessar esta funcionalidade.');
+                return false;
+            }
+            return true;
+        }
+
+        // --- Funções de Autenticação ---
+
+        async function signIn(email, password) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Obter a categoria do usuário (role)
+                const { data: userData, error: userError } = await supabase
+                    .from('usuarios')
+                    .select('categoria')
+                    .eq('email', email)
+                    .single();
+
+                if (userError || !userData) {
+                    throw new Error('Não foi possível obter a categoria do usuário.');
+                }
+
+                userRole = userData.categoria; // Define a categoria global
+                showMessage(loginMessage, 'Login bem-sucedido!', 'success');
+                document.body.classList.remove('logged-out'); // Remove a classe para mostrar a sidebar e elementos da navbar
+                // Ajusta o Select2 após o login, pois o elemento pode estar escondido antes
+                loadFiliaisIntoSelect2();
+                showScreen(screens.mainDashboardScreen);
+                loadEquipamentosDashboard(); // Carrega o dashboard após o login
+            } catch (error) {
+                console.error('Erro de login:', error.message);
+                showMessage(loginMessage, `Erro de login: ${error.message}`, 'danger');
+                userRole = ''; // Limpa a role em caso de falha no login
+                document.body.classList.add('logged-out'); // Mantém a classe para esconder a sidebar e elementos da navbar
+            }
+        }
+
+        async function signOut() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    throw error;
+                }
+                userRole = ''; // Limpa a role ao deslogar
+                showMessage(loginMessage, 'Deslogado com sucesso!', 'info');
+                document.body.classList.add('logged-out'); // Adiciona a classe para esconder a sidebar e elementos da navbar
+                showScreen(screens.loginScreen);
+            } catch (error) {
+                console.error('Erro ao deslogar:', error.message);
+                showMessage(loginMessage, `Erro ao deslogar: ${error.message}`, 'danger');
+            }
+        }
+
+        // --- Funções de CRUD - Usuários ---
+
+        async function addUsuario(nome, email, senha, categoria) {
+            if (!checkPermission(['admin'])) return;
+            try {
+                // Verificar se o email já existe
+                const { data: existingUser, error: existingUserError } = await supabase
+                    .from('usuarios')
+                    .select('id')
+                    .eq('email', email)
+                    .single();
+
+                if (existingUserError && existingUserError.code !== 'PGRST116') { // PGRST116 = No rows found
+                    throw existingUserError;
+                }
+                if (existingUser) {
+                    showMessage(usuarioMessage, 'Erro: Email já cadastrado.', 'danger');
+                    return;
+                }
+
+                // Inserir usuário na tabela 'usuarios'
+                const { data: usuarioData, error: usuarioError } = await supabase
+                    .from('usuarios')
+                    .insert([{ nome, email, categoria }])
+                    .select();
+
+                if (usuarioError) {
+                    throw usuarioError;
+                }
+
+                // Inserir credenciais na tabela 'auth.users' do Supabase (para login)
+                // Nota: O Supabase handleia o hash da senha automaticamente
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: senha,
+                });
+
+                if (authError) {
+                    // Se falhar o auth.signUp, tentar remover o usuário da tabela 'usuarios' para evitar inconsistência
+                    await supabase.from('usuarios').delete().eq('id', usuarioData[0].id);
+                    throw authError;
+                }
+
+                showMessage(usuarioMessage, 'Usuário cadastrado com sucesso!', 'success');
+                usuarioForm.reset();
+                loadUsuarios(); // Recarrega a lista de usuários
+            } catch (error) {
+                console.error('Erro ao cadastrar usuário:', error.message);
+                showMessage(usuarioMessage, `Erro ao cadastrar usuário: ${error.message}`, 'danger');
+            }
+        }
+
+        async function loadUsuarios(searchTerm = '') {
+            if (!checkPermission(['admin'])) {
+                usuariosTableBody.innerHTML = '';
+                showMessage(usuarioConsultaMessage, 'Você não tem permissão para visualizar usuários.', 'danger');
+                return;
+            }
+            try {
+                let query = supabase.from('usuarios').select('*').order('nome', { ascending: true });
+
+                if (searchTerm) {
+                    query = query.or(`nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    throw error;
+                }
+
+                usuariosTableBody.innerHTML = ''; // Limpa a tabela
+                if (data.length === 0) {
+                    showMessage(usuarioConsultaMessage, 'Nenhum usuário encontrado.', 'info');
+                    return;
+                }
+                data.forEach(usuario => {
+                    const row = usuariosTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${usuario.nome}</td>
+                        <td>${usuario.email}</td>
+                        <td>${usuario.categoria}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info edit-usuario-btn" data-id="${usuario.id}"
+                                data-nome="${usuario.nome}" data-email="${usuario.email}" data-categoria="${usuario.categoria}">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-usuario-btn" data-id="${usuario.id}" data-email="${usuario.email}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                });
+                usuarioConsultaMessage.classList.add('hidden'); // Oculta a mensagem se houver resultados
+                addUsuarioEventListeners(); // Adiciona event listeners para os botões após carregar
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error.message);
+                showMessage(usuarioConsultaMessage, `Erro ao carregar usuários: ${error.message}`, 'danger');
+            }
+        }
+
+        function addUsuarioEventListeners() {
+            document.querySelectorAll('.edit-usuario-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const nome = e.currentTarget.dataset.nome;
+                    const email = e.currentTarget.dataset.email;
+                    const categoria = e.currentTarget.dataset.categoria;
+
+                    modalUsuarioId.value = id;
+                    modalUsuarioNomeAtual.textContent = nome; // Exibe o nome atual no título do modal
+                    modalUsuarioNome.value = nome;
+                    modalUsuarioEmail.value = email;
+                    modalUsuarioCategoria.value = categoria;
+                    modalUsuarioNovaSenha.value = ''; // Limpa campos de senha ao abrir
+                    modalUsuarioConfirmaSenha.value = '';
+                    modalEditUsuarioMessage.classList.add('hidden'); // Oculta mensagem
+
+                    editUsuarioModal.show();
+                };
+            });
+
+            document.querySelectorAll('.delete-usuario-btn').forEach(button => {
+                button.onclick = async (e) => {
+                    if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+                    const id = e.currentTarget.dataset.id;
+                    const email = e.currentTarget.dataset.email; // Necessário para deletar no auth.users
+                    await deleteUsuario(id, email);
+                };
+            });
+        }
+
+        async function updateUsuario() {
+            if (!checkPermission(['admin'])) return;
+            const id = modalUsuarioId.value;
+            const nome = modalUsuarioNome.value;
+            const email = modalUsuarioEmail.value;
+            const categoria = modalUsuarioCategoria.value;
+            const novaSenha = modalUsuarioNovaSenha.value;
+            const confirmaSenha = modalUsuarioConfirmaSenha.value;
+
+            // Validações básicas
+            if (!nome || !email || !categoria) {
+                showMessage(modalEditUsuarioMessage, 'Todos os campos obrigatórios devem ser preenchidos.', 'danger');
+                return;
+            }
+            if (novaSenha && novaSenha !== confirmaSenha) {
+                showMessage(modalEditUsuarioMessage, 'A nova senha e a confirmação não coincidem.', 'danger');
+                return;
+            }
+
+            try {
+                // Atualizar dados na tabela 'usuarios'
+                const { data, error } = await supabase
+                    .from('usuarios')
+                    .update({ nome, email, categoria })
+                    .eq('id', id)
+                    .select();
+
+                if (error) {
+                    throw error;
+                }
+
+                // Atualizar senha no Auth do Supabase, se fornecida
+                if (novaSenha) {
+                    const { data: updateAuthData, error: updateAuthError } = await supabase.auth.updateUser({
+                        email: email, // O email atualizado (ou o original se não mudou)
+                        password: novaSenha
+                    });
+                    if (updateAuthError) {
+                        throw updateAuthError;
+                    }
+                }
+
+                showMessage(modalEditUsuarioMessage, 'Usuário atualizado com sucesso!', 'success');
+                loadUsuarios(); // Recarrega a lista
+                editUsuarioModal.hide(); // Fecha o modal
+            } catch (error) {
+                console.error('Erro ao atualizar usuário:', error.message);
+                showMessage(modalEditUsuarioMessage, `Erro ao atualizar usuário: ${error.message}`, 'danger');
+            }
+        }
+
+        async function deleteUsuario(id, email) {
+            if (!checkPermission(['admin'])) return;
+            try {
+                // Tentar deletar do auth.users primeiro
+                // Nota: O Supabase exige que um usuário esteja logado para deletar outro usuário.
+                // Se a intenção é que um admin possa deletar qualquer usuário, isso precisaria ser feito
+                // via uma função de servidor (Edge Function) do Supabase ou via a API REST com a service_role key.
+                // Para simplificar, esta implementação deleta apenas da tabela 'usuarios'.
+                // Para uma deleção completa (Auth + Public Table), uma Cloud Function seria ideal.
+
+                // Por enquanto, apenas remove da tabela pública 'usuarios'
+                const { error: usuarioError } = await supabase
+                    .from('usuarios')
+                    .delete()
+                    .eq('id', id);
+
+                if (usuarioError) {
+                    throw usuarioError;
+                }
+
+                // Em um cenário real, você precisaria de uma Edge Function ou Admin API para deletar do `auth.users`
+                // Exemplo simplificado (NÃO FUNCIONARÁ DIRETAMENTE NO CLIENTE SEM ADMIN PRIVILEGES):
+                // const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+                // if (authError) { /* handle error */ }
+
+                showMessage(usuarioConsultaMessage, 'Usuário excluído com sucesso!', 'success');
+                loadUsuarios(); // Recarrega a lista
+            } catch (error) {
+                console.error('Erro ao excluir usuário:', error.message);
+                showMessage(usuarioConsultaMessage, `Erro ao excluir usuário: ${error.message}`, 'danger');
+            }
+        }
+
+        // --- Funções de CRUD - Filiais ---
+
+        async function addFilial(nome, responsavelEmail) {
+            if (!checkPermission(['admin'])) return;
+            try {
+                // Verificar se o responsável existe e obter o ID
+                const { data: responsavelData, error: responsavelError } = await supabase
+                    .from('usuarios')
+                    .select('id, nome')
+                    .or(`email.eq.${responsavelEmail},nome.ilike.%${responsavelEmail}%`)
+                    .single();
+
+                if (responsavelError || !responsavelData) {
+                    showMessage(filialMessage, 'Erro: Responsável não encontrado. Certifique-se de que o email ou nome está correto.', 'danger');
+                    return;
+                }
+
+                // Inserir filial
+                const { data, error } = await supabase
+                    .from('filiais')
+                    .insert([{ nome, responsavel_id: responsavelData.id, responsavel_nome: responsavelData.nome }])
+                    .select();
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage(filialMessage, 'Filial cadastrada com sucesso!', 'success');
+                filialForm.reset();
+                loadFiliais();
+                loadFiliaisIntoSelect2(); // Recarrega as filiais no Select2 de troca
+                loadResponsaveisForFilter(selectResponsavelFilter); // Recarrega responsáveis no filtro do dashboard
+            } catch (error) {
+                console.error('Erro ao cadastrar filial:', error.message);
+                showMessage(filialMessage, `Erro ao cadastrar filial: ${error.message}`, 'danger');
+            }
+        }
+
+        async function loadFiliais(searchTerm = '') {
+            if (!checkPermission(['admin', 'operador', 'visualizador'])) { // Operadores e visualizadores podem ver filiais
+                filiaisTableBody.innerHTML = '';
+                showMessage(filialConsultaMessage, 'Você não tem permissão para visualizar filiais.', 'danger');
+                return;
+            }
+            try {
+                let query = supabase.from('filiais').select('id, nome, responsavel_id, responsavel_nome').order('nome', { ascending: true }); // Seleciona responsavel_nome diretamente
+
+                if (searchTerm) {
+                    // Ajuste aqui: busca diretamente nos campos da tabela filiais
+                    query = query.or(`nome.ilike.%${searchTerm}%,responsavel_nome.ilike.%${searchTerm}%`);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    throw error;
+                }
+
+                filiaisTableBody.innerHTML = '';
+                if (data.length === 0) {
+                    showMessage(filialConsultaMessage, 'Nenhuma filial encontrada.', 'info');
+                    return;
+                }
+                data.forEach(filial => {
+                    const row = filiaisTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${filial.nome}</td>
+                        <td>${filial.responsavel_nome ? filial.responsavel_nome : 'N/A'}</td> <td>
+                            <button class="btn btn-sm btn-info edit-filial-btn" data-id="${filial.id}"
+                                data-nome="${filial.nome}" data-responsavel-id="${filial.responsavel_id}">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-filial-btn" data-id="${filial.id}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                });
+                filialConsultaMessage.classList.add('hidden');
+                addFilialEventListeners();
+            } catch (error) {
+                console.error('Erro ao carregar filiais:', error.message);
+                showMessage(filialConsultaMessage, `Erro ao carregar filiais: ${error.message}`, 'danger');
+            }
+        }
+
+        function addFilialEventListeners() {
+            document.querySelectorAll('.edit-filial-btn').forEach(button => {
+                button.onclick = async (e) => {
+                    if (!checkPermission(['admin'])) return;
+                    const id = e.currentTarget.dataset.id;
+                    const nome = e.currentTarget.dataset.nome;
+                    const responsavelId = e.currentTarget.dataset.responsavelId;
+
+                    // Buscar email do responsável atual para exibir no campo
+                    const { data: responsavel, error } = await supabase
+                        .from('usuarios')
+                        .select('email')
+                        .eq('id', responsavelId)
+                        .single();
+
+                    modalFilialId.value = id;
+                    modalFilialNome.textContent = nome;
+                    modalResponsavelEmail.value = responsavel ? responsavel.email : '';
+                    modalEditFilialMessage.classList.add('hidden');
+
+                    editFilialResponsavelModal.show();
+                };
+            });
+
+            document.querySelectorAll('.delete-filial-btn').forEach(button => {
+                button.onclick = async (e) => {
+                    if (!checkPermission(['admin'])) return;
+                    if (!confirm('Tem certeza que deseja excluir esta filial? Esta ação não pode ser desfeita.')) return;
+                    const id = e.currentTarget.dataset.id;
+                    await deleteFilial(id);
+                };
+            });
+        }
+
+        async function updateFilialResponsavel() {
+            if (!checkPermission(['admin'])) return;
+            const filialId = modalFilialId.value;
+            const novoResponsavelEmail = modalResponsavelEmail.value;
+
+            try {
+                // Verificar se o novo responsável existe e obter o ID e nome
+                const { data: responsavelData, error: responsavelError } = await supabase
+                    .from('usuarios')
+                    .select('id, nome')
+                    .or(`email.eq.${novoResponsavelEmail},nome.ilike.%${novoResponsavelEmail}%`)
+                    .single();
+
+                if (responsavelError || !responsavelData) {
+                    showMessage(modalEditFilialMessage, 'Erro: Novo responsável não encontrado.', 'danger');
+                    return;
+                }
+
+                // Atualizar filial
+                const { error } = await supabase
+                    .from('filiais')
+                    .update({ responsavel_id: responsavelData.id, responsavel_nome: responsavelData.nome })
+                    .eq('id', filialId);
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage(modalEditFilialMessage, 'Responsável da filial atualizado com sucesso!', 'success');
+                loadFiliais(); // Recarrega a lista
+                loadResponsaveisForFilter(selectResponsavelFilter); // Recarrega responsáveis no filtro do dashboard
+                editFilialResponsavelModal.hide();
+            } catch (error) {
+                console.error('Erro ao atualizar responsável da filial:', error.message);
+                showMessage(modalEditFilialMessage, `Erro ao atualizar responsável: ${error.message}`, 'danger');
+            }
+        }
+
+        async function deleteFilial(id) {
+            if (!checkPermission(['admin'])) return;
+            try {
+                const { error } = await supabase
+                    .from('filiais')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage(filialConsultaMessage, 'Filial excluída com sucesso!', 'success');
+                loadFiliais();
+                loadFiliaisIntoSelect2(); // Recarrega as filiais no Select2 de troca
+                loadResponsaveisForFilter(selectResponsavelFilter); // Recarrega responsáveis no filtro do dashboard
+            } catch (error) {
+                console.error('Erro ao excluir filial:', error.message);
+                showMessage(filialConsultaMessage, `Erro ao excluir filial: ${error.message}`, 'danger');
+            }
+        }
+
+        // --- Funções de CRUD - Equipamentos ---
+
+        async function addEquipamento(placa, tipo) {
+            if (!checkPermission(['admin'])) return;
+            try {
+                // Verificar se a placa já existe
+                const { data: existingEquipamento, error: existingEquipamentoError } = await supabase
+                    .from('equipamentos')
+                    .select('id')
+                    .eq('placa', placa)
+                    .single();
+
+                if (existingEquipamentoError && existingEquipamentoError.code !== 'PGRST116') { // PGRST116 = No rows found
+                    throw existingEquipamentoError;
+                }
+                if (existingEquipamento) {
+                    showMessage(equipamentoMessage, 'Erro: Placa já cadastrada.', 'danger');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('equipamentos')
+                    .insert([{ placa, tipo, status: 'Ativo' }]); // Status inicial como "Ativo"
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage(equipamentoMessage, 'Equipamento cadastrado com sucesso!', 'success');
+                equipamentoForm.reset();
+                loadEquipamentos(); // Recarrega a lista
+                loadPlacasEquipamentosForDatalist(); // Atualiza a datalist
+            } catch (error) {
+                console.error('Erro ao cadastrar equipamento:', error.message);
+                showMessage(equipamentoMessage, `Erro ao cadastrar equipamento: ${error.message}`, 'danger');
+            }
+        }
+
+        async function loadEquipamentos(searchTerm = '') {
+            if (!checkPermission(['admin', 'operador', 'visualizador'])) {
+                equipamentosTableBody.innerHTML = '';
+                showMessage(equipamentoConsultaMessage, 'Você não tem permissão para visualizar equipamentos.', 'danger');
+                return;
+            }
+            try {
+                let query = supabase.from('equipamentos').select('*').order('placa', { ascending: true });
+
+                if (searchTerm) {
+                    query = query.or(`placa.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    throw error;
+                }
+
+                equipamentosTableBody.innerHTML = '';
+                if (data.length === 0) {
+                    showMessage(equipamentoConsultaMessage, 'Nenhum equipamento encontrado.', 'info');
+                    return;
+                }
+                data.forEach(equipamento => {
+                    const row = equipamentosTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${equipamento.placa}</td>
+                        <td>${equipamento.tipo}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info edit-equipamento-btn" data-id="${equipamento.id}"
+                                data-placa="${equipamento.placa}" data-tipo="${equipamento.tipo}">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-equipamento-btn" data-id="${equipamento.id}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                });
+                equipamentoConsultaMessage.classList.add('hidden');
+                addEquipamentoEventListeners();
+            } catch (error) {
+                console.error('Erro ao carregar equipamentos:', error.message);
+                showMessage(equipamentoConsultaMessage, `Erro ao carregar equipamentos: ${error.message}`, 'danger');
+            }
+        }
+
+        function addEquipamentoEventListeners() {
+            document.querySelectorAll('.edit-equipamento-btn').forEach(button => {
+                button.onclick = (e) => {
+                    if (!checkPermission(['admin'])) return;
+                    const id = e.currentTarget.dataset.id;
+                    const placa = e.currentTarget.dataset.placa;
+                    const tipo = e.currentTarget.dataset.tipo;
+
+                    modalEquipamentoId.value = id;
+                    modalEquipamentoPlaca.textContent = placa;
+                    modalEquipamentoTipo.value = tipo;
+                    modalEditEquipamentoMessage.classList.add('hidden');
+
+                    editEquipamentoModal.show();
+                };
+            });
+
+            document.querySelectorAll('.delete-equipamento-btn').forEach(button => {
+                button.onclick = async (e) => {
+                    if (!checkPermission(['admin'])) return;
+                    if (!confirm('Tem certeza que deseja excluir este equipamento? Esta ação não pode ser desfeita.')) return;
+                    const id = e.currentTarget.dataset.id;
+                    await deleteEquipamento(id);
+                };
+            });
+        }
+
+        async function updateEquipamento() {
+            if (!checkPermission(['admin'])) return;
+            const id = modalEquipamentoId.value;
+            const tipo = modalEquipamentoTipo.value;
+
+            try {
+                const { error } = await supabase
+                    .from('equipamentos')
+                    .update({ tipo })
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage(modalEditEquipamentoMessage, 'Equipamento atualizado com sucesso!', 'success');
+                loadEquipamentos();
+                editEquipamentoModal.hide();
+            }
+            catch (error) {
+                console.error('Erro ao atualizar equipamento:', error.message);
+                showMessage(modalEditEquipamentoMessage, `Erro ao atualizar equipamento: ${error.message}`, 'danger');
+            }
+        }
+
+        async function deleteEquipamento(id) {
+            if (!checkPermission(['admin'])) return;
+            try {
+                const { error } = await supabase
+                    .from('equipamentos')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage(equipamentoConsultaMessage, 'Equipamento excluído com sucesso!', 'success');
+                loadEquipamentos();
+                loadPlacasEquipamentosForDatalist(); // Atualiza a datalist
+            } catch (error) {
+                console.error('Erro ao excluir equipamento:', error.message);
+                showMessage(equipamentoConsultaMessage, `Erro ao excluir equipamento: ${error.message}`, 'danger');
+            }
+        }
+
+        // --- Funções de Troca de Filial ---
+
+        async function loadPlacasEquipamentosForDatalist() {
+            if (!checkPermission(['admin', 'operador'])) return;
+            try {
+                const { data, error } = await supabase
+                    .from('equipamentos')
+                    .select('placa')
+                    .order('placa', { ascending: true });
+
+                if (error) {
+                    throw error;
+                }
+
+                equipamentosListDatalist.innerHTML = '';
+                data.forEach(equipamento => {
+                    const option = document.createElement('option');
+                    option.value = equipamento.placa;
+                    equipamentosListDatalist.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar placas de equipamentos:', error.message);
+                // Não exibe mensagem na tela para datalist, apenas no console
+            }
+        }
+
+        async function loadFiliaisIntoSelect2() {
+            if (!checkPermission(['admin', 'operador', 'visualizador'])) return; // Permite que todos vejam as filiais
+            try {
+                const { data, error } = await supabase
+                    .from('filiais')
+                    .select('id, nome')
+                    .order('nome', { ascending: true });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Limpa o select antes de adicionar novas opções
+                $('#novaFilial').empty().append('<option value="">Selecione...</option>');
+                $('#selectFiliais').empty(); // Para o Select2 no dashboard
+
+                data.forEach(filial => {
+                    const option = new Option(filial.nome, filial.id, false, false);
+                    $('#novaFilial').append(option);
+
+                    // Adiciona as mesmas opções para o Select2 do dashboard
+                    const optionDashboard = new Option(filial.nome, filial.id, false, false);
+                    $('#selectFiliais').append(optionDashboard);
+                });
+
+                // Inicializa Select2 no elemento
+                // Certifica-se de que o Select2 só é inicializado uma vez
+                if (!$('#selectFiliais').data('select2')) {
+                    $('#selectFiliais').select2({
+                        theme: 'bootstrap-5',
+                        width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+                        placeholder: $(this).data('placeholder'),
+                        closeOnSelect: false, // Permite manter o dropdown aberto para múltiplas seleções
+                    });
+                } else {
+                    // Se já inicializado, apenas notifica Select2 que as opções mudaram
+                    $('#selectFiliais').trigger('change');
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar filiais para Select2:', error.message);
+            }
+        }
+
+        async function registerTrocaFilial(placa, novaFilialId, dataExecucao) {
+            if (!checkPermission(['admin', 'operador'])) return;
+            try {
+                // 1. Obter o ID do equipamento pela placa
+                const { data: equipamentoData, error: equipamentoError } = await supabase
+                    .from('equipamentos')
+                    .select('id')
+                    .eq('placa', placa)
+                    .single();
+
+                if (equipamentoError || !equipamentoData) {
+                    showMessage(trocaFilialMessage, 'Erro: Equipamento com esta placa não encontrado.', 'danger');
+                    return;
+                }
+                const equipamentoId = equipamentoData.id;
+
+                // 2. Inserir o registro de troca de filial
+                const { error: trocaError } = await supabase
+                    .from('historico_filiais')
+                    .insert([{
+                        equipamento_id: equipamentoId,
+                        filial_id: novaFilialId,
+                        data_inicio: dataExecucao,
+                        data_fim: null, // Nova filial não tem data_fim inicial
+                        tipo_movimentacao: 'Troca Fixa'
+                    }]);
+
+                if (trocaError) {
+                    throw trocaError;
+                }
+
+                // 3. Atualizar o equipamento para apontar para a nova filial como fixa
+                const { error: updateEquipamentoError } = await supabase
+                    .from('equipamentos')
+                    .update({ filial_fixa_id: novaFilialId })
+                    .eq('id', equipamentoId);
+
+                if (updateEquipamentoError) {
+                    throw updateEquipamentoError;
+                }
+
+                showMessage(trocaFilialMessage, 'Troca de filial registrada e equipamento atualizado com sucesso!', 'success');
+                trocaFilialForm.reset();
+                loadEquipamentosDashboard(); // Recarrega o dashboard
+            } catch (error) {
+                console.error('Erro ao registrar troca de filial:', error.message);
+                showMessage(trocaFilialMessage, `Erro ao registrar troca de filial: ${error.message}`, 'danger');
+            }
+        }
+
+        // --- Funções do Dashboard Kanban ---
+
+        async function loadResponsaveisForFilter(selectElement) {
+            if (!checkPermission(['admin', 'operador', 'visualizador'])) return;
+            try {
+                const { data, error } = await supabase
+                    .from('usuarios')
+                    .select('id, nome')
+                    .order('nome', { ascending: true });
+
+                if (error) {
+                    throw error;
+                }
+
+                selectElement.innerHTML = '<option value="">Todos os Responsáveis</option>';
+                data.forEach(responsavel => {
+                    const option = document.createElement('option');
+                    option.value = responsavel.id;
+                    option.textContent = responsavel.nome;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar responsáveis para filtro:', error.message);
+            }
+        }
+
+
+        async function loadEquipamentosDashboard() {
+            if (!checkPermission(['admin', 'operador', 'visualizador'])) {
+                kanbanBoard.innerHTML = '';
+                kanbanMessage.textContent = 'Você não tem permissão para visualizar o dashboard.';
+                kanbanMessage.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const startDate = filterStartDateInput.value;
+                const endDate = filterEndDateInput.value;
+                const searchTerm = filterSearchInput.value.toLowerCase();
+                const selectedResponsavelId = selectResponsavelFilter.value;
+                const selectedFilialIds = $('#selectFiliais').val(); // Array de IDs das filiais selecionadas pelo Select2
+
+                let query = supabase
+                    .from('equipamentos')
+                    .select(`
+                        id,
+                        placa,
+                        tipo,
+                        status,
+                        filial_fixa_id,
+                        filiais!filial_fixa_id(nome, responsavel_id),
+                        historico_filiais(
+                            id,
+                            data_inicio,
+                            data_fim,
+                            filial_id,
+                            filiais(nome, responsavel_id),
+                            tipo_movimentacao
+                        )
+                    `)
+                    .eq('status', 'Ativo') // Apenas equipamentos ativos
+                    .order('placa', { ascending: true });
+
+                // Aplicar filtro de texto (placa, tipo)
+                if (searchTerm) {
+                    query = query.or(`placa.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`);
+                }
+
+                const { data: equipamentos, error } = await query;
+
+                if (error) {
+                    throw error;
+                }
+
+                // Filtragem pós-fetch para filtros mais complexos ou que não podem ser feitos diretamente na query Supabase (ex: responsavel)
+                const filteredEquipamentos = equipamentos.filter(eq => {
+                    let filialAtualNome = 'Sem Filial Definida';
+                    let filialAtualId = null;
+                    let responsavelDaFilialAtual = null;
+
+                    // Prioriza a filial fixa, se houver
+                    if (eq.filial_fixa_id && eq.filiais) {
+                        filialAtualNome = eq.filiais.nome;
+                        filialAtualId = eq.filial_fixa_id;
+                        responsavelDaFilialAtual = eq.filiais.responsavel_id;
+                    }
+
+                    // Se não tiver filial fixa, ou se houver histórico mais recente, busca a filial atual no histórico
+                    if (eq.historico_filiais && eq.historico_filiais.length > 0) {
+                        const trocasFixas = eq.historico_filiais.filter(h => h.tipo_movimentacao === 'Troca Fixa');
+                        const maisRecenteHistorico = trocasFixas.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio))[0];
+
+                        if (maisRecenteHistorico && maisRecenteHistorico.filiais) {
+                            filialAtualNome = maisRecenteHistorico.filiais.nome;
+                            filialAtualId = maisRecenteHistorico.filial_id;
+                            responsavelDaFilialAtual = maisRecenteHistorico.filiais.responsavel_id;
+                        }
+                    }
+
+                    // Filtro de data (aplica ao histórico, então o equipamento deve ter pelo menos um movimento dentro do período)
+                    // Para o dashboard, a data se refere ao histórico de movimentação.
+                    let hasRelevantHistoryInDateRange = true;
+                    if (startDate || endDate) {
+                        hasRelevantHistoryInDateRange = eq.historico_filiais.some(h => {
+                            const h_data_inicio = new Date(h.data_inicio);
+                            const h_data_fim = h.data_fim ? new Date(h.data_fim) : null;
+
+                            const isAfterStartDate = !startDate || h_data_inicio >= new Date(startDate);
+                            const isBeforeEndDate = !endDate || (h_data_fim && h_data_fim <= new Date(endDate)) || (!h_data_fim && h_data_inicio <= new Date(endDate));
+
+                            return isAfterStartDate && isBeforeEndDate;
+                        });
+                    }
+
+                    // Filtro de responsavel
+                    const matchesResponsavel = !selectedResponsavelId || (responsavelDaFilialAtual && String(responsavelDaFilialAtual) === selectedResponsavelId);
+
+                    // Filtro de filiais selecionadas (Select2)
+                    const matchesSelectedFilial = selectedFilialIds.length === 0 || selectedFilialIds.includes(String(filialAtualId));
+
+
+                    // Pesquisa de texto no nome da filial atual (se não foi coberto pelo searchTerm inicial)
+                    const matchesFilialSearchTerm = searchTerm === '' || filialAtualNome.toLowerCase().includes(searchTerm);
+
+
+                    return hasRelevantHistoryInDateRange && matchesResponsavel && matchesSelectedFilial && matchesFilialSearchTerm;
+                });
+
+                kanbanBoard.innerHTML = ''; // Limpa o board
+                kanbanMessage.classList.add('hidden'); // Oculta a mensagem de "nenhum resultado"
+
+                if (!filteredEquipamentos || filteredEquipamentos.length === 0) {
+                    kanbanMessage.textContent = 'NENHUM RESULTADO ENCONTRADO COM O FILTRO SELECIONADO!';
+                    kanbanMessage.classList.remove('hidden');
+                    return;
+                }
+
+                // Agrupar os equipamentos filtrados por filial atual
+                const equipamentosPorFilial = new Map();
+
+                filteredEquipamentos.forEach(eq => {
+                    let filialAtualNome = 'Sem Filial Definida';
+                    // Re-determinar a filial atual baseada no histórico mais recente para exibição consistente
+                    if (eq.filial_fixa_id && eq.filiais) {
+                        filialAtualNome = eq.filiais.nome;
+                    }
+
+                    if (eq.historico_filiais && eq.historico_filiais.length > 0) {
+                        const trocasFixas = eq.historico_filiais.filter(h => h.tipo_movimentacao === 'Troca Fixa');
+                        const maisRecenteHistorico = trocasFixas.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio))[0];
+
+                        if (maisRecenteHistorico && maisRecenteHistorico.filiais) {
+                            filialAtualNome = maisRecenteHistorico.filiais.nome;
+                        }
+                    }
+
+                    const eqData = {
+                        id: eq.id,
+                        placa: eq.placa,
+                        tipo: eq.tipo,
+                        status: eq.status,
+                        filial_atual: filialAtualNome,
+                        historico_relevante: eq.historico_filiais // Use o histórico completo aqui para mostrar detalhes
+                            .map(h => ({
+                                filial_nome: h.filiais ? h.filiais.nome : 'N/A',
+                                data_inicio: h.data_inicio,
+                                data_fim: h.data_fim,
+                                tipo_movimentacao: h.tipo_movimentacao
+                            }))
+                            .sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio))
+                    };
+
+                    if (!equipamentosPorFilial.has(filialAtualNome)) {
+                        equipamentosPorFilial.set(filialAtualNome, []);
+                    }
+                    equipamentosPorFilial.get(filialAtualNome).push(eqData);
+                });
+
+
+                // Ordena as filiais por nome
+                const filiaisOrdenadas = Array.from(equipamentosPorFilial.keys()).sort();
+
+                if (filiaisOrdenadas.length === 0) {
+                    kanbanMessage.textContent = 'NENHUM RESULTADO ENCONTRADO COM O FILTRO SELECIONADO!';
+                    kanbanMessage.classList.remove('hidden');
+                    return;
+                }
+
+                filiaisOrdenadas.forEach(filialNome => {
+                    const columnDiv = document.createElement('div');
+                    columnDiv.classList.add('kanban-column', 'col-lg-3', 'col-md-4', 'col-sm-6', 'col-12'); // Responsive columns
+                    columnDiv.innerHTML = `
+                        <div class="kanban-column-header">
+                            ${filialNome}
+                            <span>${equipamentosPorFilial.get(filialNome).length}</span>
+                        </div>
+                    `;
+
+                    equipamentosPorFilial.get(filialNome).forEach(eq => {
+                        let historicoHtml = '';
+                        if (eq.historico_relevante && eq.historico_relevante.length > 0) {
+                            historicoHtml += `<small>Histórico (${eq.historico_relevante.length} ${eq.historico_relevante.length > 1 ? 'movs' : 'mov'}):</small><br>`;
+                            eq.historico_relevante.forEach(h => {
+                                const dataFim = h.data_fim ? ` até ${new Date(h.data_fim).toLocaleDateString('pt-BR')}` : '';
+                                historicoHtml += `<small>- ${h.tipo_movimentacao} em ${h.filial_nome} (${new Date(h.data_inicio).toLocaleDateString('pt-BR')}${dataFim})</small><br>`;
+                            });
+                        }
+
+                        const cardDiv = document.createElement('div');
+                        cardDiv.classList.add('kanban-card');
+                        cardDiv.innerHTML = `
+                            <div class="kanban-card-title">${eq.placa} - ${eq.tipo}</div>
+                            <div class="kanban-card-meta">Status: ${eq.status}</div>
+                            <div class="kanban-card-meta">Filial Atual: ${eq.filial_atual}</div>
+                            ${historicoHtml ? `<div class="kanban-card-meta mt-2">${historicoHtml}</div>` : ''}
+                        `;
+                        columnDiv.appendChild(cardDiv);
+                    });
+                    kanbanBoard.appendChild(columnDiv);
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar dashboard (Kanban):', error.message);
+                kanbanBoard.innerHTML = ''; // Limpa o board
+                kanbanMessage.textContent = `Erro ao carregar dados do dashboard: ${error.message}`;
+                kanbanMessage.classList.remove('hidden'); // Mostra a mensagem de erro
+            }
+        }
+
+
+        // --- Event Listeners ---
+
+        // Login Form
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                signIn(email, password);
+            });
+        }
+
+        // Sidebar Toggles
+        if (mobileSidebarToggleBtn) {
+            mobileSidebarToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-expanded');
+            });
+        }
+
+        if (desktopSidebarToggleBtn) {
+            desktopSidebarToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+        }
+
+        // Logout
+        if (sidebarLogoutLink) {
+            sidebarLogoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                signOut();
+            });
+        }
+
+        // Navegação da Sidebar
+        document.querySelectorAll('#sidebar .nav-link[data-screen]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetScreenId = e.currentTarget.dataset.screen;
+                const screenElement = screens[targetScreenId];
+
+                let allowedRoles = ['admin', 'operador', 'visualizador']; // Default for Dashboard
+
+                if (targetScreenId === 'cadastroUsuariosScreen' || targetScreenId === 'cadastroFiliaisScreen' || targetScreenId === 'cadastroEquipamentosScreen') {
+                    allowedRoles = ['admin'];
+                } else if (targetScreenId === 'trocaFilialScreen') {
+                    allowedRoles = ['admin', 'operador'];
+                }
+
+                if (checkPermission(allowedRoles)) {
+                    showScreen(screenElement);
+                    // Specific load functions for each screen
+                    if (targetScreenId === 'mainDashboardScreen') {
+                        loadEquipamentosDashboard();
+                    } else if (targetScreenId === 'cadastroUsuariosScreen') {
+                        loadUsuarios();
+                    } else if (targetScreenId === 'cadastroFiliaisScreen') {
+                        loadFiliais();
+                    } else if (targetScreenId === 'cadastroEquipamentosScreen') {
+                        loadEquipamentos();
+                    } else if (targetScreenId === 'trocaFilialScreen') {
+                        loadPlacasEquipamentosForDatalist();
+                        loadFiliaisIntoSelect2();
+                    }
+                }
+            });
+        });
+
+        // Botões de Voltar
+        document.querySelectorAll('.btn-secondary[id^="backToMainDashboardFrom"]').forEach(button => {
+            button.addEventListener('click', () => {
+                showScreen(screens.mainDashboardScreen);
+                loadEquipamentosDashboard(); // Recarrega dashboard ao voltar
+            });
+        });
+
+
+        // Formulário de Usuários
+        if (usuarioForm) {
+            usuarioForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nome = nomeUsuarioInput.value;
+                const email = emailUsuarioInput.value;
+                const senha = senhaUsuarioInput.value;
+                const categoria = categoriaUsuarioSelect.value;
+                addUsuario(nome, email, senha, categoria);
+            });
+        }
+        if (usuarioSearchBtn) {
+            usuarioSearchBtn.addEventListener('click', () => {
+                loadUsuarios(usuarioSearchInput.value);
+            });
+        }
+        if (usuarioClearSearchBtn) {
+            usuarioClearSearchBtn.addEventListener('click', () => {
+                usuarioSearchInput.value = '';
+                loadUsuarios();
+            });
+        }
+        if (saveUsuarioBtn) {
+            saveUsuarioBtn.addEventListener('click', updateUsuario);
+        }
+
+        // Formulário de Filiais
+        if (filialForm) {
+            filialForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nome = nomeFilialInput.value;
+                const responsavelEmail = responsavelEmailInput.value;
+                addFilial(nome, responsavelEmail);
+            });
+        }
+        if (filialSearchBtn) {
+            filialSearchBtn.addEventListener('click', () => {
+                loadFiliais(filialSearchInput.value);
+            });
+        }
+        if (filialClearSearchBtn) {
+            filialClearSearchBtn.addEventListener('click', () => {
+                filialSearchInput.value = '';
+                loadFiliais();
+            });
+        }
+        if (saveFilialResponsavelBtn) {
+            saveFilialResponsavelBtn.addEventListener('click', updateFilialResponsavel);
+        }
+
+        // Formulário de Equipamentos
+        if (equipamentoForm) {
+            equipamentoForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const placa = placaInput.value;
+                const tipo = tipoEquipamentoSelect.value;
+                addEquipamento(placa, tipo);
+            });
+        }
+        if (equipamentoSearchBtn) {
+            equipamentoSearchBtn.addEventListener('click', () => {
+                loadEquipamentos(equipamentoSearchInput.value);
+            });
+        }
+        if (equipamentoClearSearchBtn) {
+            equipamentoClearSearchBtn.addEventListener('click', () => {
+                equipamentoSearchInput.value = '';
+                loadEquipamentos();
+            });
+        }
+        if (saveEquipamentoBtn) {
+            saveEquipamentoBtn.addEventListener('click', updateEquipamento);
+        }
+
+        // Formulário de Troca de Filial
+        if (trocaFilialForm) {
+            trocaFilialForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const placa = placaEquipamentoInput.value;
+                const novaFilialId = novaFilialSelect.value;
+                const dataExecucao = dataExecucaoInput.value;
+
+                if (!placa || !novaFilialId || !dataExecucao) {
+                    showMessage(trocaFilialMessage, 'Por favor, preencha todos os campos.', 'danger');
+                    return;
+                }
+                registerTrocaFilial(placa, novaFilialId, dataExecucao);
+            });
+        }
+
+
+        // Dashboard Filters
+        if (filterDashboardBtn) {
+            filterDashboardBtn.addEventListener('click', loadEquipamentosDashboard);
+        }
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                filterSearchInput.value = '';
+                filterStartDateInput.value = '';
+                filterEndDateInput.value = '';
+                selectResponsavelFilter.value = '';
+                $('#selectFiliais').val(null).trigger('change'); // Limpa Select2
+                loadEquipamentosDashboard();
+            });
+        }
+
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            // Não verifica o estado da sessão ao carregar a página para exibir a sidebar por padrão.
+            // A role do usuário é definida como 'admin' diretamente para testes.
+            // Para um ambiente de produção, esta lógica precisaria ser reintegrada e funcional.
+
+            // Definir tela inicial após "login" automático de teste
+            showScreen(screens.mainDashboardScreen);
+            loadFiliaisIntoSelect2(); // Carrega filiais para Select2
+            loadResponsaveisForFilter(selectResponsavelFilter); // Carrega responsáveis para o filtro
+            loadEquipamentosDashboard(); // Carrega o dashboard
+
+
+            // Adiciona listener para o evento de redimensionamento para controlar a sidebar em mobile
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    document.body.classList.remove('sidebar-expanded'); // Garante que não está expandida em desktop
+                }
+            });
+        });
+
+    </script>
 </body>
 </html>
