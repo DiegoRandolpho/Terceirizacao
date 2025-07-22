@@ -381,12 +381,8 @@
     <script>
         'use strict';
 
-        // --- Configuração do Supabase (COM OS SEUS VALORES REAIS) ---
-        const SUPABASE_URL = 'https://jtikvjomzduvjrrrsfeg.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg';
-
-        // Inicializa o cliente Supabase
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- Variáveis Globais (definidas aqui para serem acessíveis por todas as funções) ---
+        let supabase; // Será inicializado dentro do DOMContentLoaded
 
         // --- Referências de Elementos do DOM ---
         // Login Screen Elements
@@ -756,6 +752,14 @@
 
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', async () => {
+            // --- Configuração do Supabase (COM OS SEUS VALORES REAIS) ---
+            const SUPABASE_URL = 'https://jtikvjomzduvjrrrsfeg.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg';
+
+            // Inicializa o cliente Supabase AGORA, após o DOM estar pronto e a lib Supabase carregada
+            supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
             // Verifica o status de autenticação ao carregar a página
             const { data: { session } } = await supabase.auth.getSession();
 
