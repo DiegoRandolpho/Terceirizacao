@@ -840,9 +840,87 @@
         // O URL do seu projeto Supabase (encontrado em Project Settings -> API)
         const supabaseUrl = "https://jtikvjomzduvjrrrsfeg.supabase.co"; // SEU URL REAL AQUI
         // A sua chave "anon" ou "public" do Supabase (encontrada em Project Settings -> API)
-        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuCprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg"; // SUA CHAVE ANON REAL AQUI
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg"; // SUA CHAVE ANON REAL AQUI
 
         export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // --- Funções de Navegação de Tela ---
+        function showScreen(screenId) {
+            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroUsuariosScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen'];
+            screens.forEach(id => {
+                const screenElement = document.getElementById(id);
+                if (screenElement) screenElement.classList.add('hidden');
+            });
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) targetScreen.classList.remove('hidden');
+
+            // Resetar mensagens
+            document.querySelectorAll('.message').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('alert-success', 'alert-danger', 'alert-info');
+            });
+
+            // Atualiza o estado ativo da sidebar e colapsa outros submenus
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Fecha todos os colapsos, exceto o que está sendo aberto (se houver)
+            document.querySelectorAll('.collapse.show').forEach(collapseEl => {
+                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
+                if (bsCollapse) {
+                    const toggleLink = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
+                    // Só esconde se não for o pai do link clicado atualmente
+                    if (!toggleLink || !toggleLink.contains(document.querySelector(`[data-screen="${screenId}"]`))) {
+                         bsCollapse.hide();
+                    }
+                }
+            });
+
+            const clickedLink = document.querySelector(`[data-screen="${screenId}"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+                // Se o link está dentro de um collapse, garante que o collapse pai esteja aberto
+                const parentCollapse = clickedLink.closest('.collapse');
+                if (parentCollapse) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(parentCollapse);
+                    if (bsCollapse && !parentCollapse.classList.contains('show')) {
+                        bsCollapse.show();
+                    }
+                }
+            }
+
+
+            if (screenId === 'mainDashboardScreen') {
+                loadEquipamentosDashboard(); // Carrega o dashboard automaticamente ao ir para a tela principal
+                // Inicializa Select2 para o filtro de filiais
+                $('#selectFiliais').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: $(this).data('placeholder'),
+                    closeOnSelect: false,
+                    allowClear: true, // Adiciona a opção de limpar seleção
+                    width: 'style', // Usa a largura definida pelo CSS
+                    language: 'pt-BR'
+                });
+                loadFiliaisIntoSelect2(); // Carrega as filiais para o Select2
+            } else if (screenId === 'cadastroFiliaisScreen') {
+                loadFiliaisTable(); // Carrega a tabela de filiais ao entrar na tela de cadastro de filiais
+            } else if (screenId === 'cadastroEquipamentosScreen') {
+                loadEquipamentosTable(); // Carrega a tabela de equipamentos ao entrar na tela de cadastro de equipamentos
+            } else if (screenId === 'cadastroUsuariosScreen') {
+                loadUsuariosTable(); // Carrega a tabela de usuários ao entrar na tela de cadastro de usuários
+            } else if (screenId === 'trocaFilialScreen') {
+                loadFiliaisIntoSelect(document.getElementById('novaFilial'));
+                loadEquipamentoPlacasIntoDatalist(document.getElementById('equipamentosList'));
+            }
+
+             // Esconde a sidebar em telas pequenas após a navegação
+            if (window.innerWidth <= 768) {
+                body.classList.remove('sidebar-expanded');
+                // Em mobile, `sidebar-collapsed` não é usado para ocultar, `sidebar-expanded` é usado para mostrar.
+                // Não precisamos adicionar sidebar-collapsed aqui, pois em mobile ela sempre começa oculta.
+            }
+        }
 
         // --- Variáveis Globais de Elementos (para fácil acesso) ---
         const loginScreen = document.getElementById('loginScreen');
@@ -854,11 +932,12 @@
 
         const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('loginMessage');
+        const taskCountBadge = document.getElementById('taskCountBadge'); // Não mais usado diretamente, mas mantido por segurança
 
         const body = document.body;
         const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn');
         const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn');
-        const sidebarElement = document.getElementById('sidebar');
+        const sidebarElement = document.getElementById('sidebar'); // Not directly used in toggle, but good to have
         const navbarTopElements = document.querySelector('.navbar-top-elements');
 
         // Elementos da tabela de consulta de filiais
@@ -894,13 +973,13 @@
         // Elementos da tela de cadastro de usuários
         const usuarioForm = document.getElementById('usuarioForm');
         const usuarioMessage = document.getElementById('usuarioMessage');
-        const categoriaUsuarioSelect = document.getElementById('categoriaUsuario');
+        const categoriaUsuarioSelect = document.getElementById('categoriaUsuario'); // Novo select de categoria
         const usuariosTableBody = document.getElementById('usuariosTableBody');
         const usuarioSearchInput = document.getElementById('usuarioSearchInput');
         const usuarioSearchBtn = document.getElementById('usuarioSearchBtn');
         const usuarioClearSearchBtn = document.getElementById('usuarioClearSearchBtn');
         const usuarioConsultaMessage = document.getElementById('usuarioConsultaMessage');
-        const cadastroUsuariosNavItem = document.getElementById('cadastroUsuariosNavItem');
+        const cadastroUsuariosNavItem = document.getElementById('cadastroUsuariosNavItem'); // Li do menu de usuários
 
         // Elementos do Modal de Edição de Usuário
         const editUsuarioModal = new bootstrap.Modal(document.getElementById('editUsuarioModal'));
@@ -908,7 +987,7 @@
         const modalUsuarioId = document.getElementById('modalUsuarioId');
         const modalUsuarioNome = document.getElementById('modalUsuarioNome');
         const modalUsuarioEmail = document.getElementById('modalUsuarioEmail');
-        const modalUsuarioCategoria = document.getElementById('modalUsuarioCategoria');
+        const modalUsuarioCategoria = document.getElementById('modalUsuarioCategoria'); // Novo select de categoria no modal
         const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha');
         const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha');
         const modalEditUsuarioMessage = document.getElementById('modalEditUsuarioMessage');
@@ -916,137 +995,59 @@
 
         const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
 
-        // Dashboard Elements
-        const selectResponsavel = document.getElementById('selectResponsavel');
-        const selectFiliais = document.getElementById('selectFiliais');
-        const filterDashboardBtn = document.getElementById('filterDashboardBtn');
-        const kanbanBoard = document.getElementById('kanbanBoard');
-        const kanbanMessage = document.getElementById('kanbanMessage');
-        const filterStartDateInput = document.getElementById('filterStartDate');
-        const filterEndDateInput = document.getElementById('filterEndDate');
-        const filterSearchInput = document.getElementById('filterSearchInput');
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
 
-        // Troca de Filial Elements
-        const trocaFilialForm = document.getElementById('trocaFilialForm');
-        const placaEquipamentoInput = document.getElementById('placaEquipamento');
-        const equipamentosList = document.getElementById('equipamentosList');
-        const novaFilialSelect = document.getElementById('novaFilial');
-        const trocaFilialMessage = document.getElementById('trocaFilialMessage');
-        const dataExecucaoInput = document.getElementById('dataExecucao');
+        // --- Lógica do Toggle da Sidebar ---
+        function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+                // Comportamento para mobile: adiciona/remove 'sidebar-expanded' para sobrepor
+                body.classList.toggle('sidebar-expanded');
+            } else {
+                // Comportamento para desktop: adiciona/remove 'sidebar-collapsed' para ocultar/exibir
+                body.classList.toggle('sidebar-collapsed');
+            }
+        }
 
+        if (mobileSidebarToggleBtn) {
+            mobileSidebarToggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        if (desktopSidebarToggleBtn) {
+            desktopSidebarToggleBtn.addEventListener('click', toggleSidebar);
+        }
 
         // --- Estado de Autenticação (Simulado com Local Storage) ---
         let loggedInUser = null;
-        let select2Initialized = false; // Flag para garantir inicialização única do Select2
-
-
-        // --- Funções de Navegação de Tela ---
-        function showScreen(screenId) {
-            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroUsuariosScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen'];
-            screens.forEach(id => {
-                const screenElement = document.getElementById(id);
-                if (screenElement) screenElement.classList.add('hidden');
-            });
-            const targetScreen = document.getElementById(screenId);
-            if (targetScreen) targetScreen.classList.remove('hidden');
-
-            // Resetar mensagens
-            document.querySelectorAll('.message').forEach(el => {
-                el.textContent = '';
-                el.classList.remove('alert-success', 'alert-danger', 'alert-info');
-            });
-
-            // Atualiza o estado ativo da sidebar e colapsa outros submenus
-            document.querySelectorAll('#sidebar .nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            const clickedLink = document.querySelector(`[data-screen="${screenId}"]`);
-            if (clickedLink) {
-                clickedLink.classList.add('active');
-                // Se o link está dentro de um collapse, garante que o collapse pai esteja aberto
-                const parentCollapse = clickedLink.closest('.collapse');
-                if (parentCollapse) {
-                    const bsCollapse = bootstrap.Collapse.getInstance(parentCollapse);
-                    if (bsCollapse && !parentCollapse.classList.contains('show')) {
-                        bsCollapse.show();
-                    }
-                }
-            }
-
-
-            // Lógica específica para cada tela
-            if (screenId === 'mainDashboardScreen') {
-                if (!select2Initialized) { // Inicializa Select2 apenas uma vez
-                     $('#selectFiliais').select2({
-                        theme: 'bootstrap-5',
-                        placeholder: $(this).data('placeholder'),
-                        closeOnSelect: false,
-                        allowClear: true,
-                        width: 'style',
-                        language: 'pt-BR'
-                    });
-                    select2Initialized = true;
-                }
-                loadResponsaveisForFilter(selectResponsavel); // Recarrega responsáveis
-                loadFiliaisIntoSelect2(); // Recarrega filiais para o Select2
-                loadEquipamentosDashboard(); // Carrega o dashboard automaticamente
-            } else if (screenId === 'cadastroFiliaisScreen') {
-                loadFiliaisTable();
-            } else if (screenId === 'cadastroEquipamentosScreen') {
-                loadEquipamentosTable();
-            } else if (screenId === 'cadastroUsuariosScreen') {
-                loadUsuariosTable();
-            } else if (screenId === 'trocaFilialScreen') {
-                loadFiliaisIntoSelect(novaFilialSelect);
-                loadEquipamentoPlacasIntoDatalist(equipamentosList);
-            }
-
-            // Esconde a sidebar em telas pequenas após a navegação
-            if (window.innerWidth <= 768) {
-                body.classList.remove('sidebar-expanded');
-            }
-        }
 
         function checkAuthAndNavigate() {
             const userString = localStorage.getItem('loggedInUser');
             if (userString) {
                 loggedInUser = JSON.parse(userString);
-                body.classList.remove('logged-out');
+                body.classList.remove('logged-out'); // Remove a classe para mostrar a sidebar e navbar
 
+                // Define a visibilidade do item de menu de usuários
                 if (loggedInUser.categoria === 'admin') {
                     cadastroUsuariosNavItem.classList.remove('hidden');
                 } else {
                     cadastroUsuariosNavItem.classList.add('hidden');
                 }
 
+                // Garante que a sidebar esteja expandida por padrão em desktop ao logar
                 if (window.innerWidth > 768) {
-                     body.classList.remove('sidebar-collapsed');
+                     body.classList.remove('sidebar-collapsed'); // Remove para mostrar a sidebar em desktop
                 } else {
-                     body.classList.remove('sidebar-expanded');
+                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
                 }
-                showScreen('mainDashboardScreen');
+                showScreen('mainDashboardScreen'); // Vai para o dashboard se logado
             } else {
                 loggedInUser = null;
-                body.classList.add('logged-out');
-
+                body.classList.add('logged-out'); // Adiciona a classe para esconder a sidebar e navbar
+                // Garante que a sidebar esteja recolhida em desktop
                 if (window.innerWidth > 768) {
-                     body.classList.add('sidebar-collapsed');
+                     body.classList.add('sidebar-collapsed'); // Adiciona para esconder a sidebar em desktop
                 } else {
-                     body.classList.remove('sidebar-expanded');
+                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
                 }
-                cadastroUsuariosNavItem.classList.add('hidden');
-                showScreen('loginScreen');
-            }
-        }
-
-        // --- Lógica do Toggle da Sidebar ---
-        function toggleSidebar() {
-            if (window.innerWidth <= 768) {
-                body.classList.toggle('sidebar-expanded');
-            } else {
-                body.classList.toggle('sidebar-collapsed');
+                showScreen('loginScreen'); // Vai para a tela de login se não logado
             }
         }
 
@@ -1054,14 +1055,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Chamada inicial para verificar autenticação e ajustar UI
             checkAuthAndNavigate();
-
-            // Event listener for sidebar toggles
-            if (mobileSidebarToggleBtn) {
-                mobileSidebarToggleBtn.addEventListener('click', toggleSidebar);
-            }
-            if (desktopSidebarToggleBtn) {
-                desktopSidebarToggleBtn.addEventListener('click', toggleSidebar);
-            }
 
             // Evento de Login
             if (loginForm) {
@@ -1077,7 +1070,7 @@
                     try {
                         const { data, error } = await supabase
                             .from('usuarios')
-                            .select('id, email, nome, senha, categoria')
+                            .select('id, email, nome, senha, categoria') // Inclui a categoria na seleção
                             .eq('email', email)
                             .single();
 
@@ -1090,19 +1083,21 @@
                         }
 
                         if (data && data.senha === password) {
-                            loggedInUser = { id: data.id, nome: data.nome, email: data.email, categoria: data.categoria };
+                            loggedInUser = { id: data.id, nome: data.nome, email: data.email, categoria: data.categoria }; // Armazena a categoria
                             localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
                             loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
                             loginMessage.classList.add('alert-success');
                             setTimeout(() => {
-                                body.classList.remove('logged-out');
+                                body.classList.remove('logged-out'); // Mostra sidebar e navbar após login
 
+                                // Ajusta o estado da sidebar após o login
                                 if (window.innerWidth > 768) {
-                                     body.classList.remove('sidebar-collapsed');
+                                     body.classList.remove('sidebar-collapsed'); // Exibe em desktop ao logar
                                 } else {
-                                     body.classList.remove('sidebar-expanded');
+                                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
                                 }
 
+                                // Define a visibilidade do item de menu de usuários após login
                                 if (loggedInUser.categoria === 'admin') {
                                     cadastroUsuariosNavItem.classList.remove('hidden');
                                 } else {
@@ -1123,18 +1118,19 @@
                 });
             }
 
-            // Eventos de Logout
+            // Eventos de Logout (apenas o da sidebar agora)
             const handleLogout = () => {
                 localStorage.removeItem('loggedInUser');
                 loggedInUser = null;
-                body.classList.add('logged-out');
+                body.classList.add('logged-out'); // Esconde sidebar e navbar ao fazer logout
 
+                // Ajusta o estado da sidebar após o logout
                 if (window.innerWidth > 768) {
-                     body.classList.add('sidebar-collapsed');
+                     body.classList.add('sidebar-collapsed'); // Esconde em desktop ao deslogar
                 } else {
-                     body.classList.remove('sidebar-expanded');
+                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
                 }
-                cadastroUsuariosNavItem.classList.add('hidden');
+                cadastroUsuariosNavItem.classList.add('hidden'); // Esconde o link de usuários ao deslogar
                 showScreen('loginScreen');
             };
             if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
@@ -1147,13 +1143,13 @@
                     const screenId = targetLink.getAttribute('data-screen');
                     const isToggle = targetLink.hasAttribute('data-bs-toggle') && targetLink.getAttribute('data-bs-toggle') === 'collapse';
 
-                    // Se for um toggle de collapse e NÃO tiver um data-screen, apenas deixa o Bootstrap lidar
+                    // Evita que o clique no "toggle" também mude de tela se ele não tiver data-screen
                     if (isToggle && !screenId) {
-                        return;
+                        return; // Apenas deixa o collapse funcionar
                     }
 
-                    event.preventDefault(); // Impede o comportamento padrão do link para evitar navegação de página
-                    if (!loggedInUser) { checkAuthAndNavigate(); return; } // Garante que o usuário esteja logado
+                    event.preventDefault(); // Impede o comportamento padrão do link
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
 
                     // Verifica permissão para Cadastro de Usuários
                     if (screenId === 'cadastroUsuariosScreen' && loggedInUser.categoria !== 'admin') {
@@ -1161,7 +1157,8 @@
                         return;
                     }
 
-                    // Se houver um screenId, navega para a tela
+                    // Lógicas específicas antes de mostrar a tela (apenas para links sem data-screen definidos)
+                    // Para os links com data-screen, showScreen() já cuida de carregar os dados
                     if (screenId) {
                          showScreen(screenId);
                     }
@@ -1170,6 +1167,7 @@
 
             // Botões de Voltar
             document.querySelectorAll('.btn-secondary').forEach(button => {
+                // Apenas se o ID do botão começar com 'backToMainDashboardFrom'
                 if (button.id.startsWith('backToMainDashboardFrom')) {
                     button.addEventListener('click', () => showScreen('mainDashboardScreen'));
                 }
@@ -1177,23 +1175,23 @@
 
             // --- Lógicas dos Formulários ---
 
-            // --- Cadastro de Usuários ---
+            // --- Cadastro de Usuários --- (Modificado para inserir senha em texto puro e categoria)
             if (usuarioForm) {
                 usuarioForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
-                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; }
+                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; } // Verifica permissão
 
                     const nome = usuarioForm.nomeUsuario.value;
                     const email = usuarioForm.emailUsuario.value;
                     const senha = usuarioForm.senhaUsuario.value;
-                    const categoria = categoriaUsuarioSelect.value;
+                    const categoria = categoriaUsuarioSelect.value; // Pega a categoria
 
                     usuarioMessage.textContent = ''; usuarioMessage.classList.remove('alert-success', 'alert-danger');
 
                     try {
                         const { data, error } = await supabase
                             .from('usuarios')
-                            .insert({ nome: nome, email: email, senha: senha, categoria: categoria });
+                            .insert({ nome: nome, email: email, senha: senha, categoria: categoria }); // Inclui categoria
 
                         if (error) {
                             if (error.code === '23505') { usuarioMessage.textContent = 'Já existe um usuário com este email.'; }
@@ -1204,7 +1202,7 @@
                             usuarioMessage.textContent = 'Usuário cadastrado com sucesso!';
                             usuarioMessage.classList.add('alert-success');
                             usuarioForm.reset();
-                            loadUsuariosTable();
+                            loadUsuariosTable(); // Recarrega a tabela após um novo cadastro
                         }
                     } catch (error) {
                         console.error('Erro geral no cadastro de usuário:', error.message);
@@ -1214,7 +1212,7 @@
                 });
             }
 
-            // --- Consulta de Usuários ---
+            // --- Consulta de Usuários --- (Modificado para exibir categoria)
             async function loadUsuariosTable(searchTerm = '') {
                 usuariosTableBody.innerHTML = '';
                 usuarioConsultaMessage.textContent = ''; usuarioConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
@@ -1226,7 +1224,7 @@
                 }
 
                 try {
-                    let query = supabase.from('usuarios').select('id, nome, email, categoria');
+                    let query = supabase.from('usuarios').select('id, nome, email, categoria'); // Seleciona categoria
 
                     if (searchTerm) {
                         query = query.or(`nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
@@ -1246,8 +1244,8 @@
                         const row = usuariosTableBody.insertRow();
                         row.insertCell(0).textContent = usuario.nome;
                         row.insertCell(1).textContent = usuario.email;
-                        row.insertCell(2).textContent = usuario.categoria || 'Não Definida';
-                        const actionsCell = row.insertCell(3);
+                        row.insertCell(2).textContent = usuario.categoria || 'Não Definida'; // Exibe categoria
+                        const actionsCell = row.insertCell(3); // Ações agora na 4ª coluna
                         const editButton = document.createElement('button');
                         editButton.classList.add('btn', 'btn-sm', 'btn-info', 'me-2');
                         editButton.innerHTML = '<i class="bi bi-pencil"></i> Editar';
@@ -1276,14 +1274,14 @@
                 });
             }
 
-            // --- Modal de Edição de Usuário ---
+            // --- Modal de Edição de Usuário --- (Modificado para incluir senha e categoria)
             function openEditUsuarioModal(usuario) {
                 modalUsuarioNomeAtual.textContent = usuario.nome;
                 modalUsuarioId.value = usuario.id;
                 modalUsuarioNome.value = usuario.nome;
                 modalUsuarioEmail.value = usuario.email;
-                modalUsuarioCategoria.value = usuario.categoria || '';
-                modalUsuarioNovaSenha.value = '';
+                modalUsuarioCategoria.value = usuario.categoria || ''; // Preenche a categoria
+                modalUsuarioNovaSenha.value = ''; // Limpa os campos de senha
                 modalUsuarioConfirmaSenha.value = '';
                 modalEditUsuarioMessage.textContent = '';
                 modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
@@ -1292,12 +1290,12 @@
 
             if (saveUsuarioBtn) {
                 saveUsuarioBtn.addEventListener('click', async () => {
-                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; }
+                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; } // Verifica permissão
 
                     const usuarioId = modalUsuarioId.value;
                     const novoNome = modalUsuarioNome.value.trim();
                     const novoEmail = modalUsuarioEmail.value.trim();
-                    const novaCategoria = modalUsuarioCategoria.value;
+                    const novaCategoria = modalUsuarioCategoria.value; // Pega a nova categoria
                     const novaSenha = modalUsuarioNovaSenha.value;
                     const confirmaSenha = modalUsuarioConfirmaSenha.value;
 
@@ -1317,9 +1315,9 @@
                     }
 
                     try {
-                        const updateData = { nome: novoNome, email: novoEmail, categoria: novaCategoria };
+                        const updateData = { nome: novoNome, email: novoEmail, categoria: novaCategoria }; // Inclui categoria
                         if (novaSenha) {
-                            updateData.senha = novaSenha;
+                            updateData.senha = novaSenha; // Atualiza a senha se um valor foi fornecido
                         }
 
                         const { error } = await supabase
@@ -1335,10 +1333,11 @@
                             modalEditUsuarioMessage.classList.add('alert-success');
                             setTimeout(() => {
                                 editUsuarioModal.hide();
-                                loadUsuariosTable();
+                                loadUsuariosTable(); // Recarrega a tabela para mostrar a atualização
+                                // Se o usuário logado editar a própria categoria, recarrega a página para aplicar as permissões
                                 if (loggedInUser.id == usuarioId && loggedInUser.categoria !== novaCategoria) {
                                     alert('Sua categoria foi alterada. Por favor, faça login novamente.');
-                                    handleLogout();
+                                    handleLogout(); // Força o logout para recarregar as permissões
                                 }
                             }, 1000);
                         }
@@ -1350,7 +1349,7 @@
                 });
             }
 
-            // --- Cadastro de Filiais ---
+            // --- Cadastro de Filiais --- (EXISTENTE, mantido)
             const filialForm = document.getElementById('filialForm');
             const filialMessage = document.getElementById('filialMessage');
             if (filialForm) {
@@ -1367,7 +1366,7 @@
                         const { data: responsavel, error: responsavelError } = await supabase
                             .from('usuarios')
                             .select('id')
-                            .or(`email.eq.${responsavelEmail},nome.ilike.%${responsavelEmail}%`)
+                            .or(`email.eq.${responsavelEmail},nome.ilike.%${responsavelEmail}%`) // Busca por email ou nome
                             .single();
 
                         if (responsavelError && responsavelError.code === 'PGRST116') {
@@ -1389,7 +1388,7 @@
                             filialMessage.textContent = 'Filial cadastrada com sucesso!';
                             filialMessage.classList.add('alert-success');
                             filialForm.reset();
-                            loadFiliaisTable();
+                            loadFiliaisTable(); // Recarrega a tabela após um novo cadastro
                         }
                     } catch (error) {
                         console.error('Erro geral no cadastro de filial:', error.message);
@@ -1399,9 +1398,9 @@
                 });
             }
 
-            // --- Consulta e Edição de Filiais ---
+            // --- Consulta e Edição de Filiais (EXISTENTE, mantido) ---
             async function loadFiliaisTable(searchTerm = '') {
-                filiaisTableBody.innerHTML = '';
+                filiaisTableBody.innerHTML = ''; // Limpa a tabela
                 filialConsultaMessage.textContent = ''; filialConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
 
                 try {
@@ -1418,6 +1417,7 @@
                         `);
 
                     if (searchTerm) {
+                        // Buscar por nome da filial OU nome/email do responsável
                         query = query.or(`nome_filial.ilike.%${searchTerm}%,responsavel.nome.ilike.%${searchTerm}%,responsavel.email.ilike.%${searchTerm}%`);
                     }
 
@@ -1453,7 +1453,7 @@
             function openEditFilialResponsavelModal(filial) {
                 modalFilialNome.textContent = filial.nome_filial;
                 modalFilialId.value = filial.id;
-                modalResponsavelEmail.value = filial.responsavel ? filial.responsavel.email : '';
+                modalResponsavelEmail.value = filial.responsavel ? filial.responsavel.email : ''; // Preenche com email atual
                 modalEditFilialMessage.textContent = '';
                 modalEditFilialMessage.classList.remove('alert-success', 'alert-danger');
                 editFilialResponsavelModal.show();
@@ -1469,7 +1469,7 @@
             if (filialClearSearchBtn) {
                 filialClearSearchBtn.addEventListener('click', () => {
                     filialSearchInput.value = '';
-                    loadFiliaisTable();
+                    loadFiliaisTable(); // Recarrega sem termo de busca
                 });
             }
 
@@ -1517,7 +1517,7 @@
                         modalEditFilialMessage.classList.add('alert-success');
                         setTimeout(() => {
                             editFilialResponsavelModal.hide();
-                            loadFiliaisTable();
+                            loadFiliaisTable(); // Recarrega a tabela de filiais para mostrar a atualização
                         }, 1000);
 
                     } catch (error) {
@@ -1528,7 +1528,7 @@
                 });
             }
 
-            // --- Cadastro de Equipamentos ---
+            // --- Cadastro de Equipamentos --- (EXISTENTE, com consulta adicionada)
             const equipamentoForm = document.getElementById('equipamentoForm');
             const equipamentoMessage = document.getElementById('equipamentoMessage');
             if (equipamentoForm) {
@@ -1555,7 +1555,7 @@
                             equipamentoMessage.textContent = 'Equipamento cadastrado com sucesso!';
                             equipamentoMessage.classList.add('alert-success');
                             equipamentoForm.reset();
-                            loadEquipamentosTable();
+                            loadEquipamentosTable(); // Recarrega a tabela após um novo cadastro
                         }
                     } catch (error) {
                         console.error('Erro geral no cadastro de equipamento:', error.message);
@@ -1565,7 +1565,7 @@
                 });
             }
 
-            // --- Consulta de Equipamentos ---
+            // --- Consulta de Equipamentos --- (NOVO)
             async function loadEquipamentosTable(searchTerm = '') {
                 equipamentosTableBody.innerHTML = '';
                 equipamentoConsultaMessage.textContent = ''; equipamentoConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
@@ -1620,11 +1620,11 @@
                 });
             }
 
-            // --- Modal de Edição de Equipamento ---
+            // --- Modal de Edição de Equipamento --- (NOVO)
             function openEditEquipamentoModal(equipamento) {
                 modalEquipamentoPlaca.textContent = equipamento.placa;
                 modalEquipamentoId.value = equipamento.id;
-                modalEquipamentoTipo.value = equipamento.tipo_equipamento;
+                modalEquipamentoTipo.value = equipamento.tipo_equipamento; // Preenche com o tipo atual
                 modalEditEquipamentoMessage.textContent = '';
                 modalEditEquipamentoMessage.classList.remove('alert-success', 'alert-danger');
                 editEquipamentoModal.show();
@@ -1658,7 +1658,7 @@
                         modalEditEquipamentoMessage.classList.add('alert-success');
                         setTimeout(() => {
                             editEquipamentoModal.hide();
-                            loadEquipamentosTable();
+                            loadEquipamentosTable(); // Recarrega a tabela para mostrar a atualização
                         }, 1000);
 
                     } catch (error) {
@@ -1669,7 +1669,14 @@
                 });
             }
 
-            // --- Troca de Filial Fixa ---
+            // --- Troca de Filial Fixa --- (EXISTENTE, mantido)
+            const trocaFilialForm = document.getElementById('trocaFilialForm');
+            const placaEquipamentoInput = document.getElementById('placaEquipamento');
+            const equipamentosList = document.getElementById('equipamentosList');
+            const novaFilialSelect = document.getElementById('novaFilial');
+            const trocaFilialMessage = document.getElementById('trocaFilialMessage');
+            const dataExecucaoInput = document.getElementById('dataExecucao');
+
             async function loadFiliaisIntoSelect(selectElement) {
                 const { data, error } = await supabase.from('filiais').select('id, nome_filial');
                 if (error) { console.error('Erro ao carregar filiais:', error.message); return; }
@@ -1751,7 +1758,7 @@
                         trocaFilialMessage.textContent = 'Troca de filial registrada com sucesso!';
                         trocaFilialMessage.classList.add('alert-success');
                         trocaFilialForm.reset();
-                        await loadEquipamentoPlacasIntoDatalist(equipamentosList);
+                        await loadEquipamentoPlacasIntoDatalist(equipamentosList); // Recarrega para manter datalist atualizado
                     } catch (error) {
                         console.error('Erro na troca de filial:', error.message);
                         trocaFilialMessage.textContent = `Erro: ${error.message}`;
@@ -1760,7 +1767,16 @@
                 });
             }
 
-            // --- Dashboard de Visualização (KANBAN) ---
+            // --- Dashboard de Visualização (MODIFICADO PARA KANBAN) ---
+            const selectResponsavel = document.getElementById('selectResponsavel');
+            const selectFiliais = document.getElementById('selectFiliais'); // Novo Select2 para filiais
+            const filterDashboardBtn = document.getElementById('filterDashboardBtn');
+            const kanbanBoard = document.getElementById('kanbanBoard'); // Agora é o contêiner do Kanban
+            const kanbanMessage = document.getElementById('kanbanMessage');
+            const filterStartDateInput = document.getElementById('filterStartDate');
+            const filterEndDateInput = document.getElementById('filterEndDate');
+            const filterSearchInput = document.getElementById('filterSearchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
 
             // Set default dates for the filter (e.g., last 30 days)
             const today = new Date();
@@ -1786,30 +1802,22 @@
                 const { data, error } = await supabase.from('filiais').select('id, nome_filial');
                 if (error) { console.error('Erro ao carregar filiais para Select2:', error.message); return; }
 
-                // Salva as opções atualmente selecionadas antes de esvaziar
-                const currentSelected = $('#selectFiliais').val();
-
-                $('#selectFiliais').empty();
+                $('#selectFiliais').empty(); // Limpa as opções existentes
                 data.forEach(filial => {
                     const newOption = new Option(filial.nome_filial, filial.id, false, false);
                     $('#selectFiliais').append(newOption);
                 });
-
-                // Restaura as opções selecionadas
-                if (currentSelected) {
-                    $('#selectFiliais').val(currentSelected);
-                }
-                $('#selectFiliais').trigger('change');
+                $('#selectFiliais').trigger('change'); // Notifica Select2 da mudança
             }
 
 
             async function loadEquipamentosDashboard() {
-                kanbanBoard.innerHTML = '';
-                kanbanMessage.classList.add('hidden');
+                kanbanBoard.innerHTML = ''; // Limpa o board
+                kanbanMessage.classList.add('hidden'); // Esconde a mensagem de "nenhum resultado" por padrão
 
                 try {
                     const selectedResponsavelId = selectResponsavel.value === "" ? null : selectResponsavel.value;
-                    const selectedFilialIds = $('#selectFiliais').val();
+                    const selectedFilialIds = $('#selectFiliais').val(); // Obtém os IDs das filiais selecionadas do Select2
                     const startDate = filterStartDateInput.value;
                     const endDate = filterEndDateInput.value;
                     const searchTerm = filterSearchInput.value.toLowerCase();
@@ -1821,16 +1829,19 @@
                             equipamentos:equipamento_id (placa, tipo_equipamento),
                             filiais:filial_id (id, nome_filial, responsavel:responsavel_id (id, nome))
                         `)
-                        .is('data_fim', null);
+                        .is('data_fim', null); // Apenas equipamentos ativos (com data_fim nula)
 
+                    // Filtra por responsável, se selecionado
                     if (selectedResponsavelId) {
                         query = query.eq('filiais.responsavel_id', selectedResponsavelId);
                     }
 
+                    // Filtra por filiais, se selecionadas (apenas se houver alguma seleção)
                     if (selectedFilialIds && selectedFilialIds.length > 0) {
                         query = query.in('filial_id', selectedFilialIds);
                     }
 
+                    // Filtra por data_inicio dentro do período, se preenchido
                     if (startDate) {
                         query = query.gte('data_inicio', startDate);
                     }
@@ -1844,6 +1855,7 @@
 
                     let filteredData = historicoEquipamentos || [];
 
+                    // Filtro por termo de pesquisa (placa ou tipo de equipamento ou filial)
                     if (searchTerm) {
                         filteredData = filteredData.filter(item =>
                             item.equipamentos?.placa?.toLowerCase().includes(searchTerm) ||
@@ -1852,6 +1864,7 @@
                         );
                     }
 
+                    // Agrupar equipamentos por filial
                     const equipamentosPorFilial = filteredData.reduce((acc, item) => {
                         const filialId = item.filial_id;
                         const filialNome = item.filiais?.nome_filial || 'Filial Desconhecida';
@@ -1868,11 +1881,12 @@
                         return acc;
                     }, {});
 
+                    // Ordenar as filiais pelo nome
                     const sortedFiliais = Object.values(equipamentosPorFilial).sort((a, b) => a.nome.localeCompare(b.nome));
 
                     if (sortedFiliais.length === 0) {
-                        kanbanMessage.classList.remove('hidden');
-                        kanbanBoard.innerHTML = '';
+                        kanbanMessage.classList.remove('hidden'); // Mostra a mensagem de "nenhum resultado"
+                        kanbanBoard.innerHTML = ''; // Garante que o board esteja vazio
                         return;
                     }
 
@@ -1885,6 +1899,7 @@
                         headerDiv.innerHTML = `<span>${filialData.nome}</span> <span class="badge bg-secondary">${filialData.equipamentos.length}</span>`;
                         columnDiv.appendChild(headerDiv);
 
+                        // Ordenar cartões por data de início do mais recente para o mais antigo
                         filialData.equipamentos.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
 
                         filialData.equipamentos.forEach(eq => {
@@ -1903,9 +1918,9 @@
 
                 } catch (error) {
                     console.error('Erro ao carregar dashboard (Kanban):', error.message);
-                    kanbanBoard.innerHTML = '';
+                    kanbanBoard.innerHTML = ''; // Limpa o board
                     kanbanMessage.textContent = `Erro ao carregar dados do dashboard: ${error.message}`;
-                    kanbanMessage.classList.remove('hidden');
+                    kanbanMessage.classList.remove('hidden'); // Mostra a mensagem de erro
                 }
             }
 
@@ -1918,6 +1933,12 @@
                     loadEquipamentosDashboard();
                 });
             }
+
+            // Carrega os responsáveis no filtro e o dashboard ao iniciar (após login)
+            if (selectResponsavel) {
+                loadResponsaveisForFilter(selectResponsavel);
+            }
+            // O loadFiliaisIntoSelect2 é chamado dentro de showScreen('mainDashboardScreen')
         });
     </script>
 </body>
