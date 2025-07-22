@@ -41,16 +41,14 @@
             position: fixed; /* Fixa a navbar no topo */
             top: 0;
             left: var(--sidebar-width); /* Inicia com o espaço da sidebar */
-            z-index: 1000;
-            /* Acima do conteúdo, abaixo da sidebar (em z-index) */
-            transition: left 0.3s ease, width 0.3s ease;
-            /* Transição suave para movimentação */
+            z-index: 1000; /* Acima do conteúdo, abaixo da sidebar (em z-index) */
+            transition: left 0.3s ease, width 0.3s ease; /* Transição suave para movimentação */
         }
 
         /* Ajuste da navbar quando sidebar está recolhida (desktop) */
         body.sidebar-collapsed #navbar {
             width: 100%; /* Ocupa toda a largura */
-            left: 0; /* Alinha à esquerda */
+            left: 0;     /* Alinha à esquerda */
         }
 
         .navbar .navbar-brand {
@@ -430,8 +428,7 @@
 
     </style>
 </head>
-<body class="logged-out sidebar-collapsed">
-    <nav class="navbar navbar-expand-lg" id="navbar">
+<body class="logged-out sidebar-collapsed"> <nav class="navbar navbar-expand-lg" id="navbar">
         <div class="container-fluid">
             <button class="btn btn-light d-none d-lg-block me-3" type="button" id="desktopSidebarToggleBtn" title="Ocultar/Exibir Menu">
                 <i class="bi bi-list"></i>
@@ -450,8 +447,7 @@
     </nav>
 
     <aside id="sidebar" class="d-flex flex-column">
-        <div class="sidebar-header d-lg-none">
-            <span>TercSistemas</span>
+        <div class="sidebar-header d-lg-none"> <span>TercSistemas</span>
         </div>
         <ul class="nav flex-column mt-3">
             <li class="nav-item">
@@ -481,8 +477,7 @@
                     </ul>
                 </div>
             </li>
-            <li class="nav-item mt-auto">
-                <a class="nav-link" href="#" id="sidebarLogoutLink">
+            <li class="nav-item mt-auto"> <a class="nav-link" href="#" id="sidebarLogoutLink">
                     <i class="bi bi-box-arrow-right"></i> Sair
                 </a>
             </li>
@@ -537,7 +532,7 @@
                         <div class="input-group flex-grow-1">
                             <span class="input-group-text"><i class="bi bi-shop"></i></span>
                             <select id="selectFiliais" class="form-select" multiple data-placeholder="Selecione as Filiais">
-                            </select>
+                                </select>
                         </div>
                         <button class="btn btn-primary" id="filterDashboardBtn"><i class="bi bi-funnel"></i> Aplicar Filtros</button>
                     </div>
@@ -599,7 +594,7 @@
                                 </tr>
                             </thead>
                             <tbody id="usuariosTableBody">
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                     <div id="usuarioConsultaMessage" class="message mt-3"></div>
@@ -625,9 +620,7 @@
                 </form>
                 <div id="filialMessage" class="message"></div>
 
-                <hr class="my-4">
-
-                <div class="filial-consulta-section">
+                <hr class="my-4"> <div class="filial-consulta-section">
                     <h3 class="mb-3"><i class="bi bi-search me-2"></i> Consulta de Filiais</h3>
                     <div class="input-group mb-3">
                         <input type="text" id="filialSearchInput" class="form-control" placeholder="Pesquisar por Filial ou Responsável">
@@ -644,7 +637,7 @@
                                 </tr>
                             </thead>
                             <tbody id="filiaisTableBody">
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                     <div id="filialConsultaMessage" class="message mt-3"></div>
@@ -673,10 +666,8 @@
                     </div>
                 </form>
                 <div id="equipamentoMessage" class="message"></div>
-
                 <hr class="my-4">
-
-                <div class="equipamento-consulta-section">
+                 <div class="equipamento-consulta-section">
                     <h3 class="mb-3"><i class="bi bi-search me-2"></i> Consulta de Equipamentos</h3>
                     <div class="input-group mb-3">
                         <input type="text" id="equipamentoSearchInput" class="form-control" placeholder="Pesquisar por Placa ou Tipo">
@@ -693,7 +684,7 @@
                                 </tr>
                             </thead>
                             <tbody id="equipamentosTableBody">
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                     <div id="equipamentoConsultaMessage" class="message mt-3"></div>
@@ -725,7 +716,6 @@
                 </form>
                 <div id="trocaFilialMessage" class="message"></div>
             </div>
-
         </main>
     </div>
 
@@ -827,17 +817,22 @@
         </div>
     </div>
 
-    <a href="https://wa.me/5522992075244?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%21" class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center py-2 px-3" style="position: fixed; bottom: 20px; right: 20px; z-index: 1060;" target="_blank">
+
+    <a href="https://wa.me/5522992075244?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%21"
+       class="btn btn-primary rounded-pill shadow-lg d-flex align-items-center py-2 px-3"
+       style="position: fixed; bottom: 20px; right: 20px; z-index: 1060;" target="_blank">
         <i class="bi bi-question-circle-fill me-2 fs-5"></i> Precisando de ajuda? Clique aqui
     </a>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.10-rc.0/dist/js/i18n/pt-BR.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/pt-BR.js"></script>
+
 
     <script type="module">
         // public/index.html
+
         // Supabase Client (consolidado)
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.5';
 
@@ -845,1137 +840,1090 @@
         // O URL do seu projeto Supabase (encontrado em Project Settings -> API)
         const supabaseUrl = "https://jtikvjomzduvjrrrsfeg.supabase.co"; // SEU URL REAL AQUI
         // A sua chave "anon" ou "public" do Supabase (encontrada em Project Settings -> API)
-        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiIomp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROx... "; // SUA CHAVE ANON REAL AQUI
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg"; // SUA CHAVE ANON REAL AQUI
 
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-        // Função para exibir telas
+        // --- Funções de Navegação de Tela ---
         function showScreen(screenId) {
-            document.querySelectorAll('#mainContent > div').forEach(screen => {
-                screen.classList.add('hidden');
+            const screens = ['loginScreen', 'mainDashboardScreen', 'cadastroUsuariosScreen', 'cadastroFiliaisScreen', 'cadastroEquipamentosScreen', 'trocaFilialScreen'];
+            screens.forEach(id => {
+                const screenElement = document.getElementById(id);
+                if (screenElement) screenElement.classList.add('hidden');
             });
-            document.getElementById(screenId).classList.remove('hidden');
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) targetScreen.classList.remove('hidden');
 
-            // Gerencia classes de corpo para layout
-            if (screenId === 'loginScreen') {
-                document.body.classList.add('logged-out');
-            } else {
-                document.body.classList.remove('logged-out');
+            // Resetar mensagens
+            document.querySelectorAll('.message').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('alert-success', 'alert-danger', 'alert-info');
+            });
+
+            // Atualiza o estado ativo da sidebar e colapsa outros submenus
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Fecha todos os colapsos, exceto o que está sendo aberto (se houver)
+            document.querySelectorAll('.collapse.show').forEach(collapseEl => {
+                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
+                if (bsCollapse) {
+                    const toggleLink = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
+                    // Só esconde se não for o pai do link clicado atualmente
+                    if (!toggleLink || !toggleLink.contains(document.querySelector(`[data-screen="${screenId}"]`))) {
+                         bsCollapse.hide();
+                    }
+                }
+            });
+
+            const clickedLink = document.querySelector(`[data-screen="${screenId}"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+                // Se o link está dentro de um collapse, garante que o collapse pai esteja aberto
+                const parentCollapse = clickedLink.closest('.collapse');
+                if (parentCollapse) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(parentCollapse);
+                    if (bsCollapse && !parentCollapse.classList.contains('show')) {
+                        bsCollapse.show();
+                    }
+                }
             }
-            // Garante que a sidebar esteja recolhida no mobile ao trocar de tela
-            document.body.classList.remove('sidebar-expanded');
+
+
+            if (screenId === 'mainDashboardScreen') {
+                loadEquipamentosDashboard(); // Carrega o dashboard automaticamente ao ir para a tela principal
+                // Inicializa Select2 para o filtro de filiais
+                $('#selectFiliais').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: $(this).data('placeholder'),
+                    closeOnSelect: false,
+                    allowClear: true, // Adiciona a opção de limpar seleção
+                    width: 'style', // Usa a largura definida pelo CSS
+                    language: 'pt-BR'
+                });
+                loadFiliaisIntoSelect2(); // Carrega as filiais para o Select2
+            } else if (screenId === 'cadastroFiliaisScreen') {
+                loadFiliaisTable(); // Carrega a tabela de filiais ao entrar na tela de cadastro de filiais
+            } else if (screenId === 'cadastroEquipamentosScreen') {
+                loadEquipamentosTable(); // Carrega a tabela de equipamentos ao entrar na tela de cadastro de equipamentos
+            } else if (screenId === 'cadastroUsuariosScreen') {
+                loadUsuariosTable(); // Carrega a tabela de usuários ao entrar na tela de cadastro de usuários
+            } else if (screenId === 'trocaFilialScreen') {
+                loadFiliaisIntoSelect(document.getElementById('novaFilial'));
+                loadEquipamentoPlacasIntoDatalist(document.getElementById('equipamentosList'));
+            }
+
+             // Esconde a sidebar em telas pequenas após a navegação
+            if (window.innerWidth <= 768) {
+                body.classList.remove('sidebar-expanded');
+                // Em mobile, `sidebar-collapsed` não é usado para ocultar, `sidebar-expanded` é usado para mostrar.
+                // Não precisamos adicionar sidebar-collapsed aqui, pois em mobile ela sempre começa oculta.
+            }
         }
 
-        // Variáveis globais para os elementos de filtro do dashboard
-        const filterStartDateInput = document.getElementById('filterStartDate');
-        const filterEndDateInput = document.getElementById('filterEndDate');
-        const filterSearchInput = document.getElementById('filterSearchInput');
-        const selectResponsavel = document.getElementById('selectResponsavel');
-        const selectFiliais = document.getElementById('selectFiliais');
-        const filterDashboardBtn = document.getElementById('filterDashboardBtn');
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
-        const kanbanMessage = document.getElementById('kanbanMessage');
+        // --- Variáveis Globais de Elementos (para fácil acesso) ---
+        const loginScreen = document.getElementById('loginScreen');
+        const mainDashboardScreen = document.getElementById('mainDashboardScreen');
+        const cadastroUsuariosScreen = document.getElementById('cadastroUsuariosScreen');
+        const cadastroFiliaisScreen = document.getElementById('cadastroFiliaisScreen');
+        const cadastroEquipamentosScreen = document.getElementById('cadastroEquipamentosScreen');
+        const trocaFilialScreen = document.getElementById('trocaFilialScreen');
 
-        // Adicione isso logo após todas as declarações globais:
-        async function loadEquipamentosDashboard() {
-            const kanbanBoard = document.getElementById('kanbanBoard');
-            kanbanBoard.innerHTML = ''; // limpa conteúdo anterior
-            const kanbanMessage = document.getElementById('kanbanMessage');
-            kanbanMessage.style.display = 'none';
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const taskCountBadge = document.getElementById('taskCountBadge'); // Não mais usado diretamente, mas mantido por segurança
 
-            try {
-                // Consulta: equipamentos com filial associada
-                const { data: equipamentos, error } = await supabase
-                    .from('equipamentos')
-                    .select(`
-                        id,
-                        placa,
-                        tipo,
-                        filial:filial_id (
-                            id,
-                            nome_filial
-                        )
-                    `);
+        const body = document.body;
+        const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn');
+        const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn');
+        const sidebarElement = document.getElementById('sidebar'); // Not directly used in toggle, but good to have
+        const navbarTopElements = document.querySelector('.navbar-top-elements');
 
-                if (error) throw error;
+        // Elementos da tabela de consulta de filiais
+        const filiaisTableBody = document.getElementById('filiaisTableBody');
+        const filialSearchInput = document.getElementById('filialSearchInput');
+        const filialSearchBtn = document.getElementById('filialSearchBtn');
+        const filialClearSearchBtn = document.getElementById('filialClearSearchBtn');
+        const filialConsultaMessage = document.getElementById('filialConsultaMessage');
 
-                if (!equipamentos || equipamentos.length === 0) {
-                    kanbanMessage.style.display = 'block';
+        // Elementos do Modal de Edição de Responsável da Filial
+        const editFilialResponsavelModal = new bootstrap.Modal(document.getElementById('editFilialResponsavelModal'));
+        const modalFilialNome = document.getElementById('modalFilialNome');
+        const modalFilialId = document.getElementById('modalFilialId');
+        const modalResponsavelEmail = document.getElementById('modalResponsavelEmail');
+        const modalEditFilialMessage = document.getElementById('modalEditFilialMessage');
+        const saveFilialResponsavelBtn = document.getElementById('saveFilialResponsavelBtn');
+
+        // Elementos da tabela de consulta de equipamentos
+        const equipamentosTableBody = document.getElementById('equipamentosTableBody');
+        const equipamentoSearchInput = document.getElementById('equipamentoSearchInput');
+        const equipamentoSearchBtn = document.getElementById('equipamentoSearchBtn');
+        const equipamentoClearSearchBtn = document.getElementById('equipamentoClearSearchBtn');
+        const equipamentoConsultaMessage = document.getElementById('equipamentoConsultaMessage');
+
+        // Elementos do Modal de Edição de Equipamento
+        const editEquipamentoModal = new bootstrap.Modal(document.getElementById('editEquipamentoModal'));
+        const modalEquipamentoPlaca = document.getElementById('modalEquipamentoPlaca');
+        const modalEquipamentoId = document.getElementById('modalEquipamentoId');
+        const modalEquipamentoTipo = document.getElementById('modalEquipamentoTipo');
+        const modalEditEquipamentoMessage = document.getElementById('modalEditEquipamentoMessage');
+        const saveEquipamentoBtn = document.getElementById('saveEquipamentoBtn');
+
+        // Elementos da tela de cadastro de usuários
+        const usuarioForm = document.getElementById('usuarioForm');
+        const usuarioMessage = document.getElementById('usuarioMessage');
+        const categoriaUsuarioSelect = document.getElementById('categoriaUsuario'); // Novo select de categoria
+        const usuariosTableBody = document.getElementById('usuariosTableBody');
+        const usuarioSearchInput = document.getElementById('usuarioSearchInput');
+        const usuarioSearchBtn = document.getElementById('usuarioSearchBtn');
+        const usuarioClearSearchBtn = document.getElementById('usuarioClearSearchBtn');
+        const usuarioConsultaMessage = document.getElementById('usuarioConsultaMessage');
+        const cadastroUsuariosNavItem = document.getElementById('cadastroUsuariosNavItem'); // Li do menu de usuários
+
+        // Elementos do Modal de Edição de Usuário
+        const editUsuarioModal = new bootstrap.Modal(document.getElementById('editUsuarioModal'));
+        const modalUsuarioNomeAtual = document.getElementById('modalUsuarioNomeAtual');
+        const modalUsuarioId = document.getElementById('modalUsuarioId');
+        const modalUsuarioNome = document.getElementById('modalUsuarioNome');
+        const modalUsuarioEmail = document.getElementById('modalUsuarioEmail');
+        const modalUsuarioCategoria = document.getElementById('modalUsuarioCategoria'); // Novo select de categoria no modal
+        const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha');
+        const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha');
+        const modalEditUsuarioMessage = document.getElementById('modalEditUsuarioMessage');
+        const saveUsuarioBtn = document.getElementById('saveUsuarioBtn');
+
+        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
+
+
+        // --- Lógica do Toggle da Sidebar ---
+        function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+                // Comportamento para mobile: adiciona/remove 'sidebar-expanded' para sobrepor
+                body.classList.toggle('sidebar-expanded');
+            } else {
+                // Comportamento para desktop: adiciona/remove 'sidebar-collapsed' para ocultar/exibir
+                body.classList.toggle('sidebar-collapsed');
+            }
+        }
+
+        if (mobileSidebarToggleBtn) {
+            mobileSidebarToggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        if (desktopSidebarToggleBtn) {
+            desktopSidebarToggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        // --- Estado de Autenticação (Simulado com Local Storage) ---
+        let loggedInUser = null;
+
+        function checkAuthAndNavigate() {
+            const userString = localStorage.getItem('loggedInUser');
+            if (userString) {
+                loggedInUser = JSON.parse(userString);
+                body.classList.remove('logged-out'); // Remove a classe para mostrar a sidebar e navbar
+
+                // Define a visibilidade do item de menu de usuários
+                if (loggedInUser.categoria === 'admin') {
+                    cadastroUsuariosNavItem.classList.remove('hidden');
+                } else {
+                    cadastroUsuariosNavItem.classList.add('hidden');
+                }
+
+                // Garante que a sidebar esteja expandida por padrão em desktop ao logar
+                if (window.innerWidth > 768) {
+                     body.classList.remove('sidebar-collapsed'); // Remove para mostrar a sidebar em desktop
+                } else {
+                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
+                }
+                showScreen('mainDashboardScreen'); // Vai para o dashboard se logado
+            } else {
+                loggedInUser = null;
+                body.classList.add('logged-out'); // Adiciona a classe para esconder a sidebar e navbar
+                // Garante que a sidebar esteja recolhida em desktop
+                if (window.innerWidth > 768) {
+                     body.classList.add('sidebar-collapsed'); // Adiciona para esconder a sidebar em desktop
+                } else {
+                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
+                }
+                showScreen('loginScreen'); // Vai para a tela de login se não logado
+            }
+        }
+
+        // --- Lógica de Eventos ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Chamada inicial para verificar autenticação e ajustar UI
+            checkAuthAndNavigate();
+
+            // Evento de Login
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const email = loginForm.email.value;
+                    const password = loginForm.password.value;
+
+                    loginMessage.textContent = '';
+                    loginMessage.classList.remove('alert-success', 'alert-danger');
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('usuarios')
+                            .select('id, email, nome, senha, categoria') // Inclui a categoria na seleção
+                            .eq('email', email)
+                            .single();
+
+                        if (error && error.code === 'PGRST116') {
+                            loginMessage.textContent = 'Usuário não encontrado.';
+                            loginMessage.classList.add('alert-danger');
+                            return;
+                        } else if (error) {
+                            throw error;
+                        }
+
+                        if (data && data.senha === password) {
+                            loggedInUser = { id: data.id, nome: data.nome, email: data.email, categoria: data.categoria }; // Armazena a categoria
+                            localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+                            loginMessage.textContent = `Login bem-sucedido! Bem-vindo(a), ${data.nome}.`;
+                            loginMessage.classList.add('alert-success');
+                            setTimeout(() => {
+                                body.classList.remove('logged-out'); // Mostra sidebar e navbar após login
+
+                                // Ajusta o estado da sidebar após o login
+                                if (window.innerWidth > 768) {
+                                     body.classList.remove('sidebar-collapsed'); // Exibe em desktop ao logar
+                                } else {
+                                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
+                                }
+
+                                // Define a visibilidade do item de menu de usuários após login
+                                if (loggedInUser.categoria === 'admin') {
+                                    cadastroUsuariosNavItem.classList.remove('hidden');
+                                } else {
+                                    cadastroUsuariosNavItem.classList.add('hidden');
+                                }
+                                showScreen('mainDashboardScreen');
+                            }, 500);
+                        } else {
+                            loginMessage.textContent = 'Email ou senha incorretos.';
+                            loginMessage.classList.add('alert-danger');
+                        }
+
+                    } catch (error) {
+                        console.error('Erro no login:', error.message);
+                        loginMessage.textContent = `Erro no login: ${error.message}`;
+                        loginMessage.classList.add('alert-danger');
+                    }
+                });
+            }
+
+            // Eventos de Logout (apenas o da sidebar agora)
+            const handleLogout = () => {
+                localStorage.removeItem('loggedInUser');
+                loggedInUser = null;
+                body.classList.add('logged-out'); // Esconde sidebar e navbar ao fazer logout
+
+                // Ajusta o estado da sidebar após o logout
+                if (window.innerWidth > 768) {
+                     body.classList.add('sidebar-collapsed'); // Esconde em desktop ao deslogar
+                } else {
+                     body.classList.remove('sidebar-expanded'); // Garante que a sidebar mobile não esteja "presa" aberta
+                }
+                cadastroUsuariosNavItem.classList.add('hidden'); // Esconde o link de usuários ao deslogar
+                showScreen('loginScreen');
+            };
+            if (sidebarLogoutLink) sidebarLogoutLink.addEventListener('click', handleLogout);
+
+            // --- Navegação da Sidebar: Delegando eventos para o document ---
+            document.addEventListener('click', async (event) => {
+                const targetLink = event.target.closest('#sidebar .nav-link');
+
+                if (targetLink) {
+                    const screenId = targetLink.getAttribute('data-screen');
+                    const isToggle = targetLink.hasAttribute('data-bs-toggle') && targetLink.getAttribute('data-bs-toggle') === 'collapse';
+
+                    // Evita que o clique no "toggle" também mude de tela se ele não tiver data-screen
+                    if (isToggle && !screenId) {
+                        return; // Apenas deixa o collapse funcionar
+                    }
+
+                    event.preventDefault(); // Impede o comportamento padrão do link
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
+
+                    // Verifica permissão para Cadastro de Usuários
+                    if (screenId === 'cadastroUsuariosScreen' && loggedInUser.categoria !== 'admin') {
+                        alert('Você não tem permissão para acessar esta funcionalidade.');
+                        return;
+                    }
+
+                    // Lógicas específicas antes de mostrar a tela (apenas para links sem data-screen definidos)
+                    // Para os links com data-screen, showScreen() já cuida de carregar os dados
+                    if (screenId) {
+                         showScreen(screenId);
+                    }
+                }
+            });
+
+            // Botões de Voltar
+            document.querySelectorAll('.btn-secondary').forEach(button => {
+                // Apenas se o ID do botão começar com 'backToMainDashboardFrom'
+                if (button.id.startsWith('backToMainDashboardFrom')) {
+                    button.addEventListener('click', () => showScreen('mainDashboardScreen'));
+                }
+            });
+
+            // --- Lógicas dos Formulários ---
+
+            // --- Cadastro de Usuários --- (Modificado para inserir senha em texto puro e categoria)
+            if (usuarioForm) {
+                usuarioForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; } // Verifica permissão
+
+                    const nome = usuarioForm.nomeUsuario.value;
+                    const email = usuarioForm.emailUsuario.value;
+                    const senha = usuarioForm.senhaUsuario.value;
+                    const categoria = categoriaUsuarioSelect.value; // Pega a categoria
+
+                    usuarioMessage.textContent = ''; usuarioMessage.classList.remove('alert-success', 'alert-danger');
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('usuarios')
+                            .insert({ nome: nome, email: email, senha: senha, categoria: categoria }); // Inclui categoria
+
+                        if (error) {
+                            if (error.code === '23505') { usuarioMessage.textContent = 'Já existe um usuário com este email.'; }
+                            else { usuarioMessage.textContent = `Erro ao cadastrar usuário: ${error.message}`; }
+                            usuarioMessage.classList.add('alert-danger');
+                            console.error('Erro ao cadastrar usuário:', error);
+                        } else {
+                            usuarioMessage.textContent = 'Usuário cadastrado com sucesso!';
+                            usuarioMessage.classList.add('alert-success');
+                            usuarioForm.reset();
+                            loadUsuariosTable(); // Recarrega a tabela após um novo cadastro
+                        }
+                    } catch (error) {
+                        console.error('Erro geral no cadastro de usuário:', error.message);
+                        usuarioMessage.textContent = `Erro: ${error.message}`;
+                        usuarioMessage.classList.add('alert-danger');
+                    }
+                });
+            }
+
+            // --- Consulta de Usuários --- (Modificado para exibir categoria)
+            async function loadUsuariosTable(searchTerm = '') {
+                usuariosTableBody.innerHTML = '';
+                usuarioConsultaMessage.textContent = ''; usuarioConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
+
+                if (!loggedInUser || loggedInUser.categoria !== 'admin') {
+                    usuarioConsultaMessage.textContent = 'Você não tem permissão para visualizar esta tabela.';
+                    usuarioConsultaMessage.classList.add('alert-danger');
                     return;
                 }
 
-                // Agrupar por filial
-                const colunas = {};
-                equipamentos.forEach(equip => {
-                    const nomeFilial = equip.filial?.nome_filial || 'Sem Filial';
-                    if (!colunas[nomeFilial]) colunas[nomeFilial] = [];
-                    colunas[nomeFilial].push(equip);
-                });
-
-                // Criar colunas do Kanban
-                for (const [filial, equipamentos] of Object.entries(colunas)) {
-                    const coluna = document.createElement('div');
-                    coluna.className = 'kanban-column';
-
-                    const cabecalho = document.createElement('div');
-                    cabecalho.className = 'kanban-column-header';
-                    cabecalho.textContent = filial;
-                    coluna.appendChild(cabecalho);
-
-                    equipamentos.forEach(eq => {
-                        const card = document.createElement('div');
-                        card.className = 'kanban-card';
-
-                        const titulo = document.createElement('div');
-                        titulo.className = 'kanban-card-title';
-                        titulo.textContent = eq.placa;
-                        card.appendChild(titulo);
-
-                        const meta = document.createElement('div');
-                        meta.className = 'kanban-card-meta';
-                        meta.textContent = eq.tipo;
-                        card.appendChild(meta);
-
-                        coluna.appendChild(card);
-                    });
-
-                    kanbanBoard.appendChild(coluna);
-                }
-
-            } catch (err) {
-                console.error('Erro ao carregar Kanban:', err.message);
-                kanbanMessage.textContent = 'Erro ao carregar o dashboard';
-                kanbanMessage.style.display = 'block';
-            }
-        }
-
-        // Funções para carregar dados nos Select2
-        async function loadFiliaisIntoSelect2() {
-            try {
-                const { data, error } = await supabase
-                    .from('filiais')
-                    .select('id, nome_filial')
-                    .order('nome_filial', { ascending: true });
-
-                if (error) throw error;
-
-                const filiais = data.map(filial => ({
-                    id: filial.id,
-                    text: filial.nome_filial
-                }));
-
-                // Inicializa Select2
-                $('#selectFiliais').empty().select2({
-                    data: filiais,
-                    theme: "bootstrap-5",
-                    width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
-                    placeholder: $(this).data('placeholder'),
-                    allowClear: true,
-                    dropdownParent: $('#mainDashboardScreen') // Garante que o dropdown aparece corretamente
-                });
-
-            } catch (error) {
-                console.error('Erro ao carregar filiais para Select2:', error.message);
-            }
-        }
-
-        async function loadResponsaveisForFilter(selectElement) {
-            try {
-                const { data, error } = await supabase
-                    .from('usuarios')
-                    .select('id, nome')
-                    .in('categoria', ['admin', 'operador']) // Apenas admin e operador podem ser responsáveis
-                    .order('nome', { ascending: true });
-
-                if (error) throw error;
-
-                // Limpa opções existentes, exceto a primeira (Todos)
-                $(selectElement).find('option:not(:first)').remove();
-
-                data.forEach(responsavel => {
-                    const option = document.createElement('option');
-                    option.value = responsavel.id;
-                    option.textContent = responsavel.nome;
-                    selectElement.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Erro ao carregar responsáveis:', error.message);
-            }
-        }
-
-        // Função de login
-        async function login(email, password) {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-
-            if (error) {
-                console.error("Erro de login:", error.message);
-                return { success: false, message: error.message };
-            }
-            return { success: true, user: data.user };
-        }
-
-        // Função de logout
-        async function logout() {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                console.error("Erro ao fazer logout:", error.message);
-                return { success: false, message: error.message };
-            }
-            return { success: true };
-        }
-
-        // Função para obter o usuário logado
-        async function getUser() {
-            const { data: { user } } = await supabase.auth.getUser();
-            return user;
-        }
-
-        // Gerenciamento de Autenticação e UI
-        supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Auth state changed:", event, session);
-            if (event === 'SIGNED_IN' && session) {
-                showScreen('mainDashboardScreen');
-                // Chama as funções de carregamento de dados para o dashboard
-                await loadFiliaisIntoSelect2();
-                await loadResponsaveisForFilter(selectResponsavel);
-                await loadEquipamentosDashboard(); // Carrega o dashboard após o login
-            } else if (event === 'SIGNED_OUT') {
-                showScreen('loginScreen');
-            }
-        });
-
-        // Event Listeners Globais
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Verifica o estado da sessão ao carregar a página
-            const user = await getUser();
-            if (user) {
-                showScreen('mainDashboardScreen');
-                await loadFiliaisIntoSelect2();
-                await loadResponsaveisForFilter(selectResponsavel);
-                await loadEquipamentosDashboard(); // Carrega o dashboard se já estiver logado
-            } else {
-                showScreen('loginScreen');
-            }
-
-            // --- Gerenciamento de Telas ---
-            document.querySelectorAll('a[data-screen]').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    showScreen(e.target.dataset.screen);
-                });
-            });
-
-            // Voltar para o Dashboard principal
-            document.querySelectorAll('[id^="backToMainDashboard"]').forEach(btn => {
-                btn.addEventListener('click', () => showScreen('mainDashboardScreen'));
-            });
-
-            // --- Login ---
-            const loginForm = document.getElementById('loginForm');
-            const loginMessage = document.getElementById('loginMessage');
-
-            if (loginForm) {
-                loginForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-
-                    loginMessage.classList.remove('alert-success', 'alert-danger');
-                    loginMessage.textContent = '';
-
-                    const result = await login(email, password);
-                    if (result.success) {
-                        loginMessage.classList.add('alert-success');
-                        loginMessage.textContent = 'Login bem-sucedido!';
-                        // Redirecionamento é feito pelo onAuthStateChange
-                    } else {
-                        loginMessage.classList.add('alert-danger');
-                        loginMessage.textContent = `Erro no login: ${result.message}`;
-                    }
-                });
-            }
-
-            // --- Logout ---
-            const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
-            if (sidebarLogoutLink) {
-                sidebarLogoutLink.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    const result = await logout();
-                    if (result.success) {
-                        console.log("Logout bem-sucedido.");
-                        // Redirecionamento é feito pelo onAuthStateChange
-                    } else {
-                        alert(`Erro ao fazer logout: ${result.message}`);
-                    }
-                });
-            }
-
-            // --- Toggle Sidebar (Desktop) ---
-            const desktopSidebarToggleBtn = document.getElementById('desktopSidebarToggleBtn');
-            if (desktopSidebarToggleBtn) {
-                desktopSidebarToggleBtn.addEventListener('click', () => {
-                    document.body.classList.toggle('sidebar-collapsed');
-                });
-            }
-
-            // --- Toggle Sidebar (Mobile) ---
-            const mobileSidebarToggleBtn = document.getElementById('mobileSidebarToggleBtn');
-            if (mobileSidebarToggleBtn) {
-                mobileSidebarToggleBtn.addEventListener('click', () => {
-                    document.body.classList.toggle('sidebar-expanded');
-                });
-            }
-
-            // --- Cadastro de Usuários ---
-            const usuarioForm = document.getElementById('usuarioForm');
-            const usuarioMessage = document.getElementById('usuarioMessage');
-            const usuariosTableBody = document.getElementById('usuariosTableBody');
-            const usuarioSearchInput = document.getElementById('usuarioSearchInput');
-            const usuarioSearchBtn = document.getElementById('usuarioSearchBtn');
-            const usuarioClearSearchBtn = document.getElementById('usuarioClearSearchBtn');
-            const usuarioConsultaMessage = document.getElementById('usuarioConsultaMessage');
-            const cadastroUsuariosNavItem = document.getElementById('cadastroUsuariosNavItem'); // Referência ao item do menu
-
-            // Esconde o item de menu "Usuários" se o usuário não for admin
-            const user = await getUser();
-            if (user && user.user_metadata?.categoria !== 'admin') {
-                if (cadastroUsuariosNavItem) {
-                    cadastroUsuariosNavItem.classList.add('hidden');
-                }
-            } else {
-                if (cadastroUsuariosNavItem) {
-                    cadastroUsuariosNavItem.classList.remove('hidden');
-                }
-            }
-
-
-            async function loadUsuarios(searchTerm = '') {
-                usuarioConsultaMessage.classList.add('hidden');
-                usuariosTableBody.innerHTML = '';
                 try {
-                    let query = supabase.from('usuarios').select('*').order('nome', { ascending: true });
+                    let query = supabase.from('usuarios').select('id, nome, email, categoria'); // Seleciona categoria
 
                     if (searchTerm) {
                         query = query.or(`nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
                     }
 
-                    const { data: usuarios, error } = await query;
+                    const { data: usuarios, error } = await query.order('nome', { ascending: true });
 
-                    if (error) throw error;
+                    if (error) { throw error; }
 
-                    if (usuarios.length === 0) {
-                        usuarioConsultaMessage.classList.remove('hidden');
+                    if (!usuarios || usuarios.length === 0) {
                         usuarioConsultaMessage.textContent = 'Nenhum usuário encontrado.';
+                        usuarioConsultaMessage.classList.add('alert-info');
                         return;
                     }
 
                     usuarios.forEach(usuario => {
                         const row = usuariosTableBody.insertRow();
-                        row.innerHTML = `
-                            <td>${usuario.nome}</td>
-                            <td>${usuario.email}</td>
-                            <td>${usuario.categoria}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info edit-usuario-btn" data-id="${usuario.id}" data-bs-toggle="modal" data-bs-target="#editUsuarioModal">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger delete-usuario-btn" data-id="${usuario.id}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        `;
-                    });
-
-                    // Adiciona listeners para os botões de editar e excluir
-                    usuariosTableBody.querySelectorAll('.edit-usuario-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const id = e.currentTarget.dataset.id;
-                            await loadUsuarioForEdit(id);
-                        });
-                    });
-
-                    usuariosTableBody.querySelectorAll('.delete-usuario-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const id = e.currentTarget.dataset.id;
-                            if (confirm('Tem certeza que deseja excluir este usuário?')) {
-                                await deleteUsuario(id);
-                            }
-                        });
+                        row.insertCell(0).textContent = usuario.nome;
+                        row.insertCell(1).textContent = usuario.email;
+                        row.insertCell(2).textContent = usuario.categoria || 'Não Definida'; // Exibe categoria
+                        const actionsCell = row.insertCell(3); // Ações agora na 4ª coluna
+                        const editButton = document.createElement('button');
+                        editButton.classList.add('btn', 'btn-sm', 'btn-info', 'me-2');
+                        editButton.innerHTML = '<i class="bi bi-pencil"></i> Editar';
+                        editButton.addEventListener('click', () => openEditUsuarioModal(usuario));
+                        actionsCell.appendChild(editButton);
                     });
 
                 } catch (error) {
-                    console.error('Erro ao carregar usuários:', error.message);
-                    usuarioConsultaMessage.classList.remove('hidden');
+                    console.error('Erro ao carregar usuários para consulta:', error.message);
                     usuarioConsultaMessage.textContent = `Erro ao carregar usuários: ${error.message}`;
+                    usuarioConsultaMessage.classList.add('alert-danger');
                 }
-            }
-
-            if (usuarioForm) {
-                usuarioForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    usuarioMessage.classList.remove('alert-success', 'alert-danger');
-                    usuarioMessage.textContent = '';
-
-                    const nome = document.getElementById('nomeUsuario').value;
-                    const email = document.getElementById('emailUsuario').value;
-                    const senha = document.getElementById('senhaUsuario').value;
-                    const categoria = document.getElementById('categoriaUsuario').value;
-
-                    try {
-                        const { data, error } = await supabase.auth.signUp({
-                            email: email,
-                            password: senha,
-                            options: {
-                                data: {
-                                    nome: nome,
-                                    categoria: categoria
-                                }
-                            }
-                        });
-
-                        if (error) throw error;
-
-                        // Se o cadastro na autenticação for bem-sucedido, adicione ao perfil customizado
-                        const { error: insertError } = await supabase
-                            .from('usuarios')
-                            .insert([
-                                { id: data.user.id, nome: nome, email: email, categoria: categoria }
-                            ]);
-
-                        if (insertError) throw insertError;
-
-                        usuarioMessage.classList.add('alert-success');
-                        usuarioMessage.textContent = 'Usuário cadastrado com sucesso!';
-                        usuarioForm.reset();
-                        loadUsuarios(); // Recarrega a tabela
-                    } catch (error) {
-                        console.error('Erro ao cadastrar usuário:', error.message);
-                        usuarioMessage.classList.add('alert-danger');
-                        usuarioMessage.textContent = `Erro ao cadastrar usuário: ${error.message}`;
-                    }
-                });
             }
 
             if (usuarioSearchBtn) {
                 usuarioSearchBtn.addEventListener('click', () => {
-                    loadUsuarios(usuarioSearchInput.value);
+                    const searchTerm = usuarioSearchInput.value.trim();
+                    loadUsuariosTable(searchTerm);
                 });
             }
 
             if (usuarioClearSearchBtn) {
                 usuarioClearSearchBtn.addEventListener('click', () => {
                     usuarioSearchInput.value = '';
-                    loadUsuarios();
+                    loadUsuariosTable();
                 });
             }
 
-            // Modal de Edição de Usuário
-            const editUsuarioModal = document.getElementById('editUsuarioModal');
-            const modalUsuarioNomeAtual = document.getElementById('modalUsuarioNomeAtual');
-            const modalUsuarioId = document.getElementById('modalUsuarioId');
-            const modalUsuarioNome = document.getElementById('modalUsuarioNome');
-            const modalUsuarioEmail = document.getElementById('modalUsuarioEmail');
-            const modalUsuarioCategoria = document.getElementById('modalUsuarioCategoria');
-            const modalUsuarioNovaSenha = document.getElementById('modalUsuarioNovaSenha');
-            const modalUsuarioConfirmaSenha = document.getElementById('modalUsuarioConfirmaSenha');
-            const modalEditUsuarioMessage = document.getElementById('modalEditUsuarioMessage');
-            const saveUsuarioBtn = document.getElementById('saveUsuarioBtn');
-
-
-            async function loadUsuarioForEdit(id) {
-                modalEditUsuarioMessage.classList.add('hidden');
-                modalEditUsuarioMessage.textContent = '';
-                modalUsuarioNovaSenha.value = ''; // Limpa a senha ao abrir
+            // --- Modal de Edição de Usuário --- (Modificado para incluir senha e categoria)
+            function openEditUsuarioModal(usuario) {
+                modalUsuarioNomeAtual.textContent = usuario.nome;
+                modalUsuarioId.value = usuario.id;
+                modalUsuarioNome.value = usuario.nome;
+                modalUsuarioEmail.value = usuario.email;
+                modalUsuarioCategoria.value = usuario.categoria || ''; // Preenche a categoria
+                modalUsuarioNovaSenha.value = ''; // Limpa os campos de senha
                 modalUsuarioConfirmaSenha.value = '';
-
-                try {
-                    const { data: usuario, error } = await supabase
-                        .from('usuarios')
-                        .select('*')
-                        .eq('id', id)
-                        .single();
-
-                    if (error) throw error;
-
-                    modalUsuarioId.value = usuario.id;
-                    modalUsuarioNomeAtual.textContent = usuario.nome;
-                    modalUsuarioNome.value = usuario.nome;
-                    modalUsuarioEmail.value = usuario.email;
-                    modalUsuarioCategoria.value = usuario.categoria;
-
-                } catch (error) {
-                    console.error('Erro ao carregar usuário para edição:', error.message);
-                    modalEditUsuarioMessage.classList.remove('hidden');
-                    modalEditUsuarioMessage.classList.add('alert-danger');
-                    modalEditUsuarioMessage.textContent = `Erro ao carregar dados do usuário: ${error.message}`;
-                }
+                modalEditUsuarioMessage.textContent = '';
+                modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
+                editUsuarioModal.show();
             }
 
             if (saveUsuarioBtn) {
                 saveUsuarioBtn.addEventListener('click', async () => {
-                    modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
-                    modalEditUsuarioMessage.textContent = '';
+                    if (!loggedInUser || loggedInUser.categoria !== 'admin') { alert('Permissão negada.'); return; } // Verifica permissão
 
-                    const id = modalUsuarioId.value;
-                    const nome = modalUsuarioNome.value;
-                    const email = modalUsuarioEmail.value;
-                    const categoria = modalUsuarioCategoria.value;
+                    const usuarioId = modalUsuarioId.value;
+                    const novoNome = modalUsuarioNome.value.trim();
+                    const novoEmail = modalUsuarioEmail.value.trim();
+                    const novaCategoria = modalUsuarioCategoria.value; // Pega a nova categoria
                     const novaSenha = modalUsuarioNovaSenha.value;
                     const confirmaSenha = modalUsuarioConfirmaSenha.value;
 
-                    if (novaSenha && novaSenha !== confirmaSenha) {
-                        modalEditUsuarioMessage.classList.remove('hidden');
+                    modalEditUsuarioMessage.textContent = '';
+                    modalEditUsuarioMessage.classList.remove('alert-success', 'alert-danger');
+
+                    if (!novoNome || !novoEmail || !novaCategoria) {
+                        modalEditUsuarioMessage.textContent = 'Nome, email e categoria são obrigatórios.';
                         modalEditUsuarioMessage.classList.add('alert-danger');
-                        modalEditUsuarioMessage.textContent = 'A nova senha e a confirmação de senha não coincidem.';
+                        return;
+                    }
+
+                    if (novaSenha && novaSenha !== confirmaSenha) {
+                        modalEditUsuarioMessage.textContent = 'A nova senha e a confirmação não coincidem.';
+                        modalEditUsuarioMessage.classList.add('alert-danger');
                         return;
                     }
 
                     try {
-                        // Atualizar perfil customizado
-                        const { error: updateProfileError } = await supabase
+                        const updateData = { nome: novoNome, email: novoEmail, categoria: novaCategoria }; // Inclui categoria
+                        if (novaSenha) {
+                            updateData.senha = novaSenha; // Atualiza a senha se um valor foi fornecido
+                        }
+
+                        const { error } = await supabase
                             .from('usuarios')
-                            .update({ nome: nome, email: email, categoria: categoria })
-                            .eq('id', id);
+                            .update(updateData)
+                            .eq('id', usuarioId);
 
-                        if (updateProfileError) throw updateProfileError;
-
-                        // Atualizar autenticação (email e senha)
-                        const updates = {};
-                        if (email !== user.email) { // Atualiza email apenas se mudou
-                            updates.email = email;
+                        if (error) {
+                            if (error.code === '23505') { modalEditUsuarioMessage.textContent = 'Este email já está em uso por outro usuário.'; }
+                            else { throw error; }
+                        } else {
+                            modalEditUsuarioMessage.textContent = 'Usuário atualizado com sucesso!';
+                            modalEditUsuarioMessage.classList.add('alert-success');
+                            setTimeout(() => {
+                                editUsuarioModal.hide();
+                                loadUsuariosTable(); // Recarrega a tabela para mostrar a atualização
+                                // Se o usuário logado editar a própria categoria, recarrega a página para aplicar as permissões
+                                if (loggedInUser.id == usuarioId && loggedInUser.categoria !== novaCategoria) {
+                                    alert('Sua categoria foi alterada. Por favor, faça login novamente.');
+                                    handleLogout(); // Força o logout para recarregar as permissões
+                                }
+                            }, 1000);
                         }
-                        if (novaSenha) { // Atualiza senha apenas se foi fornecida
-                            updates.password = novaSenha;
-                        }
-
-                        if (Object.keys(updates).length > 0) {
-                            const { error: authUpdateError } = await supabase.auth.updateUser(updates);
-                            if (authUpdateError) throw authUpdateError;
-                        }
-
-                        modalEditUsuarioMessage.classList.remove('hidden');
-                        modalEditUsuarioMessage.classList.add('alert-success');
-                        modalEditUsuarioMessage.textContent = 'Usuário atualizado com sucesso!';
-                        $('#editUsuarioModal').modal('hide'); // Fecha o modal
-                        loadUsuarios(); // Recarrega a tabela
                     } catch (error) {
-                        console.error('Erro ao atualizar usuário:', error.message);
-                        modalEditUsuarioMessage.classList.remove('hidden');
-                        modalEditUsuarioMessage.classList.add('alert-danger');
+                        console.error('Erro ao salvar edição de usuário:', error.message);
                         modalEditUsuarioMessage.textContent = `Erro ao atualizar usuário: ${error.message}`;
+                        modalEditUsuarioMessage.classList.add('alert-danger');
                     }
                 });
             }
 
-            async function deleteUsuario(id) {
-                try {
-                    // Primeiro, exclui da tabela de usuários (perfil customizado)
-                    const { error: deleteProfileError } = await supabase
-                        .from('usuarios')
-                        .delete()
-                        .eq('id', id);
-
-                    if (deleteProfileError) throw deleteProfileError;
-
-                    // Opcional: Se desejar excluir o usuário da autenticação do Supabase também
-                    // const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(id);
-                    // if (deleteAuthError) throw deleteAuthError;
-                    // Note: Excluir da auth.users requer chave de serviço/admin, que não é recomendável no cliente.
-                    // Para um app real, isso seria feito via função edge ou backend seguro.
-
-                    alert('Usuário excluído com sucesso!');
-                    loadUsuarios(); // Recarrega a tabela
-                } catch (error) {
-                    console.error('Erro ao excluir usuário:', error.message);
-                    alert(`Erro ao excluir usuário: ${error.message}`);
-                }
-            }
-
-
-            // Inicializa a carga de usuários quando a tela é mostrada
-            document.getElementById('showCadastroUsuarios').addEventListener('click', () => {
-                loadUsuarios();
-            });
-
-
-            // --- Cadastro de Filiais ---
+            // --- Cadastro de Filiais --- (EXISTENTE, mantido)
             const filialForm = document.getElementById('filialForm');
             const filialMessage = document.getElementById('filialMessage');
-            const filiaisTableBody = document.getElementById('filiaisTableBody');
-            const filialSearchInput = document.getElementById('filialSearchInput');
-            const filialSearchBtn = document.getElementById('filialSearchBtn');
-            const filialClearSearchBtn = document.getElementById('filialClearSearchBtn');
-            const filialConsultaMessage = document.getElementById('filialConsultaMessage');
+            if (filialForm) {
+                filialForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
 
+                    const nomeFilial = filialForm.nomeFilial.value;
+                    const responsavelEmail = filialForm.responsavelEmail.value;
 
-            async function loadFiliais(searchTerm = '') {
-                filialConsultaMessage.classList.add('hidden');
-                filiaisTableBody.innerHTML = '';
+                    filialMessage.textContent = ''; filialMessage.classList.remove('alert-success', 'alert-danger');
+
+                    try {
+                        const { data: responsavel, error: responsavelError } = await supabase
+                            .from('usuarios')
+                            .select('id')
+                            .or(`email.eq.${responsavelEmail},nome.ilike.%${responsavelEmail}%`) // Busca por email ou nome
+                            .single();
+
+                        if (responsavelError && responsavelError.code === 'PGRST116') {
+                            filialMessage.textContent = 'Responsável não encontrado. Verifique o email ou nome.';
+                            filialMessage.classList.add('alert-danger');
+                            return;
+                        } else if (responsavelError) { throw responsavelError; }
+
+                        const { data, error } = await supabase
+                            .from('filiais')
+                            .insert({ nome_filial: nomeFilial, responsavel_id: responsavel.id });
+
+                        if (error) {
+                            if (error.code === '23505') { filialMessage.textContent = 'Já existe uma filial com este nome.'; }
+                            else { filialMessage.textContent = `Erro ao cadastrar filial: ${error.message}`; }
+                            filialMessage.classList.add('alert-danger');
+                            console.error('Erro ao cadastrar filial:', error);
+                        } else {
+                            filialMessage.textContent = 'Filial cadastrada com sucesso!';
+                            filialMessage.classList.add('alert-success');
+                            filialForm.reset();
+                            loadFiliaisTable(); // Recarrega a tabela após um novo cadastro
+                        }
+                    } catch (error) {
+                        console.error('Erro geral no cadastro de filial:', error.message);
+                        filialMessage.textContent = `Erro: ${error.message}`;
+                        filialMessage.classList.add('alert-danger');
+                    }
+                });
+            }
+
+            // --- Consulta e Edição de Filiais (EXISTENTE, mantido) ---
+            async function loadFiliaisTable(searchTerm = '') {
+                filiaisTableBody.innerHTML = ''; // Limpa a tabela
+                filialConsultaMessage.textContent = ''; filialConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
+
                 try {
-                    let query = supabase.from('filiais').select(`
-                        id,
-                        nome_filial,
-                        responsavel:responsavel_id (
+                    let query = supabase
+                        .from('filiais')
+                        .select(`
                             id,
-                            nome,
-                            email
-                        )
-                    `).order('nome_filial', { ascending: true });
+                            nome_filial,
+                            responsavel:responsavel_id (
+                                id,
+                                nome,
+                                email
+                            )
+                        `);
 
                     if (searchTerm) {
+                        // Buscar por nome da filial OU nome/email do responsável
                         query = query.or(`nome_filial.ilike.%${searchTerm}%,responsavel.nome.ilike.%${searchTerm}%,responsavel.email.ilike.%${searchTerm}%`);
                     }
 
-                    const { data: filiais, error } = await query;
+                    const { data: filiais, error } = await query.order('nome_filial', { ascending: true });
 
-                    if (error) throw error;
+                    if (error) { throw error; }
 
-                    if (filiais.length === 0) {
-                        filialConsultaMessage.classList.remove('hidden');
+                    if (!filiais || filiais.length === 0) {
                         filialConsultaMessage.textContent = 'Nenhuma filial encontrada.';
+                        filialConsultaMessage.classList.add('alert-info');
                         return;
                     }
 
                     filiais.forEach(filial => {
                         const row = filiaisTableBody.insertRow();
-                        const responsavelNome = filial.responsavel ? filial.responsavel.nome : 'N/A';
-                        row.innerHTML = `
-                            <td>${filial.nome_filial}</td>
-                            <td>${responsavelNome}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info edit-filial-btn" data-id="${filial.id}" data-bs-toggle="modal" data-bs-target="#editFilialResponsavelModal">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger delete-filial-btn" data-id="${filial.id}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        `;
-                    });
-
-                    // Adiciona listeners para os botões de editar e excluir
-                    filiaisTableBody.querySelectorAll('.edit-filial-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const id = e.currentTarget.dataset.id;
-                            await loadFilialForEdit(id);
-                        });
-                    });
-
-                    filiaisTableBody.querySelectorAll('.delete-filial-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const id = e.currentTarget.dataset.id;
-                            if (confirm('Tem certeza que deseja excluir esta filial?')) {
-                                await deleteFilial(id);
-                            }
-                        });
+                        row.insertCell(0).textContent = filial.nome_filial;
+                        row.insertCell(1).textContent = filial.responsavel ? filial.responsavel.nome : 'N/A';
+                        const actionsCell = row.insertCell(2);
+                        const editButton = document.createElement('button');
+                        editButton.classList.add('btn', 'btn-sm', 'btn-info');
+                        editButton.innerHTML = '<i class="bi bi-pencil"></i> Editar Responsável';
+                        editButton.addEventListener('click', () => openEditFilialResponsavelModal(filial));
+                        actionsCell.appendChild(editButton);
                     });
 
                 } catch (error) {
-                    console.error('Erro ao carregar filiais:', error.message);
-                    filialConsultaMessage.classList.remove('hidden');
+                    console.error('Erro ao carregar filiais para consulta:', error.message);
                     filialConsultaMessage.textContent = `Erro ao carregar filiais: ${error.message}`;
+                    filialConsultaMessage.classList.add('alert-danger');
                 }
             }
 
-            if (filialForm) {
-                filialForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    filialMessage.classList.remove('alert-success', 'alert-danger');
-                    filialMessage.textContent = '';
-
-                    const nomeFilial = document.getElementById('nomeFilial').value;
-                    const responsavelInput = document.getElementById('responsavelEmail').value;
-
-                    try {
-                        // Buscar ID do responsável (assumindo que responsavelInput pode ser email ou nome)
-                        let responsavelId = null;
-                        if (responsavelInput) {
-                            const { data: responsavelUser, error: responsavelError } = await supabase
-                                .from('usuarios')
-                                .select('id')
-                                .or(`email.eq.${responsavelInput},nome.ilike.${responsavelInput}`)
-                                .single();
-
-                            if (responsavelError && responsavelError.code !== 'PGRST116') { // PGRST116 = No rows found
-                                throw responsavelError;
-                            }
-                            if (responsavelUser) {
-                                responsavelId = responsavelUser.id;
-                            } else {
-                                throw new Error('Responsável não encontrado. Verifique o email ou nome.');
-                            }
-                        }
-
-                        const { error } = await supabase
-                            .from('filiais')
-                            .insert([
-                                { nome_filial: nomeFilial, responsavel_id: responsavelId }
-                            ]);
-
-                        if (error) throw error;
-
-                        filialMessage.classList.add('alert-success');
-                        filialMessage.textContent = 'Filial cadastrada com sucesso!';
-                        filialForm.reset();
-                        loadFiliais(); // Recarrega a tabela
-                        loadFiliaisIntoSelect2(); // Recarrega o select do dashboard
-                    } catch (error) {
-                        console.error('Erro ao cadastrar filial:', error.message);
-                        filialMessage.classList.add('alert-danger');
-                        filialMessage.textContent = `Erro ao cadastrar filial: ${error.message}`;
-                    }
-                });
+            function openEditFilialResponsavelModal(filial) {
+                modalFilialNome.textContent = filial.nome_filial;
+                modalFilialId.value = filial.id;
+                modalResponsavelEmail.value = filial.responsavel ? filial.responsavel.email : ''; // Preenche com email atual
+                modalEditFilialMessage.textContent = '';
+                modalEditFilialMessage.classList.remove('alert-success', 'alert-danger');
+                editFilialResponsavelModal.show();
             }
 
             if (filialSearchBtn) {
                 filialSearchBtn.addEventListener('click', () => {
-                    loadFiliais(filialSearchInput.value);
+                    const searchTerm = filialSearchInput.value.trim();
+                    loadFiliaisTable(searchTerm);
                 });
             }
 
             if (filialClearSearchBtn) {
                 filialClearSearchBtn.addEventListener('click', () => {
                     filialSearchInput.value = '';
-                    loadFiliais();
+                    loadFiliaisTable(); // Recarrega sem termo de busca
                 });
-            }
-
-            // Modal de Edição de Filial
-            const editFilialResponsavelModal = document.getElementById('editFilialResponsavelModal');
-            const modalFilialNome = document.getElementById('modalFilialNome');
-            const modalFilialId = document.getElementById('modalFilialId');
-            const modalResponsavelEmail = document.getElementById('modalResponsavelEmail');
-            const modalEditFilialMessage = document.getElementById('modalEditFilialMessage');
-            const saveFilialResponsavelBtn = document.getElementById('saveFilialResponsavelBtn');
-
-            async function loadFilialForEdit(id) {
-                modalEditFilialMessage.classList.add('hidden');
-                modalEditFilialMessage.textContent = '';
-                modalResponsavelEmail.value = ''; // Limpa o campo ao abrir
-
-                try {
-                    const { data: filial, error } = await supabase
-                        .from('filiais')
-                        .select(`
-                            id,
-                            nome_filial,
-                            responsavel:responsavel_id (
-                                nome,
-                                email
-                            )
-                        `)
-                        .eq('id', id)
-                        .single();
-
-                    if (error) throw error;
-
-                    modalFilialId.value = filial.id;
-                    modalFilialNome.textContent = filial.nome_filial;
-                    modalResponsavelEmail.value = filial.responsavel ? filial.responsavel.email : ''; // Preenche com email do responsável
-
-                } catch (error) {
-                    console.error('Erro ao carregar filial para edição:', error.message);
-                    modalEditFilialMessage.classList.remove('hidden');
-                    modalEditFilialMessage.classList.add('alert-danger');
-                    modalEditFilialMessage.textContent = `Erro ao carregar dados da filial: ${error.message}`;
-                }
             }
 
             if (saveFilialResponsavelBtn) {
                 saveFilialResponsavelBtn.addEventListener('click', async () => {
-                    modalEditFilialMessage.classList.remove('alert-success', 'alert-danger');
-                    modalEditFilialMessage.textContent = '';
+                    const filialId = modalFilialId.value;
+                    const novoResponsavelTerm = modalResponsavelEmail.value.trim();
 
-                    const id = modalFilialId.value;
-                    const novoResponsavelInput = modalResponsavelEmail.value;
-                    let responsavelId = null;
+                    modalEditFilialMessage.textContent = '';
+                    modalEditFilialMessage.classList.remove('alert-success', 'alert-danger');
+
+                    if (!novoResponsavelTerm) {
+                        modalEditFilialMessage.textContent = 'Por favor, digite o email ou nome do novo responsável.';
+                        modalEditFilialMessage.classList.add('alert-danger');
+                        return;
+                    }
 
                     try {
-                        if (novoResponsavelInput) {
-                            const { data: responsavelUser, error: responsavelError } = await supabase
-                                .from('usuarios')
-                                .select('id')
-                                .or(`email.eq.${novoResponsavelInput},nome.ilike.${novoResponsavelInput}`)
-                                .single();
+                        const { data: usuario, error: usuarioError } = await supabase
+                            .from('usuarios')
+                            .select('id')
+                            .or(`email.eq.${novoResponsavelTerm},nome.ilike.%${novoResponsavelTerm}%`)
+                            .single();
 
-                            if (responsavelError && responsavelError.code !== 'PGRST116') {
-                                throw responsavelError;
-                            }
-                            if (responsavelUser) {
-                                responsavelId = responsavelUser.id;
-                            } else {
-                                throw new Error('Novo responsável não encontrado. Verifique o email ou nome.');
-                            }
+                        if (usuarioError && usuarioError.code === 'PGRST116') {
+                            modalEditFilialMessage.textContent = 'Usuário não encontrado. Verifique o email ou nome do novo responsável.';
+                            modalEditFilialMessage.classList.add('alert-danger');
+                            return;
+                        } else if (usuarioError) {
+                            throw usuarioError;
                         }
+
+                        const novoResponsavelId = usuario.id;
 
                         const { error } = await supabase
                             .from('filiais')
-                            .update({ responsavel_id: responsavelId })
-                            .eq('id', id);
+                            .update({ responsavel_id: novoResponsavelId })
+                            .eq('id', filialId);
 
-                        if (error) throw error;
+                        if (error) {
+                            throw error;
+                        }
 
-                        modalEditFilialMessage.classList.remove('hidden');
+                        modalEditFilialMessage.textContent = 'Responsável da filial atualizado com sucesso!';
                         modalEditFilialMessage.classList.add('alert-success');
-                        modalEditFilialMessage.textContent = 'Filial atualizada com sucesso!';
-                        $('#editFilialResponsavelModal').modal('hide'); // Fecha o modal
-                        loadFiliais(); // Recarrega a tabela
-                        loadResponsaveisForFilter(selectResponsavel); // Recarrega select de responsáveis no dashboard
+                        setTimeout(() => {
+                            editFilialResponsavelModal.hide();
+                            loadFiliaisTable(); // Recarrega a tabela de filiais para mostrar a atualização
+                        }, 1000);
+
                     } catch (error) {
-                        console.error('Erro ao atualizar filial:', error.message);
-                        modalEditFilialMessage.classList.remove('hidden');
+                        console.error('Erro ao salvar novo responsável:', error.message);
+                        modalEditFilialMessage.textContent = `Erro: ${error.message}`;
                         modalEditFilialMessage.classList.add('alert-danger');
-                        modalEditFilialMessage.textContent = `Erro ao atualizar filial: ${error.message}`;
                     }
                 });
             }
 
-            async function deleteFilial(id) {
-                try {
-                    const { error } = await supabase
-                        .from('filiais')
-                        .delete()
-                        .eq('id', id);
-
-                    if (error) throw error;
-
-                    alert('Filial excluída com sucesso!');
-                    loadFiliais(); // Recarrega a tabela
-                    loadFiliaisIntoSelect2(); // Recarrega o select do dashboard
-                } catch (error) {
-                    console.error('Erro ao excluir filial:', error.message);
-                    alert(`Erro ao excluir filial: ${error.message}`);
-                }
-            }
-
-            // Inicializa a carga de filiais quando a tela é mostrada
-            document.getElementById('showCadastroFiliais').addEventListener('click', () => {
-                loadFiliais();
-            });
-
-            // --- Cadastro de Equipamentos ---
+            // --- Cadastro de Equipamentos --- (EXISTENTE, com consulta adicionada)
             const equipamentoForm = document.getElementById('equipamentoForm');
             const equipamentoMessage = document.getElementById('equipamentoMessage');
-            const equipamentosTableBody = document.getElementById('equipamentosTableBody');
-            const equipamentoSearchInput = document.getElementById('equipamentoSearchInput');
-            const equipamentoSearchBtn = document.getElementById('equipamentoSearchBtn');
-            const equipamentoClearSearchBtn = document.getElementById('equipamentoClearSearchBtn');
-            const equipamentoConsultaMessage = document.getElementById('equipamentoConsultaMessage');
+            if (equipamentoForm) {
+                equipamentoForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
 
-            async function loadEquipamentos(searchTerm = '') {
-                equipamentoConsultaMessage.classList.add('hidden');
+                    const placa = equipamentoForm.placa.value;
+                    const tipoEquipamento = equipamentoForm.tipoEquipamento.value;
+
+                    equipamentoMessage.textContent = ''; equipamentoMessage.classList.remove('alert-success', 'alert-danger');
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('equipamentos')
+                            .insert({ placa: placa, tipo_equipamento: tipoEquipamento });
+
+                        if (error) {
+                            if (error.code === '23505') { equipamentoMessage.textContent = 'Já existe um equipamento com esta placa.'; }
+                            else { equipamentoMessage.textContent = `Erro ao cadastrar equipamento: ${error.message}`; }
+                            equipamentoMessage.classList.add('alert-danger');
+                            console.error('Erro ao cadastrar equipamento:', error);
+                        } else {
+                            equipamentoMessage.textContent = 'Equipamento cadastrado com sucesso!';
+                            equipamentoMessage.classList.add('alert-success');
+                            equipamentoForm.reset();
+                            loadEquipamentosTable(); // Recarrega a tabela após um novo cadastro
+                        }
+                    } catch (error) {
+                        console.error('Erro geral no cadastro de equipamento:', error.message);
+                        equipamentoMessage.textContent = `Erro: ${error.message}`;
+                        equipamentoMessage.classList.add('alert-danger');
+                    }
+                });
+            }
+
+            // --- Consulta de Equipamentos --- (NOVO)
+            async function loadEquipamentosTable(searchTerm = '') {
                 equipamentosTableBody.innerHTML = '';
+                equipamentoConsultaMessage.textContent = ''; equipamentoConsultaMessage.classList.remove('alert-success', 'alert-danger', 'alert-info');
+
                 try {
-                    let query = supabase.from('equipamentos').select(`
-                        id,
-                        placa,
-                        tipo,
-                        filial:filial_id (
-                            nome_filial
-                        )
-                    `).order('placa', { ascending: true });
+                    let query = supabase.from('equipamentos').select('id, placa, tipo_equipamento');
 
                     if (searchTerm) {
-                        query = query.or(`placa.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%,filial.nome_filial.ilike.%${searchTerm}%`);
+                        query = query.or(`placa.ilike.%${searchTerm}%,tipo_equipamento.ilike.%${searchTerm}%`);
                     }
 
-                    const { data: equipamentos, error } = await query;
+                    const { data: equipamentos, error } = await query.order('placa', { ascending: true });
 
-                    if (error) throw error;
+                    if (error) { throw error; }
 
-                    if (equipamentos.length === 0) {
-                        equipamentoConsultaMessage.classList.remove('hidden');
+                    if (!equipamentos || equipamentos.length === 0) {
                         equipamentoConsultaMessage.textContent = 'Nenhum equipamento encontrado.';
+                        equipamentoConsultaMessage.classList.add('alert-info');
                         return;
                     }
 
                     equipamentos.forEach(equipamento => {
                         const row = equipamentosTableBody.insertRow();
-                        const nomeFilial = equipamento.filial ? equipamento.filial.nome_filial : 'N/A';
-                        row.innerHTML = `
-                            <td>${equipamento.placa}</td>
-                            <td>${equipamento.tipo}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info edit-equipamento-btn" data-id="${equipamento.id}" data-bs-toggle="modal" data-bs-target="#editEquipamentoModal">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger delete-equipamento-btn" data-id="${equipamento.id}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        `;
-                    });
-
-                    equipamentosTableBody.querySelectorAll('.edit-equipamento-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const id = e.currentTarget.dataset.id;
-                            await loadEquipamentoForEdit(id);
-                        });
-                    });
-
-                    equipamentosTableBody.querySelectorAll('.delete-equipamento-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            const id = e.currentTarget.dataset.id;
-                            if (confirm('Tem certeza que deseja excluir este equipamento?')) {
-                                await deleteEquipamento(id);
-                            }
-                        });
+                        row.insertCell(0).textContent = equipamento.placa;
+                        row.insertCell(1).textContent = equipamento.tipo_equipamento;
+                        const actionsCell = row.insertCell(2);
+                        const editButton = document.createElement('button');
+                        editButton.classList.add('btn', 'btn-sm', 'btn-info', 'me-2');
+                        editButton.innerHTML = '<i class="bi bi-pencil"></i> Editar Tipo';
+                        editButton.addEventListener('click', () => openEditEquipamentoModal(equipamento));
+                        actionsCell.appendChild(editButton);
                     });
 
                 } catch (error) {
-                    console.error('Erro ao carregar equipamentos:', error.message);
-                    equipamentoConsultaMessage.classList.remove('hidden');
+                    console.error('Erro ao carregar equipamentos para consulta:', error.message);
                     equipamentoConsultaMessage.textContent = `Erro ao carregar equipamentos: ${error.message}`;
+                    equipamentoConsultaMessage.classList.add('alert-danger');
                 }
-            }
-
-            if (equipamentoForm) {
-                equipamentoForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    equipamentoMessage.classList.remove('alert-success', 'alert-danger');
-                    equipamentoMessage.textContent = '';
-
-                    const placa = document.getElementById('placa').value;
-                    const tipo = document.getElementById('tipoEquipamento').value;
-
-                    try {
-                        const { error } = await supabase
-                            .from('equipamentos')
-                            .insert([
-                                { placa: placa, tipo: tipo }
-                            ]);
-
-                        if (error) throw error;
-
-                        equipamentoMessage.classList.add('alert-success');
-                        equipamentoMessage.textContent = 'Equipamento cadastrado com sucesso!';
-                        equipamentoForm.reset();
-                        loadEquipamentos(); // Recarrega a tabela
-                    } catch (error) {
-                        console.error('Erro ao cadastrar equipamento:', error.message);
-                        equipamentoMessage.classList.add('alert-danger');
-                        equipamentoMessage.textContent = `Erro ao cadastrar equipamento: ${error.message}`;
-                    }
-                });
             }
 
             if (equipamentoSearchBtn) {
                 equipamentoSearchBtn.addEventListener('click', () => {
-                    loadEquipamentos(equipamentoSearchInput.value);
+                    const searchTerm = equipamentoSearchInput.value.trim();
+                    loadEquipamentosTable(searchTerm);
                 });
             }
 
             if (equipamentoClearSearchBtn) {
                 equipamentoClearSearchBtn.addEventListener('click', () => {
                     equipamentoSearchInput.value = '';
-                    loadEquipamentos();
+                    loadEquipamentosTable();
                 });
             }
 
-            // Modal de Edição de Equipamento
-            const editEquipamentoModal = document.getElementById('editEquipamentoModal');
-            const modalEquipamentoPlaca = document.getElementById('modalEquipamentoPlaca');
-            const modalEquipamentoId = document.getElementById('modalEquipamentoId');
-            const modalEquipamentoTipo = document.getElementById('modalEquipamentoTipo');
-            const modalEditEquipamentoMessage = document.getElementById('modalEditEquipamentoMessage');
-            const saveEquipamentoBtn = document.getElementById('saveEquipamentoBtn');
-
-            async function loadEquipamentoForEdit(id) {
-                modalEditEquipamentoMessage.classList.add('hidden');
+            // --- Modal de Edição de Equipamento --- (NOVO)
+            function openEditEquipamentoModal(equipamento) {
+                modalEquipamentoPlaca.textContent = equipamento.placa;
+                modalEquipamentoId.value = equipamento.id;
+                modalEquipamentoTipo.value = equipamento.tipo_equipamento; // Preenche com o tipo atual
                 modalEditEquipamentoMessage.textContent = '';
-
-                try {
-                    const { data: equipamento, error } = await supabase
-                        .from('equipamentos')
-                        .select('*')
-                        .eq('id', id)
-                        .single();
-
-                    if (error) throw error;
-
-                    modalEquipamentoId.value = equipamento.id;
-                    modalEquipamentoPlaca.textContent = equipamento.placa;
-                    modalEquipamentoTipo.value = equipamento.tipo;
-
-                } catch (error) {
-                    console.error('Erro ao carregar equipamento para edição:', error.message);
-                    modalEditEquipamentoMessage.classList.remove('hidden');
-                    modalEditEquipamentoMessage.classList.add('alert-danger');
-                    modalEditEquipamentoMessage.textContent = `Erro ao carregar dados do equipamento: ${error.message}`;
-                }
+                modalEditEquipamentoMessage.classList.remove('alert-success', 'alert-danger');
+                editEquipamentoModal.show();
             }
 
             if (saveEquipamentoBtn) {
                 saveEquipamentoBtn.addEventListener('click', async () => {
-                    modalEditEquipamentoMessage.classList.remove('alert-success', 'alert-danger');
-                    modalEditEquipamentoMessage.textContent = '';
+                    const equipamentoId = modalEquipamentoId.value;
+                    const novoTipo = modalEquipamentoTipo.value;
 
-                    const id = modalEquipamentoId.value;
-                    const tipo = modalEquipamentoTipo.value;
+                    modalEditEquipamentoMessage.textContent = '';
+                    modalEditEquipamentoMessage.classList.remove('alert-success', 'alert-danger');
+
+                    if (!novoTipo) {
+                        modalEditEquipamentoMessage.textContent = 'Por favor, selecione um tipo de equipamento.';
+                        modalEditEquipamentoMessage.classList.add('alert-danger');
+                        return;
+                    }
 
                     try {
                         const { error } = await supabase
                             .from('equipamentos')
-                            .update({ tipo: tipo })
-                            .eq('id', id);
+                            .update({ tipo_equipamento: novoTipo })
+                            .eq('id', equipamentoId);
 
-                        if (error) throw error;
+                        if (error) {
+                            throw error;
+                        }
 
-                        modalEditEquipamentoMessage.classList.remove('hidden');
+                        modalEditEquipamentoMessage.textContent = 'Tipo de equipamento atualizado com sucesso!';
                         modalEditEquipamentoMessage.classList.add('alert-success');
-                        modalEditEquipamentoMessage.textContent = 'Equipamento atualizado com sucesso!';
-                        $('#editEquipamentoModal').modal('hide'); // Fecha o modal
-                        loadEquipamentos(); // Recarrega a tabela
-                        loadEquipamentosDashboard(); // Recarrega o dashboard
+                        setTimeout(() => {
+                            editEquipamentoModal.hide();
+                            loadEquipamentosTable(); // Recarrega a tabela para mostrar a atualização
+                        }, 1000);
+
                     } catch (error) {
-                        console.error('Erro ao atualizar equipamento:', error.message);
-                        modalEditEquipamentoMessage.classList.remove('hidden');
-                        modalEditEquipamentoMessage.classList.add('alert-danger');
+                        console.error('Erro ao salvar novo tipo de equipamento:', error.message);
                         modalEditEquipamentoMessage.textContent = `Erro ao atualizar equipamento: ${error.message}`;
+                        modalEditEquipamentoMessage.classList.add('alert-danger');
                     }
                 });
             }
 
-            async function deleteEquipamento(id) {
-                try {
-                    const { error } = await supabase
-                        .from('equipamentos')
-                        .delete()
-                        .eq('id', id);
-
-                    if (error) throw error;
-
-                    alert('Equipamento excluído com sucesso!');
-                    loadEquipamentos(); // Recarrega a tabela
-                    loadEquipamentosDashboard(); // Recarrega o dashboard
-                } catch (error) {
-                    console.error('Erro ao excluir equipamento:', error.message);
-                    alert(`Erro ao excluir equipamento: ${error.message}`);
-                }
-            }
-
-            // Inicializa a carga de equipamentos quando a tela é mostrada
-            document.getElementById('showCadastroEquipamentos').addEventListener('click', () => {
-                loadEquipamentos();
-            });
-
-
-            // --- Troca de Filial (Operacional) ---
+            // --- Troca de Filial Fixa --- (EXISTENTE, mantido)
             const trocaFilialForm = document.getElementById('trocaFilialForm');
             const placaEquipamentoInput = document.getElementById('placaEquipamento');
-            const equipamentosDatalist = document.getElementById('equipamentosList');
+            const equipamentosList = document.getElementById('equipamentosList');
             const novaFilialSelect = document.getElementById('novaFilial');
-            const dataExecucaoInput = document.getElementById('dataExecucao');
             const trocaFilialMessage = document.getElementById('trocaFilialMessage');
+            const dataExecucaoInput = document.getElementById('dataExecucao');
 
-
-            async function loadEquipamentosForDatalist() {
-                try {
-                    const { data: equipamentos, error } = await supabase
-                        .from('equipamentos')
-                        .select('placa')
-                        .order('placa', { ascending: true });
-
-                    if (error) throw error;
-
-                    equipamentosDatalist.innerHTML = ''; // Limpa as opções existentes
-                    equipamentos.forEach(equipamento => {
-                        const option = document.createElement('option');
-                        option.value = equipamento.placa;
-                        equipamentosDatalist.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('Erro ao carregar placas de equipamentos para datalist:', error.message);
-                }
+            async function loadFiliaisIntoSelect(selectElement) {
+                const { data, error } = await supabase.from('filiais').select('id, nome_filial');
+                if (error) { console.error('Erro ao carregar filiais:', error.message); return; }
+                selectElement.innerHTML = '<option value="">Selecione...</option>';
+                data.forEach(filial => {
+                    const option = document.createElement('option');
+                    option.value = filial.id;
+                    option.textContent = filial.nome_filial;
+                    selectElement.appendChild(option);
+                });
             }
 
-            async function loadFiliaisForTroca() {
-                try {
-                    const { data: filiais, error } = await supabase
-                        .from('filiais')
-                        .select('id, nome_filial')
-                        .order('nome_filial', { ascending: true });
-
-                    if (error) throw error;
-
-                    novaFilialSelect.innerHTML = '<option value="">Selecione...</option>'; // Limpa e adiciona default
-                    filiais.forEach(filial => {
-                        const option = document.createElement('option');
-                        option.value = filial.id;
-                        option.textContent = filial.nome_filial;
-                        novaFilialSelect.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('Erro ao carregar filiais para troca:', error.message);
-                }
+            async function loadEquipamentoPlacasIntoDatalist(datalistElement) {
+                const { data, error } = await supabase.from('equipamentos').select('placa');
+                if (error) { console.error('Erro ao carregar placas:', error.message); return; }
+                datalistElement.innerHTML = '';
+                data.forEach(equipamento => {
+                    const option = document.createElement('option');
+                    option.value = equipamento.placa;
+                    datalistElement.appendChild(option);
+                });
             }
 
             if (trocaFilialForm) {
-                trocaFilialForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    trocaFilialMessage.classList.remove('alert-success', 'alert-danger');
-                    trocaFilialMessage.textContent = '';
+                trocaFilialForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    if (!loggedInUser) { checkAuthAndNavigate(); return; }
 
                     const placa = placaEquipamentoInput.value;
                     const novaFilialId = novaFilialSelect.value;
                     const dataExecucao = dataExecucaoInput.value;
 
+                    trocaFilialMessage.textContent = ''; trocaFilialMessage.classList.remove('alert-success', 'alert-danger');
+
                     try {
-                        // 1. Encontrar o ID do equipamento pela placa
-                        const { data: equipamento, error: equipError } = await supabase
+                        const { data: equipamento, error: equipamentoError } = await supabase
                             .from('equipamentos')
                             .select('id')
                             .eq('placa', placa)
                             .single();
 
-                        if (equipError || !equipamento) {
-                            throw new Error('Equipamento com esta placa não encontrado.');
-                        }
+                        if (equipamentoError && equipamentoError.code === 'PGRST116') {
+                            trocaFilialMessage.textContent = 'Equipamento não encontrado com esta placa.';
+                            trocaFilialMessage.classList.add('alert-danger');
+                            return;
+                        } else if (equipamentoError) { throw equipamentoError; }
                         const equipamentoId = equipamento.id;
 
-                        // 2. Atualizar a filial_id do equipamento
-                        const { error: updateError } = await supabase
-                            .from('equipamentos')
-                            .update({ filial_id: novaFilialId })
-                            .eq('id', equipamentoId);
+                        const { data: historicoAntigo, error: historicoAntigoError } = await supabase
+                            .from('historico_filiais_equipamentos')
+                            .select('id')
+                            .eq('equipamento_id', equipamentoId)
+                            .is('data_fim', null)
+                            .single();
 
-                        if (updateError) throw updateError;
+                        if (historicoAntigoError && historicoAntigoError.code !== 'PGRST116') {
+                            throw historicoAntigoError;
+                        }
 
-                        // 3. Registrar a troca na tabela de histórico_trocas_filial
-                        const { error: historyError } = await supabase
-                            .from('historico_trocas_filial')
-                            .insert([
-                                {
-                                    equipamento_id: equipamentoId,
-                                    filial_id_destino: novaFilialId,
-                                    data_execucao: dataExecucao
-                                }
-                            ]);
+                        if (historicoAntigo) {
+                            const { error: updateError } = await supabase
+                                .from('historico_filiais_equipamentos')
+                                .update({ data_fim: new Date(dataExecucao).toISOString().split('T')[0] })
+                                .eq('id', historicoAntigo.id);
+                            if (updateError) throw updateError;
+                        }
 
-                        if (historyError) throw historyError;
+                        const { data: novoHistorico, error: novoHistoricoError } = await supabase
+                            .from('historico_filiais_equipamentos')
+                            .insert({
+                                equipamento_id: equipamentoId,
+                                filial_id: novaFilialId,
+                                data_inicio: dataExecucao,
+                                data_fim: null
+                            });
 
+                        if (novoHistoricoError) throw novoHistoricoError;
 
-                        trocaFilialMessage.classList.add('alert-success');
                         trocaFilialMessage.textContent = 'Troca de filial registrada com sucesso!';
+                        trocaFilialMessage.classList.add('alert-success');
                         trocaFilialForm.reset();
-                        loadEquipamentosDashboard(); // Recarrega o dashboard
+                        await loadEquipamentoPlacasIntoDatalist(equipamentosList); // Recarrega para manter datalist atualizado
                     } catch (error) {
-                        console.error('Erro ao registrar troca de filial:', error.message);
+                        console.error('Erro na troca de filial:', error.message);
+                        trocaFilialMessage.textContent = `Erro: ${error.message}`;
                         trocaFilialMessage.classList.add('alert-danger');
-                        trocaFilialMessage.textContent = `Erro ao registrar troca de filial: ${error.message}`;
                     }
                 });
             }
 
-            document.getElementById('showTrocaFilial').addEventListener('click', () => {
-                loadEquipamentosForDatalist();
-                loadFiliaisForTroca();
-            });
+            // --- Dashboard de Visualização (MODIFICADO PARA KANBAN) ---
+            const selectResponsavel = document.getElementById('selectResponsavel');
+            const selectFiliais = document.getElementById('selectFiliais'); // Novo Select2 para filiais
+            const filterDashboardBtn = document.getElementById('filterDashboardBtn');
+            const kanbanBoard = document.getElementById('kanbanBoard'); // Agora é o contêiner do Kanban
+            const kanbanMessage = document.getElementById('kanbanMessage');
+            const filterStartDateInput = document.getElementById('filterStartDate');
+            const filterEndDateInput = document.getElementById('filterEndDate');
+            const filterSearchInput = document.getElementById('filterSearchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
 
-            // Gerenciamento de Dashboard (Filtros)
+            // Set default dates for the filter (e.g., last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            filterEndDateInput.value = today.toISOString().split('T')[0];
+            filterStartDateInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+
+
+            async function loadResponsaveisForFilter(selectElement) {
+                const { data, error } = await supabase.from('usuarios').select('id, nome');
+                if (error) { console.error('Erro ao carregar responsáveis:', error.message); return; }
+                selectElement.innerHTML = '<option value="">Todos os Responsáveis</option>';
+                data.forEach(responsavel => {
+                    const option = document.createElement('option');
+                    option.value = responsavel.id;
+                    option.textContent = responsavel.nome;
+                    selectElement.appendChild(option);
+                });
+            }
+
+            async function loadFiliaisIntoSelect2() {
+                const { data, error } = await supabase.from('filiais').select('id, nome_filial');
+                if (error) { console.error('Erro ao carregar filiais para Select2:', error.message); return; }
+
+                $('#selectFiliais').empty(); // Limpa as opções existentes
+                data.forEach(filial => {
+                    const newOption = new Option(filial.nome_filial, filial.id, false, false);
+                    $('#selectFiliais').append(newOption);
+                });
+                $('#selectFiliais').trigger('change'); // Notifica Select2 da mudança
+            }
+
+
+            async function loadEquipamentosDashboard() {
+                kanbanBoard.innerHTML = ''; // Limpa o board
+                kanbanMessage.classList.add('hidden'); // Esconde a mensagem de "nenhum resultado" por padrão
+
+                try {
+                    const selectedResponsavelId = selectResponsavel.value === "" ? null : selectResponsavel.value;
+                    const selectedFilialIds = $('#selectFiliais').val(); // Obtém os IDs das filiais selecionadas do Select2
+                    const startDate = filterStartDateInput.value;
+                    const endDate = filterEndDateInput.value;
+                    const searchTerm = filterSearchInput.value.toLowerCase();
+
+                    let query = supabase
+                        .from('historico_filiais_equipamentos')
+                        .select(`
+                            *,
+                            equipamentos:equipamento_id (placa, tipo_equipamento),
+                            filiais:filial_id (id, nome_filial, responsavel:responsavel_id (id, nome))
+                        `)
+                        .is('data_fim', null); // Apenas equipamentos ativos (com data_fim nula)
+
+                    // Filtra por responsável, se selecionado
+                    if (selectedResponsavelId) {
+                        query = query.eq('filiais.responsavel_id', selectedResponsavelId);
+                    }
+
+                    // Filtra por filiais, se selecionadas (apenas se houver alguma seleção)
+                    if (selectedFilialIds && selectedFilialIds.length > 0) {
+                        query = query.in('filial_id', selectedFilialIds);
+                    }
+
+                    // Filtra por data_inicio dentro do período, se preenchido
+                    if (startDate) {
+                        query = query.gte('data_inicio', startDate);
+                    }
+                    if (endDate) {
+                        query = query.lte('data_inicio', endDate);
+                    }
+
+                    const { data: historicoEquipamentos, error } = await query;
+
+                    if (error) { throw error; }
+
+                    let filteredData = historicoEquipamentos || [];
+
+                    // Filtro por termo de pesquisa (placa ou tipo de equipamento ou filial)
+                    if (searchTerm) {
+                        filteredData = filteredData.filter(item =>
+                            item.equipamentos?.placa?.toLowerCase().includes(searchTerm) ||
+                            item.equipamentos?.tipo_equipamento?.toLowerCase().includes(searchTerm) ||
+                            item.filiais?.nome_filial?.toLowerCase().includes(searchTerm)
+                        );
+                    }
+
+                    // Agrupar equipamentos por filial
+                    const equipamentosPorFilial = filteredData.reduce((acc, item) => {
+                        const filialId = item.filial_id;
+                        const filialNome = item.filiais?.nome_filial || 'Filial Desconhecida';
+                        const responsavelNome = item.filiais?.responsavel?.nome || 'Responsável Desconhecido';
+
+                        if (!acc[filialId]) {
+                            acc[filialId] = { id: filialId, nome: filialNome, responsavel: responsavelNome, equipamentos: [] };
+                        }
+                        acc[filialId].equipamentos.push({
+                            placa: item.equipamentos?.placa || 'N/A',
+                            tipo_equipamento: item.equipamentos?.tipo_equipamento || 'N/A',
+                            data_inicio: item.data_inicio
+                        });
+                        return acc;
+                    }, {});
+
+                    // Ordenar as filiais pelo nome
+                    const sortedFiliais = Object.values(equipamentosPorFilial).sort((a, b) => a.nome.localeCompare(b.nome));
+
+                    if (sortedFiliais.length === 0) {
+                        kanbanMessage.classList.remove('hidden'); // Mostra a mensagem de "nenhum resultado"
+                        kanbanBoard.innerHTML = ''; // Garante que o board esteja vazio
+                        return;
+                    }
+
+                    sortedFiliais.forEach(filialData => {
+                        const columnDiv = document.createElement('div');
+                        columnDiv.classList.add('kanban-column');
+
+                        const headerDiv = document.createElement('div');
+                        headerDiv.classList.add('kanban-column-header');
+                        headerDiv.innerHTML = `<span>${filialData.nome}</span> <span class="badge bg-secondary">${filialData.equipamentos.length}</span>`;
+                        columnDiv.appendChild(headerDiv);
+
+                        // Ordenar cartões por data de início do mais recente para o mais antigo
+                        filialData.equipamentos.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
+
+                        filialData.equipamentos.forEach(eq => {
+                            const cardDiv = document.createElement('div');
+                            cardDiv.classList.add('kanban-card');
+                            cardDiv.innerHTML = `
+                                <div class="kanban-card-title">${eq.placa}</div>
+                                <div class="kanban-card-meta">Tipo: ${eq.tipo_equipamento}</div>
+                                <div class="kanban-card-meta">Responsável: ${filialData.responsavel}</div>
+                                <div class="kanban-card-date">Desde: ${new Date(eq.data_inicio).toLocaleDateString('pt-BR')}</div>
+                            `;
+                            columnDiv.appendChild(cardDiv);
+                        });
+                        kanbanBoard.appendChild(columnDiv);
+                    });
+
+                } catch (error) {
+                    console.error('Erro ao carregar dashboard (Kanban):', error.message);
+                    kanbanBoard.innerHTML = ''; // Limpa o board
+                    kanbanMessage.textContent = `Erro ao carregar dados do dashboard: ${error.message}`;
+                    kanbanMessage.classList.remove('hidden'); // Mostra a mensagem de erro
+                }
+            }
+
             if (filterDashboardBtn) {
                 filterDashboardBtn.addEventListener('click', loadEquipamentosDashboard);
             }
