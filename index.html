@@ -384,10 +384,10 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/pt-BR.js"></script>
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.5';
-        // ATENÇÃO: Use variáveis de ambiente para estas chaves em produção!
-        // No Vercel, você configuraria isso em Project Settings -> Environment Variables.
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://jtikvjomzduvjrrrsfeg.supabase.co"; // Substitua por sua variável de ambiente
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg"; // Substitua por sua variável de ambiente
+        // As chaves do Supabase foram revertidas para os valores originais para resolver o TypeError.
+        // Para uma melhor prática em produção, configure-as como variáveis de ambiente no Vercel.
+        const supabaseUrl = "https://jtikvjomzduvjrrrsfeg.supabase.co";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWt2am9temR1dmpycnJzZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjU3NjcsImV4cCI6MjA2ODcwMTc2N30.2SCuJprMLJROxV6r6z1xKaVnnvy-q0Edwb0DrmcNeEg";
 
         export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
