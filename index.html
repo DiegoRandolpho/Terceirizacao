@@ -315,34 +315,48 @@
                 const [branchToDelete, setBranchToDelete] = React.useState(null);
                 const [editingBranch, setEditingBranch] = React.useState(null); // Armazena a filial sendo editada
                 const [originalBranch, setOriginalBranch] = React.useState(null); // Armazena a filial original antes da edição
+                const [availableSupervisors, setAvailableSupervisors] = React.useState([]); // Novo estado para supervisores disponíveis
 
                 React.useEffect(() => {
                     if (!userId || !userRole) return;
 
-                    const fetchBranches = async () => {
+                    const fetchBranchesAndSupervisors = async () => {
                         setIsLoading(true);
 
+                        // Fetch filiais
                         const query = supabase.from('filiais').select('*').order('created_at', { ascending: false });
-
                         if (userRole === 'supervisor') {
                             query.eq('responsible', userId);
                         }
+                        const { data: branchesData, error: fetchBranchesError } = await query;
 
-                        const { data, error: fetchError } = await query;
-
-                        if (fetchError) {
-                            console.error("Erro ao buscar filiais:", fetchError);
+                        if (fetchBranchesError) {
+                            console.error("Erro ao buscar filiais:", fetchBranchesError);
                             setError("Erro ao carregar filiais.");
                             showToast("Erro ao carregar filiais.", "error");
                         } else {
-                            setBranches(data);
-                            setError(null);
+                            setBranches(branchesData);
+                        }
+
+                        // Fetch supervisors
+                        const { data: supervisorsData, error: fetchSupervisorsError } = await supabase
+                            .from('app_users')
+                            .select('username')
+                            .eq('role', 'supervisor')
+                            .order('username', { ascending: true });
+
+                        if (fetchSupervisorsError) {
+                            console.error("Erro ao buscar supervisores:", fetchSupervisorsError);
+                            setError("Erro ao carregar supervisores.");
+                            showToast("Erro ao carregar supervisores.", "error");
+                        } else {
+                            setAvailableSupervisors(supervisorsData.map(u => u.username));
                         }
 
                         setIsLoading(false);
                     };
 
-                    fetchBranches();
+                    fetchBranchesAndSupervisors();
                 }, [userId, userRole, showToast]);
 
                 const handleAddBranch = async (e) => {
@@ -350,6 +364,11 @@
                     if (!newBranchName.trim()) {
                         setError("O nome da filial não pode estar vazio.");
                         showToast("O nome da filial não pode estar vazio.", "error");
+                        return;
+                    }
+                    if (!responsibleInput.trim()) { // Validação para garantir que um responsável foi selecionado
+                        setError("Por favor, selecione um responsável para a nova filial.");
+                        showToast("Selecione um responsável.", "error");
                         return;
                     }
 
@@ -361,7 +380,7 @@
                                 {
                                     name: newBranchName.trim(),
                                     created_by_username: userId,
-                                    responsible: responsibleInput.trim() || null, // Use responsibleInput para a nova filial
+                                    responsible: responsibleInput.trim(),
                                 },
                             ]);
 
@@ -408,13 +427,24 @@
                 const handleUpdateBranch = async () => {
                     if (!editingBranch) return;
 
+                    if (!editingBranch.name.trim()) {
+                        setError("O nome da filial não pode estar vazio.");
+                        showToast("O nome da filial não pode estar vazio.", "error");
+                        return;
+                    }
+                    if (!editingBranch.responsible.trim()) { // Validação para garantir que um responsável foi selecionado
+                        setError("Por favor, selecione um responsável para a filial.");
+                        showToast("Selecione um responsável.", "error");
+                        return;
+                    }
+
                     setIsLoading(true);
                     try {
                         const { error: updateError } = await supabase
                             .from('filiais')
                             .update({
                                 name: editingBranch.name.trim(),
-                                responsible: editingBranch.responsible.trim() || null
+                                responsible: editingBranch.responsible.trim()
                             })
                             .eq('id', editingBranch.id);
 
@@ -503,13 +533,27 @@
                                 required: true,
                                 disabled: isLoading
                             }),
-                            React.createElement('input', {
-                                type: "text",
-                                value: responsibleInput,
-                                onChange: (e) => setResponsibleInput(e.target.value),
-                                className: "col-span-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
-                                placeholder: "Responsável pela filial (opcional)" // Adicionado "opcional"
-                            }),
+                            React.createElement('div', { className: "relative" },
+                                React.createElement('select', {
+                                    value: responsibleInput,
+                                    onChange: (e) => setResponsibleInput(e.target.value),
+                                    className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none pr-8 transition duration-150 ease-in-out",
+                                    required: true,
+                                    disabled: isLoading
+                                },
+                                    React.createElement('option', { value: "" }, "Selecione um Responsável"),
+                                    isLoading && availableSupervisors.length === 0 ? (
+                                        React.createElement('option', { disabled: true }, "Carregando responsáveis...")
+                                    ) : availableSupervisors.length === 0 ? (
+                                        React.createElement('option', { disabled: true }, "Nenhum responsável disponível.")
+                                    ) : (
+                                        availableSupervisors.map(supervisorName => (
+                                            React.createElement('option', { key: supervisorName, value: supervisorName }, supervisorName)
+                                        ))
+                                    )
+                                ),
+                                React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
+                            ),
                             React.createElement('button', {
                                 type: "submit",
                                 className: "inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out transform hover:scale-105",
@@ -554,14 +598,27 @@
                                                 ),
                                                 React.createElement('td', { className: "px-6 py-4 text-sm text-gray-700" },
                                                     editingBranch && editingBranch.id === branch.id ? (
-                                                        React.createElement('input', {
-                                                            type: "text",
-                                                            value: editingBranch.responsible || '',
-                                                            onChange: (e) => handleFieldChange(e, 'responsible'),
-                                                            className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
-                                                            placeholder: "Responsável",
-                                                            disabled: isLoading
-                                                        })
+                                                        React.createElement('div', { className: "relative" },
+                                                            React.createElement('select', {
+                                                                value: editingBranch.responsible || '',
+                                                                onChange: (e) => handleFieldChange(e, 'responsible'),
+                                                                className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none pr-8",
+                                                                required: true,
+                                                                disabled: isLoading
+                                                            },
+                                                                React.createElement('option', { value: "" }, "Selecione um Responsável"),
+                                                                isLoading && availableSupervisors.length === 0 ? (
+                                                                    React.createElement('option', { disabled: true }, "Carregando responsáveis...")
+                                                                ) : availableSupervisors.length === 0 ? (
+                                                                    React.createElement('option', { disabled: true }, "Nenhum responsável disponível.")
+                                                                ) : (
+                                                                    availableSupervisors.map(supervisorName => (
+                                                                        React.createElement('option', { key: supervisorName, value: supervisorName }, supervisorName)
+                                                                    ))
+                                                                )
+                                                            ),
+                                                            React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
+                                                        )
                                                     ) : (
                                                         React.createElement('span', null, branch.responsible || 'N/A')
                                                     )
