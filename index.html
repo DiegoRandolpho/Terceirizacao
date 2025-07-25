@@ -200,62 +200,41 @@
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 let role = null;
-// ... dentro da função handleLogin
-const username = e.target.username.value;
-const password = e.target.password.value;
 
-console.log("Tentando login com username:", username.toLowerCase(), "e password:", password); // <-- Adicione este log
-
-try {
-    const { data, error: fetchError } = await supabase
-        .from('app_users')
-        .select('*')
-        .eq('username', username.toLowerCase())
-        .eq('password', password);
-
-    console.log("Resultado da consulta Supabase (data):", data); // <-- Adicione este log
-    console.log("Resultado da consulta Supabase (erro):", fetchError); // <-- Adicione este log
-
-    if (fetchError) {
-        console.error("Erro ao buscar usuário no Supabase:", fetchError.message);
-        setLoginError("Erro na comunicação com o servidor.");
-        return;
-    }
-
-    if (data && data.length > 0) {
-        const loggedInUser = data[0];
-        localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
-        setCurrentUser(loggedInUser);
-        navigate('/home');
-    } else {
-        setLoginError("Credenciais inválidas.");
-    }
-} catch (error) {
-    console.error("Erro inesperado durante o login:", error);
-    setLoginError("Ocorreu um erro inesperado.");
-}
-                    // Query the public app_users table for authentication for other users
+                // REMOVIDO: Lógica de login hardcoded para 'admin'
+                try {
+                    console.log("Tentando login com username:", username.toLowerCase(), "e password:", password); // Log de depuração
+                    // Query the public app_users table for authentication
                     const { data, error: fetchError } = await supabase
                       .from('app_users') // Supabase table name
                       .select('*')
                       .eq('username', username.toLowerCase())
-                      .eq('password', password); // IMPORTANT: In production, hash passwords!
+                      .eq('password', password); // IMPORTANT: Em produção, hash de senhas é crucial!
 
-                    if (fetchError) throw fetchError;
+                    console.log("Resultado da consulta Supabase (data):", data); // Log de depuração
+                    console.log("Resultado da consulta Supabase (erro):", fetchError); // Log de depuração
 
-                    if (data && data.length > 0) {
-                      role = data[0].role;
+                    if (fetchError) {
+                        console.error("Erro ao buscar usuário no Supabase:", fetchError);
+                        setError("Erro ao autenticar. Por favor, tente novamente.");
+                    } else if (data && data.length > 0) {
+                        role = data[0].role;
+                    } else {
+                        setError('Usuário ou senha inválidos.');
                     }
-                  } catch (e) {
-                    console.error("Erro ao buscar usuário no Supabase:", e);
+                } catch (e) {
+                    console.error("Erro inesperado ao buscar usuário no Supabase:", e);
                     setError("Erro ao autenticar. Por favor, tente novamente.");
-                  }
                 }
+
 
                 if (role) {
                   onLogin(role, username); // Pass username as userId for data partitioning
                 } else {
-                  setError('Usuário ou senha inválidos.');
+                  // Se o erro já foi definido acima (usuário/senha inválidos ou erro Supabase), não sobrescreva
+                  if (!error) {
+                    setError('Usuário ou senha inválidos.');
+                  }
                 }
                 setIsLoggingIn(false);
               };
