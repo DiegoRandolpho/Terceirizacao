@@ -207,7 +207,7 @@
                     // Query the public app_users table for authentication
                     const { data, error: fetchError } = await supabase
                       .from('app_users') // Supabase table name
-                      .select('*')
+                      .select('responsible_branches')
                       .eq('username', username.toLowerCase())
                       .eq('password', password); // IMPORTANT: Em produção, hash de senhas é crucial!
 
