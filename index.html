@@ -72,7 +72,10 @@
             ArrowLeftRight: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-arrow-left-right"><path d="M8 3L4 7L8 11"/><path d="M4 7h16"/><path d="M16 21l4-4l-4-4"/><path d="M20 17H4"/></svg>',
             ArrowLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>',
             MapPin: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M12 18.3a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z"/><path d="M12 2C7.58 2 4 5.58 4 10c0 5.57 8 12 8 12s8-6.43 8-12c0-4.42-3.58-8-8-8z"/></svg>',
-            Factory: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 9.86 2H7.14a2 2 0 0 0-1.66.9l-.82 1.2A2 2 0 0 1 4 6H2v14z"/><path d="M10 10v4"/><path d="M14 10v4"/><path d="M18 10v4"/><path d="M6 10v4"/></svg>'
+            Factory: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 9.86 2H7.14a2 2 0 0 0-1.66.9l-.82 1.2A2 2 0 0 1 4 6H2v14z"/><path d="M10 10v4"/><path d="M14 10v4"/><path d="M18 10v4"/><path d="M6 10v4"/></svg>',
+            Edit: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+            Save: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
+            Ban: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ban"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>'
         };
 
         // Helper function to render Lucide icons
@@ -310,6 +313,8 @@
                 const [isLoading, setIsLoading] = React.useState(false);
                 const [showConfirmModal, setShowConfirmModal] = React.useState(false);
                 const [branchToDelete, setBranchToDelete] = React.useState(null);
+                const [editingBranch, setEditingBranch] = React.useState(null); // Armazena a filial sendo editada
+                const [originalBranch, setOriginalBranch] = React.useState(null); // Armazena a filial original antes da edição
 
                 React.useEffect(() => {
                     if (!userId || !userRole) return;
@@ -384,20 +389,41 @@
                     setIsLoading(false);
                 };
 
-                const handleUpdateResponsible = async (branchId, newResponsibleValue) => {
+                const handleEditClick = (branch) => {
+                    setEditingBranch({ ...branch }); // Cria uma cópia para edição
+                    setOriginalBranch({ ...branch }); // Armazena a versão original
+                };
+
+                const handleCancelEdit = () => {
+                    setEditingBranch(null);
+                    setOriginalBranch(null);
+                    // Reverte a filial na lista para o estado original
+                    setBranches(prevBranches =>
+                        prevBranches.map(b =>
+                            b.id === originalBranch.id ? originalBranch : b
+                        )
+                    );
+                };
+
+                const handleUpdateBranch = async () => {
+                    if (!editingBranch) return;
+
                     setIsLoading(true);
                     try {
                         const { error: updateError } = await supabase
                             .from('filiais')
-                            .update({ responsible: newResponsibleValue.trim() || null })
-                            .eq('id', branchId);
+                            .update({
+                                name: editingBranch.name.trim(),
+                                responsible: editingBranch.responsible.trim() || null
+                            })
+                            .eq('id', editingBranch.id);
 
                         if (updateError) throw updateError;
 
-                        showToast("Responsável da filial atualizado com sucesso!", "success");
-                        // Não é necessário re-fetch completo se o estado já foi atualizado localmente
-                        // mas para garantir consistência, podemos re-fetch ou apenas confiar na atualização local
-                        // Se você quiser re-fetch:
+                        showToast("Filial atualizada com sucesso!", "success");
+                        setEditingBranch(null);
+                        setOriginalBranch(null);
+                        // Re-fetch branches to ensure consistency
                         const query = supabase.from('filiais').select('*').order('created_at', { ascending: false });
                         if (userRole === 'supervisor') {
                             query.eq('responsible', userId);
@@ -406,14 +432,20 @@
                         setBranches(data);
 
                     } catch (e) {
-                        console.error("Erro ao atualizar responsável da filial:", e);
-                        setError("Erro ao atualizar responsável da filial.");
-                        showToast("Erro ao atualizar responsável da filial.", "error");
+                        console.error("Erro ao atualizar filial:", e);
+                        setError("Erro ao atualizar filial.");
+                        showToast("Erro ao atualizar filial.", "error");
                     } finally {
                         setIsLoading(false);
                     }
                 };
 
+                const handleFieldChange = (e, fieldName) => {
+                    setEditingBranch(prev => ({
+                        ...prev,
+                        [fieldName]: e.target.value
+                    }));
+                };
 
                 const confirmDeleteBranch = (branch) => {
                     setBranchToDelete(branch);
@@ -507,37 +539,77 @@
                                     ) : (
                                         branches.map((branch) => (
                                             React.createElement('tr', { key: branch.id },
-                                                React.createElement('td', { className: "px-6 py-4 text-sm font-medium text-gray-900" }, branch.name),
+                                                React.createElement('td', { className: "px-6 py-4 text-sm font-medium text-gray-900" },
+                                                    editingBranch && editingBranch.id === branch.id ? (
+                                                        React.createElement('input', {
+                                                            type: "text",
+                                                            value: editingBranch.name,
+                                                            onChange: (e) => handleFieldChange(e, 'name'),
+                                                            className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
+                                                            disabled: isLoading
+                                                        })
+                                                    ) : (
+                                                        React.createElement('span', null, branch.name)
+                                                    )
+                                                ),
                                                 React.createElement('td', { className: "px-6 py-4 text-sm text-gray-700" },
-                                                    React.createElement('input', {
-                                                        type: "text",
-                                                        // O valor agora vem do `branch.responsible` para cada linha
-                                                        value: branch.responsible || '',
-                                                        onChange: (e) => {
-                                                            // Atualiza o estado `branches` para a filial específica
-                                                            setBranches(prevBranches =>
-                                                                prevBranches.map(b =>
-                                                                    b.id === branch.id ? { ...b, responsible: e.target.value } : b
-                                                                )
-                                                            );
-                                                        },
-                                                        className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
-                                                        placeholder: "Responsável"
-                                                    })
+                                                    editingBranch && editingBranch.id === branch.id ? (
+                                                        React.createElement('input', {
+                                                            type: "text",
+                                                            value: editingBranch.responsible || '',
+                                                            onChange: (e) => handleFieldChange(e, 'responsible'),
+                                                            className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
+                                                            placeholder: "Responsável",
+                                                            disabled: isLoading
+                                                        })
+                                                    ) : (
+                                                        React.createElement('span', null, branch.responsible || 'N/A')
+                                                    )
                                                 ),
                                                 React.createElement('td', { className: "px-6 py-4 text-right whitespace-nowrap" },
-                                                    React.createElement('button', {
-                                                        onClick: () => handleUpdateResponsible(branch.id, branch.responsible),
-                                                        className: "text-blue-600 hover:text-blue-800 transition-colors duration-150 mr-2",
-                                                        title: "Salvar Responsável",
-                                                        disabled: isLoading
-                                                    }, "Salvar"),
-                                                    React.createElement('button', {
-                                                        onClick: () => confirmDeleteBranch(branch),
-                                                        className: "text-red-600 hover:text-red-800 ml-4 transition-colors duration-150",
-                                                        title: "Excluir Filial",
-                                                        disabled: isLoading
-                                                    }, "Excluir")
+                                                    editingBranch && editingBranch.id === branch.id ? (
+                                                        React.createElement(React.Fragment, null,
+                                                            React.createElement('button', {
+                                                                onClick: handleUpdateBranch,
+                                                                className: "text-green-600 hover:text-green-800 transition-colors duration-150 mr-2",
+                                                                title: "Salvar",
+                                                                disabled: isLoading
+                                                            },
+                                                                React.createElement(LucideIcon, { name: "Save", className: "h-5 w-5 inline-block align-middle" }),
+                                                                React.createElement('span', { className: "ml-1" }, "Salvar")
+                                                            ),
+                                                            React.createElement('button', {
+                                                                onClick: handleCancelEdit,
+                                                                className: "text-gray-600 hover:text-gray-800 transition-colors duration-150",
+                                                                title: "Cancelar",
+                                                                disabled: isLoading
+                                                            },
+                                                                React.createElement(LucideIcon, { name: "Ban", className: "h-5 w-5 inline-block align-middle" }),
+                                                                React.createElement('span', { className: "ml-1" }, "Cancelar")
+                                                            )
+                                                        )
+                                                    ) : (
+                                                        React.createElement(React.Fragment, null,
+                                                            React.createElement('button', {
+                                                                onClick: () => handleEditClick(branch),
+                                                                className: "text-blue-600 hover:text-blue-800 transition-colors duration-150 mr-2",
+                                                                title: "Editar",
+                                                                disabled: isLoading
+                                                            },
+                                                                React.createElement(LucideIcon, { name: "Edit", className: "h-5 w-5 inline-block align-middle" }),
+                                                                React.createElement('span', { className: "ml-1" }, "Editar")
+                                                            ),
+                                                            React.createElement('button', {
+                                                                onClick: () => confirmDeleteBranch(branch),
+                                                                className: "text-red-600 hover:text-red-800 ml-4 transition-colors duration-150",
+                                                                title: "Excluir Filial",
+                                                                disabled: isLoading
+                                                            },
+                                                                React.createElement(LucideIcon, { name: "Trash2", className: "h-5 w-5 inline-block align-middle" }),
+                                                                React.createElement('span', { className: "ml-1" }, "Excluir")
+                                                            )
+                                                        )
+                                                    )
                                                 )
                                             )
                                         ))
@@ -1208,7 +1280,7 @@
                                     ) : availableSupervisors.length === 0 ? (
                                         React.createElement('option', { disabled: true }, "Nenhum supervisor disponível.")
                                     ) : (
-                                        availableSuperCvisors.map(supervisorName => (
+                                        availableSupervisors.map(supervisorName => (
                                             React.createElement('option', { key: supervisorName, value: supervisorName }, supervisorName)
                                         ))
                                     )
