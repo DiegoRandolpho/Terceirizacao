@@ -305,6 +305,7 @@
             function BranchManagement({ userId, userRole, showToast }) {
   const [newBranchName, setNewBranchName] = React.useState('');
   const [branches, setBranches] = React.useState([]);
+  const [responsibleInput, setResponsibleInput] = React.useState("");
   const [error, setError] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
@@ -355,13 +356,14 @@
           {
             name: newBranchName.trim(),
             created_by_username: userId,
-            responsible: userId,
+            responsible: responsibleInput || userId,
           },
         ]);
 
       if (insertError) throw insertError;
 
       setNewBranchName('');
+      setResponsibleInput("");
       setError(null);
       showToast("Filial adicionada com sucesso!", "success");
 
@@ -427,15 +429,23 @@
           React.createElement('span', { className: "block sm:inline" }, " ", error)
         )
       ),
-      React.createElement('form', { onSubmit: handleAddBranch, className: "flex flex-col sm:flex-row gap-4 mb-6" },
+      React.createElement('form', { onSubmit: handleAddBranch, className: "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" },
         React.createElement('input', {
           type: "text",
           value: newBranchName,
           onChange: (e) => setNewBranchName(e.target.value),
           className: "flex-grow mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
           placeholder: "Nome da nova filial",
+          className: "col-span-1",
           required: true,
           disabled: isLoading
+        }),
+        React.createElement('input', {
+          type: "text",
+          value: responsibleInput,
+          onChange: (e) => setResponsibleInput(e.target.value),
+          className: "col-span-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
+          placeholder: "Responsável pela filial"
         }),
         React.createElement('button', {
           type: "submit",
@@ -450,6 +460,7 @@
           React.createElement('thead', { className: "bg-gray-100" },
             React.createElement('tr', null,
               React.createElement('th', { className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Filial"),
+              React.createElement('th', { className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Responsável"),
               React.createElement('th', { className: "px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Ações")
             )
           ),
@@ -466,8 +477,16 @@
               branches.map((branch) => (
                 React.createElement('tr', { key: branch.id },
                   React.createElement('td', { className: "px-6 py-4 text-sm font-medium text-gray-900" }, branch.name),
+                  React.createElement('td', { className: "px-6 py-4 text-sm text-gray-700" }, branch.responsible),
                   React.createElement('td', { className: "px-6 py-4 text-right" },
-                    React.createElement('button', {
+                    React.createElement('input', {
+          type: "text",
+          value: responsibleInput,
+          onChange: (e) => setResponsibleInput(e.target.value),
+          className: "col-span-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
+          placeholder: "Responsável pela filial"
+        }),
+        React.createElement('button', {
                       onClick: () => confirmDeleteBranch(branch),
                       className: "text-red-600 hover:text-red-800 ml-4 transition-colors duration-150",
                       title: "Excluir Filial",
