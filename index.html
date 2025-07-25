@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Placa App</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -42,6 +44,7 @@
 <body>
     <div id="root"></div>
 
+    <!-- React CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
@@ -69,7 +72,7 @@
             ArrowLeftRight: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-arrow-left-right"><path d="M8 3L4 7L8 11"/><path d="M4 7h16"/><path d="M16 21l4-4l-4-4"/><path d="M20 17H4"/></svg>',
             ArrowLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>',
             MapPin: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M12 18.3a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z"/><path d="M12 2C7.58 2 4 5.58 4 10c0 5.57 8 12 8 12s8-6.43 8-12c0-4.42-3.58-8-8-8z"/></svg>',
-            //Factory: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 9.86 2H7.14a2 2 0 0 0-1.66.9l-.82 1.2A2 2 0 0 1 4 6H2v14z"/><path d="M10 10v4"/><path d="M14 10v4"/><path d="M18 10v4"/><path d="M6 10v4"/></svg>'
+            // Factory: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 9.86 2H7.14a2 2 0 0 0-1.66.9l-.82 1.2A2 2 0 0 1 4 6H2v14z"/><path d="M10 10v4"/><path d="M14 10v4"/><path d="M18 10v4"/><path d="M6 10v4"/></svg>'
         };
         // Helper function to render Lucide icons
         function LucideIcon({ name, className }) {
@@ -552,8 +555,8 @@
                   setError("Erro ao deletar equipamento. Tente novamente.");
                   showToast("Erro ao excluir equipamento.", "error");
                 } finally {
-                    setIsLoading(false);
-                    setEquipmentToDelete(null);
+                  setIsLoading(false);
+                  setEquipmentToDelete(null);
                 }
               };
               return (
@@ -613,7 +616,8 @@
                       ),
                       isLoading ? 'Adicionando...' : 'Adicionar Equipamento'
                     )
-                  ),
+                  )
+                  ,
                   React.createElement('div', { className: "overflow-x-auto rounded-lg shadow-md border border-gray-200" },
                     React.createElement('table', { className: "min-w-full divide-y divide-gray-200" },
                       React.createElement('thead', { className: "bg-gray-100" },
@@ -1201,183 +1205,6 @@
                 );
             }
 
-            // const PlantManagement = ({ userId, showToast }) => {
-            //   const [newPlantName, setNewPlantName] = React.useState('');
-            //   const [plants, setPlants] = React.useState([]);
-            //   const [error, setError] = React.useState(null);
-            //   const [isLoading, setIsLoading] = React.useState(false);
-            //   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-            //   const [plantToDelete, setPlantToDelete] = React.useState(null);
-
-            //   React.useEffect(() => {
-            //     if (!userId) return;
-            //     const fetchPlants = async () => {
-            //       setIsLoading(true);
-            //       const { data, error: fetchError } = await supabase
-            //         .from('usinas')
-            //         .select('*')
-            //         .eq('created_by_username', userId)
-            //         .order('created_at', { ascending: false });
-
-            //       if (fetchError) {
-            //         console.error("Erro ao buscar usinas no Supabase:", fetchError);
-            //         setError("Erro ao carregar usinas. Por favor, recarregue a página.");
-            //         showToast("Erro ao carregar usinas.", "error");
-            //       } else {
-            //         setPlants(data);
-            //         setError(null);
-            //       }
-            //       setIsLoading(false);
-            //     };
-            //     fetchPlants();
-            //   }, [userId, showToast]);
-
-            //   const handleAddPlant = async (e) => {
-            //     e.preventDefault();
-            //     if (!newPlantName.trim()) {
-            //       setError("O nome da usina não pode estar vazio.");
-            //       showToast("O nome da usina não pode estar vazio.", "error");
-            //       return;
-            //     }
-            //     setIsLoading(true);
-            //     try {
-            //       const { error: insertError } = await supabase
-            //         .from('usinas')
-            //         .insert([
-            //           { name: newPlantName.trim(), created_by_username: userId }
-            //         ]);
-
-            //       if (insertError) throw insertError;
-
-            //       setNewPlantName('');
-            //       setError(null);
-            //       showToast("Usina adicionada com sucesso!", "success");
-            //       const { data, error: fetchError } = await supabase
-            //         .from('usinas')
-            //         .select('*')
-            //         .eq('created_by_username', userId)
-            //         .order('created_at', { ascending: false });
-            //       if (fetchError) console.error("Erro ao re-buscar usinas:", fetchError);
-            //       else setPlants(data);
-
-            //     } catch (e) {
-            //       console.error("Erro ao adicionar usina:", e);
-            //       setError("Erro ao adicionar usina. Tente novamente.");
-            //       showToast("Erro ao adicionar usina.", "error");
-            //     }
-            //     setIsLoading(false);
-            //   };
-
-            //   const confirmDeletePlant = (plant) => {
-            //     setPlantToDelete(plant);
-            //     setShowConfirmModal(true);
-            //   };
-
-            //   const handleDeletePlant = async () => {
-            //     if (!plantToDelete) return;
-            //     setIsLoading(true);
-            //     setShowConfirmModal(false);
-            //     try {
-            //       const { error: deleteError } = await supabase
-            //         .from('usinas')
-            //         .delete()
-            //         .eq('id', plantToDelete.id);
-
-            //       if (deleteError) throw deleteError;
-
-            //       showToast("Usina excluída com sucesso!", "success");
-            //       const { data, error: fetchError } = await supabase
-            //         .from('usinas')
-            //         .select('*')
-            //         .eq('created_by_username', userId)
-            //         .order('created_at', { ascending: false });
-            //       if (fetchError) console.error("Erro ao re-buscar usinas:", fetchError);
-            //       else setPlants(data);
-
-            //     } catch (e) {
-            //       console.error("Erro ao deletar usina:", e);
-            //       setError("Erro ao deletar usina. Tente novamente.");
-            //       showToast("Erro ao excluir usina.", "error");
-            //     } finally {
-            //         setIsLoading(false);
-            //         setPlantToDelete(null);
-            //     }
-            //   };
-
-            //   return (
-            //     React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-            //       React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Usinas"),
-            //       error && (
-            //         React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert" },
-            //           React.createElement('strong', { className: "font-bold" }, "Erro:"),
-            //           React.createElement('span', { className: "block sm:inline" }, " ", error)
-            //         )
-            //       ),
-            //       React.createElement('form', { onSubmit: handleAddPlant, className: "flex flex-col sm:flex-row gap-4 mb-6" },
-            //         React.createElement('input', {
-            //           type: "text",
-            //           value: newPlantName,
-            //           onChange: (e) => setNewPlantName(e.target.value),
-            //           className: "flex-grow mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
-            //           placeholder: "Nome da nova usina",
-            //           required: true,
-            //           disabled: isLoading
-            //         }),
-            //         React.createElement('button', {
-            //           type: "submit",
-            //           className: "inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out transform hover:scale-105",
-            //           disabled: isLoading
-            //         },
-            //         isLoading ? (
-            //             React.createElement('svg', { className: "animate-spin -ml-1 mr-3 h-5 w-5 text-white", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24" },
-            //               React.createElement('circle', { className: "opacity-25", cx: "12", cy: "12", r="10", stroke: "currentColor", strokeWidth="4" }),
-            //               React.createElement('path', { className: "opacity-75", fill: "currentColor", d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })
-            //             )
-            //           ) : (
-            //             React.createElement(LucideIcon, { name: "PlusCircle", className: "mr-2 h-5 w-5" })
-            //           ),
-            //           isLoading ? 'Adicionando...' : 'Adicionar Usina'
-            //         )
-            //       ),
-            //       React.createElement('div', { className: "overflow-x-auto rounded-lg shadow-md border border-gray-200" },
-            //         React.createElement('table', { className: "min-w-full divide-y divide-gray-200" },
-            //           React.createElement('thead', { className: "bg-gray-100" },
-            //             React.createElement('tr', null,
-            //               React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Usina"),
-            //               React.createElement('th', { scope: "col", className: "px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Ações")
-            //             )
-            //           ),
-            //           React.createElement('tbody', { className: "bg-white divide-y divide-gray-200" },
-            //             isLoading && plants.length === 0 ? (
-            //               React.createElement('tr', null,
-            //                 React.createElement('td', { colSpan: "2", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Carregando usinas...")
-            //               )
-            //             ) : plants.length === 0 ? (
-            //               React.createElement('tr', null,
-            //                 React.createElement('td', { colSpan: "2", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Nenhuma usina cadastrada.")
-            //               )
-            //             ) : (
-            //               plants.map((plant) => (
-            //                 React.createElement('tr', { key: plant.id, className: "hover:bg-gray-50 transition-colors duration-150" },
-            //                   React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" }, plant.name),
-            //                   React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium" },
-            //                     React.createElement('button', { onClick: () => confirmDeletePlant(plant), className: "text-red-600 hover:text-red-800 ml-4 transition-colors duration-150", title: "Excluir Usina", disabled: isLoading },
-            //                       React.createElement(LucideIcon, { name: "Trash2", className: "h-5 w-5" })
-            //                     )
-            //                   )
-            //                 )
-            //               ))
-            //             )
-            //           )
-            //         )
-            //       ),
-            //       showConfirmModal && React.createElement(ConfirmationModal, { message: `Tem certeza que deseja excluir a usina "${plantToDelete?.name}"?`,
-            //       onConfirm: handleDeletePlant, onCancel: () => setShowConfirmModal(false) })
-            //     )
-            //   );
-            // };
-
-
             // Main App Component
             function App() {
                 const [userRole, setUserRole] = React.useState(null);
@@ -1414,7 +1241,6 @@
                     { name: 'Dashboard', icon: 'LayoutDashboard', view: 'dashboard', roles: ['administrador', 'usuario'] },
                     { name: 'Filiais', icon: 'MapPin', view: 'branches', roles: ['administrador'] },
                     { name: 'Equipamentos', icon: 'Truck', view: 'equipment', roles: ['administrador'] },
-                    //{ name: 'Usinas', icon: 'Factory', view: 'usinas', roles: ['administrador'] },
                     { name: 'KM/Viagens', icon: 'CalendarDays', view: 'travels', roles: ['administrador', 'usuario'] },
                     { name: 'Usuários', icon: 'Users', view: 'users', roles: ['administrador'] },
                 ];
@@ -1430,8 +1256,6 @@
                             return React.createElement(BranchManagement, { userId: userId, showToast: showToast });
                         case 'equipment':
                             return React.createElement(EquipmentManagement, { userId: userId, showToast: showToast });
-                        // case 'usinas':
-                        //     return React.createElement(PlantManagement, { userId: userId, showToast: showToast });
                         case 'travels':
                             return React.createElement(TravelManagement, { userId: userId, showToast: showToast });
                         case 'users':
