@@ -935,22 +935,25 @@
               );
             }
 
-            // Componente para Gerenciamento de Regionais (Novo)
+            // Componente para Gerenciamento de Responsáveis Regionais (Atualizado)
             function RegionalManagement({ userId, showToast }) {
-                const [newRegionalName, setNewRegionalName] = React.useState('');
+                const [newRegionalResponsibleName, setNewRegionalResponsibleName] = React.useState('');
                 const [availableBranches, setAvailableBranches] = React.useState([]);
                 const [selectedBranches, setSelectedBranches] = React.useState([]);
-                const [regionalsList, setRegionalsList] = React.useState([]);
+                const [regionalResponsiblesList, setRegionalResponsiblesList] = React.useState([]);
                 const [error, setError] = React.useState(null);
                 const [isLoading, setIsLoading] = React.useState(false);
                 const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-                const [regionalToDelete, setRegionalToDelete] = React.useState(null);
+                const [responsibleToDelete, setResponsibleToDelete] = React.useState(null);
+                // Novo estado para armazenar a lista de supervisores
+                const [availableSupervisors, setAvailableSupervisors] = React.useState([]);
+                const [selectedSupervisor, setSelectedSupervisor] = React.useState('');
 
 
                 React.useEffect(() => {
                     if (!userId) return;
 
-                    const fetchBranchesAndRegionals = async () => {
+                    const fetchBranchesAndResponsibles = async () => {
                         setIsLoading(true);
                         const { data: branchesData, error: branchesError } = await supabase
                             .from('filiais')
@@ -959,38 +962,59 @@
                             .order('name', { ascending: true });
 
                         if (branchesError) {
-                            console.error("Erro ao buscar filiais para regionais no Supabase:", branchesError);
+                            console.error("Erro ao buscar filiais para responsáveis regionais no Supabase:", branchesError);
                             setError("Erro ao carregar filiais. Por favor, recarregue a página.");
                             showToast("Erro ao carregar filiais.", "error");
                         } else {
                             setAvailableBranches(branchesData.map(b => b.name));
                         }
 
-                        const { data: regionalsData, error: regionalsError } = await supabase
-                            .from('regionais')
+                        // Fetch only users with 'supervisor' role
+                        const { data: supervisorsData, error: supervisorsError } = await supabase
+                            .from('app_users')
+                            .select('username')
+                            .eq('role', 'supervisor')
+                            .order('username', { ascending: true });
+
+                        if (supervisorsError) {
+                            console.error("Erro ao buscar supervisores no Supabase:", supervisorsError);
+                            setError("Erro ao carregar supervisores. Por favor, recarregue a página.");
+                            showToast("Erro ao carregar supervisores.", "error");
+                        } else {
+                            setAvailableSupervisors(supervisorsData.map(u => u.username));
+                        }
+
+
+                        const { data: responsiblesData, error: responsiblesError } = await supabase
+                            .from('responsaveis_regionais') // New table name for clarity
                             .select('*')
                             .eq('created_by_username', userId)
                             .order('created_at', { ascending: false });
 
-                        if (regionalsError) {
-                            console.error("Erro ao buscar regionais no Supabase:", regionalsError);
-                            setError("Erro ao carregar regionais. Por favor, recarregue a página.");
-                            showToast("Erro ao carregar regionais.", "error");
+                        if (responsiblesError) {
+                            console.error("Erro ao buscar responsáveis regionais no Supabase:", responsiblesError);
+                            setError("Erro ao carregar responsáveis regionais. Por favor, recarregue a página.");
+                            showToast("Erro ao carregar responsáveis regionais.", "error");
                         } else {
-                            setRegionalsList(regionalsData);
+                            setRegionalResponsiblesList(responsiblesData);
                             setError(null);
                         }
                         setIsLoading(false);
                     };
 
-                    fetchBranchesAndRegionals();
+                    fetchBranchesAndResponsibles();
                 }, [userId, showToast]);
 
-                const handleAddRegional = async (e) => {
+                const handleAddRegionalResponsible = async (e) => {
                     e.preventDefault();
-                    if (!newRegionalName.trim()) {
+                    if (!newRegionalResponsibleName.trim()) {
                         setError("O nome da regional não pode estar vazio.");
                         showToast("O nome da regional não pode estar vazio.", "error");
+                        return;
+                    }
+                    if (!selectedSupervisor) {
+                        setError("Selecione um supervisor responsável.");
+                        showToast("Selecione um supervisor responsável.", "error");
                         return;
                     }
                     if (selectedBranches.length === 0) {
@@ -1002,69 +1026,75 @@
                     setIsLoading(true);
                     try {
                         const { error: insertError } = await supabase
-                            .from('regionais')
+                            .from('responsaveis_regionais') // New table name
                             .insert([
-                                { name: newRegionalName.trim(), responsible_branches: selectedBranches, created_by_username: userId }
+                                {
+                                    name: newRegionalResponsibleName.trim(),
+                                    responsible_supervisor: selectedSupervisor, // New field for supervisor
+                                    responsible_branches: selectedBranches,
+                                    created_by_username: userId
+                                }
                             ]);
 
                         if (insertError) throw insertError;
 
-                        setNewRegionalName('');
+                        setNewRegionalResponsibleName('');
+                        setSelectedSupervisor(''); // Clear selected supervisor
                         setSelectedBranches([]);
                         setError(null);
-                        showToast("Regional adicionada com sucesso!", "success");
+                        showToast("Responsável regional adicionado com sucesso!", "success");
                         // Re-fetch data to update the list
                         const { data, error: fetchError } = await supabase
-                            .from('regionais')
+                            .from('responsaveis_regionais') // New table name
                             .select('*')
                             .eq('created_by_username', userId)
                             .order('created_at', { ascending: false });
-                        if (fetchError) console.error("Erro ao re-buscar regionais:", fetchError);
-                        else setRegionalsList(data);
+                        if (fetchError) console.error("Erro ao re-buscar responsáveis regionais:", fetchError);
+                        else setRegionalResponsiblesList(data);
 
                     } catch (e) {
-                        console.error("Erro ao adicionar regional:", e);
-                        setError("Erro ao adicionar regional. Tente novamente.");
-                        showToast("Erro ao adicionar regional.", "error");
+                        console.error("Erro ao adicionar responsável regional:", e);
+                        setError("Erro ao adicionar responsável regional. Tente novamente.");
+                        showToast("Erro ao adicionar responsável regional.", "error");
                     }
                     setIsLoading(false);
                 };
 
-                const confirmDeleteRegional = (regional) => {
-                    setRegionalToDelete(regional);
+                const confirmDeleteResponsible = (responsible) => {
+                    setResponsibleToDelete(responsible);
                     setShowConfirmModal(true);
                 };
 
-                const handleDeleteRegional = async () => {
-                    if (!regionalToDelete) return;
+                const handleDeleteResponsible = async () => {
+                    if (!responsibleToDelete) return;
 
                     setIsLoading(true);
                     setShowConfirmModal(false); // Close modal
                     try {
                         const { error: deleteError } = await supabase
-                            .from('regionais')
+                            .from('responsaveis_regionais') // New table name
                             .delete()
-                            .eq('id', regionalToDelete.id);
+                            .eq('id', responsibleToDelete.id);
 
                         if (deleteError) throw deleteError;
 
-                        showToast("Regional excluída com sucesso!", "success");
+                        showToast("Responsável regional excluído com sucesso!", "success");
                         // Re-fetch data to update the list
                         const { data, error: fetchError } = await supabase
-                            .from('regionais')
+                            .from('responsaveis_regionais') // New table name
                             .select('*')
                             .eq('created_by_username', userId)
                             .order('created_at', { ascending: false });
-                        if (fetchError) console.error("Erro ao re-buscar regionais:", fetchError);
-                        else setRegionalsList(data);
+                        if (fetchError) console.error("Erro ao re-buscar responsáveis regionais:", fetchError);
+                        else setRegionalResponsiblesList(data);
 
                     } catch (e) {
-                        console.error("Erro ao deletar regional:", e);
-                        setError("Erro ao deletar regional. Tente novamente.");
-                        showToast("Erro ao excluir regional.", "error");
+                        console.error("Erro ao deletar responsável regional:", e);
+                        setError("Erro ao deletar responsável regional. Tente novamente.");
+                        showToast("Erro ao excluir responsável regional.", "error");
                     } finally {
                         setIsLoading(false);
-                        setRegionalToDelete(null);
+                        setResponsibleToDelete(null);
                     }
                 };
 
@@ -1078,26 +1108,48 @@
 
                 return (
                     React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Regionais"),
+                        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Responsáveis Regionais"),
                         error && (
                             React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert" },
                                 React.createElement('strong', { className: "font-bold" }, "Erro:"),
                                 React.createElement('span', { className: "block sm:inline" }, " ", error)
                             )
                         ),
-                        React.createElement('form', { onSubmit: handleAddRegional, className: "space-y-6 mb-6" },
+                        React.createElement('form', { onSubmit: handleAddRegionalResponsible, className: "space-y-6 mb-6" },
                             React.createElement('div', null,
-                                React.createElement('label', { htmlFor: "newRegionalName", className: "block text-sm font-medium text-gray-700 mb-1" }, "Nome da Regional"),
+                                React.createElement('label', { htmlFor: "newRegionalResponsibleName", className: "block text-sm font-medium text-gray-700 mb-1" }, "Nome da Regional:"),
                                 React.createElement('input', {
                                     type: "text",
-                                    id: "newRegionalName",
-                                    value: newRegionalName,
-                                    onChange: (e) => setNewRegionalName(e.target.value),
+                                    id: "newRegionalResponsibleName",
+                                    value: newRegionalResponsibleName,
+                                    onChange: (e) => setNewRegionalResponsibleName(e.target.value),
                                     className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
                                     placeholder: "Ex: Regional Nordeste",
                                     required: true,
                                     disabled: isLoading
                                 })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { htmlFor: "selectedSupervisor", className: "block text-sm font-medium text-gray-700 mb-1" }, "Supervisor Responsável:"),
+                                React.createElement('select', {
+                                    id: "selectedSupervisor",
+                                    value: selectedSupervisor,
+                                    onChange: (e) => setSelectedSupervisor(e.target.value),
+                                    className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
+                                    required: true,
+                                    disabled: isLoading
+                                },
+                                    React.createElement('option', { value: "" }, "Selecione um supervisor"),
+                                    isLoading && availableSupervisors.length === 0 ? (
+                                        React.createElement('option', { disabled: true }, "Carregando supervisores...")
+                                    ) : availableSupervisors.length === 0 ? (
+                                        React.createElement('option', { disabled: true }, "Nenhum supervisor disponível.")
+                                    ) : (
+                                        availableSupervisors.map(supervisorName => (
+                                            React.createElement('option', { key: supervisorName, value: supervisorName }, supervisorName)
+                                        ))
+                                    )
+                                )
                             ),
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Filiais Responsáveis:"),
@@ -1137,7 +1189,7 @@
                                     ) : (
                                         React.createElement(LucideIcon, { name: "PlusCircle", className: "mr-2 h-5 w-5" })
                                     ),
-                                    isLoading ? 'Adicionando...' : 'Adicionar Regional'
+                                    isLoading ? 'Adicionando...' : 'Adicionar Responsável Regional'
                                 )
                             )
                         ),
@@ -1145,34 +1197,36 @@
                             React.createElement('table', { className: "min-w-full divide-y divide-gray-200" },
                                 React.createElement('thead', { className: "bg-gray-100" },
                                     React.createElement('tr', null,
-                                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Regional"),
+                                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Nome da Regional"),
+                                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Supervisor Responsável"),
                                         React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Filiais Responsáveis"),
                                         React.createElement('th', { scope: "col", className: "px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Ações")
                                     )
                                 ),
                                 React.createElement('tbody', { className: "bg-white divide-y divide-gray-200" },
-                                    isLoading && regionalsList.length === 0 ? (
+                                    isLoading && regionalResponsiblesList.length === 0 ? (
                                         React.createElement('tr', null,
-                                            React.createElement('td', { colSpan: "3", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Carregando regionais...")
+                                            React.createElement('td', { colSpan: "4", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Carregando responsáveis regionais...")
                                         )
-                                    ) : regionalsList.length === 0 ? (
+                                    ) : regionalResponsiblesList.length === 0 ? (
                                         React.createElement('tr', null,
-                                            React.createElement('td', { colSpan: "3", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Nenhuma regional cadastrada.")
+                                            React.createElement('td', { colSpan: "4", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Nenhum responsável regional cadastrado.")
                                         )
                                     ) : (
-                                        regionalsList.map((regional) => (
-                                            React.createElement('tr', { key: regional.id, className: "hover:bg-gray-50 transition-colors duration-150" },
-                                                React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" }, regional.name),
+                                        regionalResponsiblesList.map((responsible) => (
+                                            React.createElement('tr', { key: responsible.id, className: "hover:bg-gray-50 transition-colors duration-150" },
+                                                React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" }, responsible.name),
+                                                React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, responsible.responsible_supervisor || 'N/A'), // Display supervisor
                                                 React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" },
-                                                    regional.responsible_branches && regional.responsible_branches.length > 0
-                                                        ? regional.responsible_branches.join(', ')
+                                                    responsible.responsible_branches && responsible.responsible_branches.length > 0
+                                                        ? responsible.responsible_branches.join(', ')
                                                         : 'N/A'
                                                 ),
                                                 React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium" },
                                                     React.createElement('button', {
-                                                        onClick: () => confirmDeleteRegional(regional),
+                                                        onClick: () => confirmDeleteResponsible(responsible),
                                                         className: "text-red-600 hover:text-red-800 ml-4 transition-colors duration-150",
-                                                        title: "Excluir Regional",
+                                                        title: "Excluir Responsável Regional",
                                                         disabled: isLoading
                                                     },
                                                         React.createElement(LucideIcon, { name: "Trash2", className: "h-5 w-5" })
@@ -1891,15 +1945,7 @@
                                     "Usuários"
                                   )
                                 ),
-                                React.createElement('li', { className: "mb-2" },
-                                  React.createElement('button', {
-                                    onClick: () => { setCurrentPage('regionalManagement'); closeSidebar(); }, // New menu item
-                                    className: `flex items-center w-full px-4 py-2 rounded-lg transition duration-150 ease-in-out ${currentPage === 'regionalManagement' ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-gray-700 text-gray-300'}`
-                                  },
-                                    React.createElement(LucideIcon, { name: "MapPin", className: "mr-3 h-5 w-5" }), // New icon
-                                    "Regionais"
-                                  )
-                                ),
+                                <!-- Removed "Responsáveis Regionais" button -->
                               )
                             )
                           )
