@@ -1128,10 +1128,9 @@
             function BranchTransfer({ userId, setCurrentPage, showToast }) {
               const [plate, setNewPlate] = React.useState('');
               const [newBranch, setNewBranch] = React.useState('');
-              const [executionDate, setExecutionDate] = React.useState('');
-              const [endingDate, setEndingDate] = React.useState(''); // Novo estado para a data final
+              const [executionDate, setExecutionDate] = React.useState(''); // Data de Alteração
               const [branches, setBranches] = React.useState([]);
-              const [availablePlates, setAvailablePlates] = React.useState([]); // New state for available plates
+              const [availablePlates, setAvailablePlates] = React.useState([]);
               const [error, setError] = React.useState(null);
               const [isLoading, setIsLoading] = React.useState(false);
 
@@ -1143,7 +1142,7 @@
                   // Fetch branches
                   const { data: branchesData, error: fetchBranchesError } = await supabase
                     .from('filiais')
-                    .select('name'); // Removed created_by_username filter to show all branches
+                    .select('name');
 
                   if (fetchBranchesError) {
                     console.error("Erro ao buscar filiais no Supabase:", fetchBranchesError);
@@ -1156,7 +1155,7 @@
                   // Fetch equipment plates
                   const { data: equipmentData, error: fetchEquipmentError } = await supabase
                     .from('equipamentos')
-                    .select('plate'); // Removed created_by_username filter to show all equipment plates
+                    .select('plate');
 
                   if (fetchEquipmentError) {
                     console.error("Erro ao buscar equipamentos no Supabase:", fetchEquipmentError);
@@ -1174,7 +1173,7 @@
               const handleRegisterTransfer = async (e) => {
                 e.preventDefault();
                 setError(null);
-                if (!plate.trim() || !newBranch || !executionDate || !endingDate) { // Adicionada validação para endingDate
+                if (!plate.trim() || !newBranch || !executionDate) {
                   setError("Por favor, preencha todos os campos.");
                   showToast("Preencha todos os campos.", "error");
                   return;
@@ -1185,7 +1184,7 @@
                   const { error: insertError } = await supabase
                     .from('trocasFilial')
                     .insert([
-                      { plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: endingDate, created_by_username: userId } // Incluído ending_date
+                      { plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: null, created_by_username: userId } // ending_date set to null
                     ]);
 
                   if (insertError) throw insertError;
@@ -1194,7 +1193,6 @@
                   setNewPlate('');
                   setNewBranch('');
                   setExecutionDate('');
-                  setEndingDate(''); // Limpa o campo da data final
                 } catch (e) {
                   console.error("Erro ao registrar troca de filial:", e);
                   setError("Erro ao registrar troca de filial. Tente novamente.");
@@ -1231,7 +1229,7 @@
                     React.createElement('div', null,
                       React.createElement('label', { htmlFor: "plate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Placa do Equipamento:"),
                       React.createElement('div', { className: "relative" },
-                        React.createElement('select', { // Changed from input to select
+                        React.createElement('select', {
                           id: "plate",
                           value: plate,
                           onChange: (e) => setNewPlate(e.target.value),
@@ -1277,28 +1275,13 @@
                       )
                     ),
                     React.createElement('div', null,
-                      React.createElement('label', { htmlFor: "executionDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data de Início:"),
+                      React.createElement('label', { htmlFor: "executionDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data de Alteração:"),
                       React.createElement('div', { className: "relative" },
                         React.createElement('input', {
                           type: "date",
                           id: "executionDate",
                           value: executionDate,
                           onChange: (e) => setExecutionDate(e.target.value),
-                          className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
-                          required: true,
-                          disabled: isLoading
-                        }),
-                        React.createElement(LucideIcon, { name: "CalendarDays", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
-                      )
-                    ),
-                    React.createElement('div', null, // Novo campo para endingDate
-                      React.createElement('label', { htmlFor: "endingDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data Final:"),
-                      React.createElement('div', { className: "relative" },
-                        React.createElement('input', {
-                          type: "date",
-                          id: "endingDate",
-                          value: endingDate,
-                          onChange: (e) => setEndingDate(e.target.value),
                           className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
                           required: true,
                           disabled: isLoading
