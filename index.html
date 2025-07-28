@@ -1742,7 +1742,8 @@
                       queryBuilder = queryBuilder.eq('newBranch', selectedBranch);
                     }
 
-                    const { data: trocasFilialData, error: trocasFilialError } = await queryBuilder.order('executionDate', { ascending: false });
+                    // Alterado para ordenar por 'newBranch' em ordem crescente
+                    const { data: trocasFilialData, error: trocasFilialError } = await queryBuilder.order('newBranch', { ascending: true });
                     if (trocasFilialError) throw trocasFilialError;
 
                     filteredTrocasFilial = trocasFilialData;
