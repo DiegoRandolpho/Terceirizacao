@@ -1561,7 +1561,8 @@
                 'BETONEIRA': 0,
               });
               const [registros, setRegistros] = React.useState([]);
-              const [allEquipment, setAllEquipment] = React.useState([]); // Novo estado para armazenar todos os equipamentos
+              const [allEquipment, setAllEquipment] = React.useState([]); // Novo estado para armazenar todos os equipamentos (plate, type)
+              const [allBranches, setAllBranches] = React.useState([]); // Novo estado para armazenar todas as filiais (name, responsible)
               const [error, setError] = React.useState(null);
               const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
               const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
@@ -1571,11 +1572,11 @@
               const equipmentTypes = ['Todos os Tipos', "BOMBA LANÇA", "BOMBA", "BETONEIRA"]; // Tipos de equipamento disponíveis
               const [isLoading, setIsLoading] = React.useState(false);
 
-              // Animated counter effect
+              // Efeito de contador animado
               const animateCount = (targetCount, type) => {
                   let start = 0;
-                  const duration = 1000; // 1 second
-                  const increment = targetCount / (duration / 16); // ~60 frames per second
+                  const duration = 1000; // 1 segundo
+                  const increment = targetCount / (duration / 16); // Aproximadamente 60 quadros por segundo
 
                   const step = () => {
                       start += increment;
@@ -1591,27 +1592,30 @@
 
 
               React.useEffect(() => {
-                if (!userId) return;
+                // Não é estritamente necessário verificar userId aqui se a autenticação já foi feita
+                // e os dados são públicos ou filtrados por RLS no Supabase.
+                // No entanto, mantemos para garantir que o Supabase esteja pronto.
 
                 const fetchAvailableFilters = async () => {
                   setIsLoading(true);
                   try {
-                    // Fetch available users with role 'supervisor'
+                    // Buscar usuários disponíveis com a função 'supervisor'
                     const { data: usersData, error: fetchUsersError } = await supabase
                       .from('app_users')
                       .select('username')
-                      .eq('role', 'supervisor'); // Filter by supervisor role
+                      .eq('role', 'supervisor'); // Filtrar por função de supervisor
                     if (fetchUsersError) throw fetchUsersError;
                     setAvailableUsers(['Todos os Responsáveis', ...usersData.map(u => u.username)]);
 
-                    // Fetch available branches
+                    // Buscar todas as filiais e seus responsáveis
                     const { data: branchesData, error: fetchBranchesError } = await supabase
                       .from('filiais')
-                      .select('name');
+                      .select('name, responsible');
                     if (fetchBranchesError) throw fetchBranchesError;
                     setAvailableBranches(['Todas as Filiais', ...branchesData.map(b => b.name)]);
+                    setAllBranches(branchesData); // Armazenar todas as filiais para uso posterior
 
-                    // Fetch all equipment to map plates to types for filtering records later
+                    // Buscar todos os equipamentos para mapear placas para tipos
                     const { data: allEquipmentData, error: fetchAllEquipmentError } = await supabase
                         .from('equipamentos')
                         .select('plate, type');
@@ -1627,58 +1631,59 @@
                   }
                 };
                 fetchAvailableFilters();
-              }, [userId, showToast]);
+              }, [showToast]); // Removido userId das dependências, pois não é usado diretamente na query aqui.
 
-              // New useEffect to fetch and count equipment types
+              // useEffect para buscar e contar tipos de equipamento (Visão Geral dos Equipamentos)
               React.useEffect(() => {
                 const fetchAndCountEquipment = async () => {
                   setIsLoading(true);
+                  setError(null); // Limpar erros anteriores
                   try {
-                    let equipmentQuery = supabase
-                      .from('equipamentos')
-                      .select('type, plate, created_by_username');
+                    // Buscar todos os equipamentos
+                    const { data: allEquipmentData, error: fetchAllEquipmentError } = await supabase
+                        .from('equipamentos')
+                        .select('plate, type');
+                    if (fetchAllEquipmentError) throw fetchAllEquipmentError;
 
-                    // Apply user filter to equipment count
+                    // Buscar todos os registros de transferência ativos para determinar a filial atual de cada equipamento
+                    const { data: transfersData, error: transfersError } = await supabase
+                        .from('trocasFilial')
+                        .select('plate, newBranch')
+                        .is('ending_date', null); // Apenas transferências ativas
+                    if (transfersError) throw transfersError;
+
+                    const currentBranchMap = new Map(transfersData.map(t => [t.plate, t.newBranch]));
+
+                    // Usar allBranches que já foi carregado no useEffect anterior
+                    // Criar um mapa de filial para responsável
+                    const branchResponsibleMap = new Map(allBranches.map(b => [b.name, b.responsible]));
+
+                    let filteredEquipmentForCounting = allEquipmentData;
+
+                    // Filtrar por usuário selecionado (responsável da filial)
                     if (selectedUser !== 'Todos os Responsáveis') {
-                      equipmentQuery = equipmentQuery.eq('created_by_username', selectedUser);
+                        const branchesForSelectedResponsible = allBranches
+                            .filter(branch => branch.responsible === selectedUser)
+                            .map(branch => branch.name);
+
+                        filteredEquipmentForCounting = filteredEquipmentForCounting.filter(eq => {
+                            const currentBranch = currentBranchMap.get(eq.plate);
+                            return currentBranch && branchesForSelectedResponsible.includes(currentBranch);
+                        });
                     }
                     
-                    // Apply equipment type filter
-                    if (selectedEquipmentType !== 'Todos os Tipos') {
-                        equipmentQuery = equipmentQuery.eq('type', selectedEquipmentType);
-                    }
-
-                    const { data: equipmentData, error: fetchError } = await equipmentQuery;
-
-                    if (fetchError) {
-                      console.error("Erro ao buscar tipos de equipamento no Supabase:", fetchError);
-                      setError("Erro ao carregar dados de equipamentos. Por favor, recarregue a página.");
-                      showToast("Erro ao carregar equipamentos.", "error");
-                      return;
-                    }
-
-                    // Now, filter by branch based on the 'trocasFilial' table
-                    let filteredEquipmentForBranch = equipmentData;
-
+                    // Filtrar por filial selecionada
                     if (selectedBranch !== 'Todas as Filiais') {
-                        // Fetch active records from 'trocasFilial' for the selected branch
-                        const { data: transfersData, error: transfersError } = await supabase
-                            .from('trocasFilial')
-                            .select('plate')
-                            .eq('newBranch', selectedBranch)
-                            .is('ending_date', null); // Only active transfers
-
-                        if (transfersError) {
-                            console.error("Erro ao buscar transferências de filial:", transfersError);
-                            setError("Erro ao filtrar equipamentos por filial.");
-                            showToast("Erro ao filtrar equipamentos por filial.", "error");
-                            return;
-                        }
-
-                        const platesInSelectedBranch = new Set(transfersData.map(t => t.plate));
-                        filteredEquipmentForBranch = equipmentData.filter(eq => platesInSelectedBranch.has(eq.plate));
+                        filteredEquipmentForCounting = filteredEquipmentForCounting.filter(eq => {
+                            const currentBranch = currentBranchMap.get(eq.plate);
+                            return currentBranch === selectedBranch;
+                        });
                     }
 
+                    // Aplicar filtro de tipo de equipamento
+                    if (selectedEquipmentType !== 'Todos os Tipos') {
+                        filteredEquipmentForCounting = filteredEquipmentForCounting.filter(eq => eq.type === selectedEquipmentType);
+                    }
 
                     const counts = {
                       'BOMBA LANÇA': 0,
@@ -1686,14 +1691,14 @@
                       'BETONEIRA': 0,
                     };
 
-                    filteredEquipmentForBranch.forEach(equipment => {
+                    filteredEquipmentForCounting.forEach(equipment => {
                       if (counts.hasOwnProperty(equipment.type)) {
                         counts[equipment.type]++;
                       }
                     });
 
                     setEquipmentCounts(counts);
-                    // Animate counts after setting them
+                    // Animar contagens após defini-las
                     Object.keys(counts).forEach(type => {
                         animateCount(counts[type], type);
                     });
@@ -1707,62 +1712,93 @@
                   }
                 };
 
-                fetchAndCountEquipment();
-              }, [userId, selectedUser, selectedBranch, selectedEquipmentType, showToast]);
+                // Executar a função de busca e contagem apenas se allBranches estiver carregado
+                if (allBranches.length > 0 || selectedUser === 'Todos os Responsáveis' && selectedBranch === 'Todas as Filiais') {
+                    fetchAndCountEquipment();
+                }
+              }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, showToast]); // allBranches adicionado como dependência
 
+              // useEffect para buscar e filtrar os registros da tabela (Distribuição de Equipamentos)
               React.useEffect(() => {
-                if (!userId) return;
-
                 const fetchRegistros = async () => {
                   setIsLoading(true);
-                  let queryBuilder = supabase
-                    .from('trocasFilial')
-                    .select('*') // Seleciona todas as colunas para exportação
-                    .is('ending_date', null) // Filtrar apenas registros ativos para o dashboard
+                  setError(null); // Limpar erros anteriores
+
+                  try {
+                    // Buscar todos os registros de transferência de filial ativos
+                    let queryBuilder = supabase
+                      .from('trocasFilial')
+                      .select('*') // Seleciona todas as colunas para exportação
+                      .is('ending_date', null); // Filtrar apenas registros ativos para o dashboard
                 
-                  // Apply user filter
-                  if (selectedUser !== 'Todos os Responsáveis') {
-                    queryBuilder = queryBuilder.eq('created_by_username', selectedUser);
-                  }
+                    // Usar allBranches que já foi carregado no useEffect anterior
+                    // Criar um mapa de filial para responsável
+                    const branchResponsibleMap = new Map(allBranches.map(b => [b.name, b.responsible]));
 
-                  // Apply branch filter
-                  if (selectedBranch !== 'Todas as Filiais') {
-                    queryBuilder = queryBuilder.eq('newBranch', selectedBranch);
-                  }
+                    let filteredTrocasFilial = [];
 
-                  const { data, error: fetchError } = await queryBuilder.order('created_at', { ascending: false });
+                    // Aplicar filtro de filial primeiro se selecionado
+                    if (selectedBranch !== 'Todas as Filiais') {
+                      queryBuilder = queryBuilder.eq('newBranch', selectedBranch);
+                    }
 
-                  if (fetchError) {
-                    console.error("Erro ao buscar dados de alteração de placas no Supabase:", fetchError);
-                    setError("Erro ao carregar dados de alteração de placas. Por favor, recarregue a página.");
-                    showToast("Erro ao carregar registros.", "error");
-                  } else {
-                    // Filter by equipment type after fetching all records
-                    const filteredData = data.map(registro => {
+                    const { data: trocasFilialData, error: trocasFilialError } = await queryBuilder.order('executionDate', { ascending: false });
+                    if (trocasFilialError) throw trocasFilialError;
+
+                    filteredTrocasFilial = trocasFilialData;
+
+                    // Aplicar filtro de usuário (responsável)
+                    if (selectedUser !== 'Todos os Responsáveis') {
+                      // Obter nomes das filiais associadas ao responsável selecionado
+                      const branchesForSelectedResponsible = allBranches
+                        .filter(branch => branch.responsible === selectedUser)
+                        .map(branch => branch.name);
+
+                      // Filtrar registros de trocasFilial com base nesses nomes de filial
+                      filteredTrocasFilial = filteredTrocasFilial.filter(registro =>
+                        branchesForSelectedResponsible.includes(registro.newBranch)
+                      );
+                    }
+
+                    // Mapear tipo de equipamento para cada registro
+                    const finalFilteredData = filteredTrocasFilial.map(registro => {
                         const equipment = allEquipment.find(eq => eq.plate === registro.plate);
                         return {
                             ...registro,
                             tipoEquipamento: equipment ? equipment.type : 'N/A'
                         };
                     }).filter(registro => {
+                        // Aplicar filtro de tipo de equipamento após o mapeamento
                         if (selectedEquipmentType === 'Todos os Tipos') {
                             return true;
                         }
                         return registro.tipoEquipamento === selectedEquipmentType;
                     });
-                    setRegistros(filteredData); // Set filtered records
+
+                    setRegistros(finalFilteredData);
                     setError(null);
+
+                  } catch (e) {
+                    console.error("Erro ao buscar registros de alteração de placas:", e);
+                    setError("Erro ao carregar dados de alteração de placas. Por favor, recarregue a página.");
+                    showToast("Erro ao carregar registros.", "error");
+                  } finally {
+                    setIsLoading(false);
                   }
-                  setIsLoading(false);
                 };
-                fetchRegistros();
-              }, [userId, selectedUser, selectedBranch, selectedEquipmentType, allEquipment, showToast]); // Adicionado selectedEquipmentType e allEquipment às dependências
+                // Executar a função de busca e contagem apenas se allBranches e allEquipment estiverem carregados
+                if (allBranches.length > 0 && allEquipment.length > 0 || (selectedUser === 'Todos os Responsáveis' && selectedBranch === 'Todas as Filiais' && selectedEquipmentType === 'Todos os Tipos')) {
+                    fetchRegistros();
+                }
+              }, [selectedUser, selectedBranch, selectedEquipmentType, allEquipment, allBranches, showToast]); // allBranches adicionado como dependência
 
               const handleApplyFilters = () => {
-                // Re-fetching is handled by useEffect when state changes
+                // A re-busca é tratada pelos useEffects quando os estados mudam,
+                // então este botão não precisa fazer nada além de talvez dar um feedback visual.
+                // Para uma melhor UX, os filtros já aplicam automaticamente.
               };
 
-              // Helper function to format date
+              // Função auxiliar para formatar a data
               const formatDate = (dateString) => {
                   if (!dateString) return '';
                   const [year, month, day] = dateString.split('-');
@@ -1770,7 +1806,7 @@
               };
 
               const exportToCSV = () => {
-                // Modified headers and rows for CSV export
+                // Cabeçalhos e linhas modificados para exportação CSV
                 const headers = ["Filial", "Placa", "Tipo de Equipamento", "Data de Início", "Data Final"]; // Adicionado Tipo de Equipamento
                 const rows = registros.map(registro => [
                   registro.newBranch,
@@ -1802,12 +1838,12 @@
               const filteredRegistrosForDisplay = registros;
 
 
-              // Calculate total equipment for chart
+              // Calcular o total de equipamentos para o gráfico
               const totalEquipment = Object.values(equipmentCounts).reduce((sum, count) => sum + count, 0);
 
               return (
                 React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                  React.createElement('div', { className: "flex justify-between items-center mb-6" }, // Flex container for title and export button
+                  React.createElement('div', { className: "flex justify-between items-center mb-6" }, // Container flex para título e botão de exportar
                     React.createElement('h2', { className: "text-2xl font-bold text-gray-800 text-center flex-grow" }, "Dashboard de Equipamentos Ativos"),
                     React.createElement('button', {
                       onClick: exportToCSV,
@@ -1819,9 +1855,9 @@
                     )
                   ),
                   error && (
-                    React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert" },
-                      React.createElement('strong', { className: "font-bold" }, "Erro:"),
-                      React.createElement('span', { className: "block sm:inline" }, " ", error)
+                    React.createElement('div', { className: "max-w-full w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 shadow-md", role: "alert" },
+                        React.createElement('strong', { className: "font-bold" }, "Erro:"),
+                        React.createElement('span', { className: "block sm:inline" }, " ", error)
                     )
                   ),
 
