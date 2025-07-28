@@ -1371,43 +1371,6 @@
               React.useEffect(() => {
                 if (!userId) return;
 
-                const fetchEquipmentCounts = async () => {
-                  setIsLoading(true);
-                  const { data, error: fetchError } = await supabase
-                    .from('equipamentos')
-                    .select('type')
-                    .eq('created_by_username', userId);
-
-                  if (fetchError) {
-                    console.error("Erro ao buscar contagem de equipamentos no Supabase:", fetchError);
-                    setError("Erro ao carregar dados do dashboard. Por favor, recarregue a página.");
-                    showToast("Erro ao carregar dados do dashboard.", "error");
-                    return;
-                  }
-
-                  const counts = {
-                    'BOMBA LANÇA': 0,
-                    'BOMBA': 0,
-                    'BETONEIRA': 0,
-                  };
-                  data.forEach(item => {
-                    if (counts.hasOwnProperty(item.type)) {
-                      counts[item.type]++;
-                    }
-                  });
-                  setEquipmentCounts(counts);
-                  // Animate counts
-                  Object.keys(counts).forEach(type => {
-                      animateCount(counts[type], type);
-                  });
-                  setIsLoading(false);
-                };
-                fetchEquipmentCounts();
-              }, [userId, showToast]);
-
-              React.useEffect(() => {
-                if (!userId) return;
-
                 const fetchRegistros = async () => {
                   setIsLoading(true);
                   let queryBuilder = supabase
@@ -1445,12 +1408,13 @@
               };
 
               const exportToCSV = () => {
-                const headers = ["Filial", "Placa Antiga", "Placa Nova", "Data da Alteração"];
+                // Modified headers and rows for CSV export
+                const headers = ["Filial", "Placa", "Data Antiga", "Data Nova"];
                 const rows = registros.map(registro => [
-                  registro.newBranch, // Assuming newBranch is the 'filial' in this context
-                  registro.plate, // Assuming plate is the 'placa antiga'
-                  registro.plate, // No 'placa nova' in trocasFilial, using plate again for now
-                  registro.executionDate
+                  registro.newBranch,
+                  registro.plate,
+                  new Date(registro.created_at).toLocaleDateString('pt-BR'), // Format created_at as "Data Antiga"
+                  registro.executionDate // "Data Nova"
                 ]);
 
                 let csvContent = headers.map(header => `"${header}"`).join(";") + "\n";
@@ -1474,7 +1438,8 @@
               const filteredRegistros = registros.filter(registro =>
                 registro.newBranch.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 registro.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                registro.executionDate.toLowerCase().includes(searchTerm.toLowerCase())
+                registro.executionDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                new Date(registro.created_at).toLocaleDateString('pt-BR').toLowerCase().includes(searchTerm.toLowerCase()) // Include created_at in search
               );
 
               // Calculate total equipment for chart
@@ -1646,9 +1611,9 @@
                       React.createElement('thead', { className: "bg-gray-100" },
                         React.createElement('tr', null,
                           React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Filial"),
-                          React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Placa Antiga"),
-                          React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Placa Nova"),
-                          React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Data Alteração")
+                          React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Placa"),
+                          React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Data Antiga"),
+                          React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" }, "Data Nova")
                         )
                       ),
                       React.createElement('tbody', { className: "bg-white divide-y divide-gray-200" },
@@ -1665,8 +1630,8 @@
                             React.createElement('tr', { key: registro.id, className: "hover:bg-gray-50 transition-colors duration-150" },
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" }, registro.newBranch),
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.plate),
-                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.plate),
-                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.executionDate)
+                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, new Date(registro.created_at).toLocaleDateString('pt-BR')), // "Data Antiga"
+                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.executionDate) // "Data Nova"
                             )
                           ))
                         )
