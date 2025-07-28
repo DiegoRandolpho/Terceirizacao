@@ -360,12 +360,14 @@
 
                 const handleAddBranch = async (e) => {
                     e.preventDefault();
-                    if (!newBranchName.trim()) {
+                    const trimmedBranchName = newBranchName.trim();
+
+                    if (!trimmedBranchName) {
                         setError("O nome da filial não pode estar vazio.");
                         showToast("O nome da filial não pode estar vazio.", "error");
                         return;
                     }
-                    if (!responsibleInput.trim()) { // Validação para garantir que um responsável foi selecionado
+                    if (!responsibleInput.trim()) {
                         setError("Por favor, selecione um responsável para a nova filial.");
                         showToast("Selecione um responsável.", "error");
                         return;
@@ -373,11 +375,26 @@
 
                     setIsLoading(true);
                     try {
+                        // Check for duplicate branch name (case-insensitive)
+                        const { data: existingBranches, error: checkError } = await supabase
+                            .from('filiais')
+                            .select('id')
+                            .ilike('name', trimmedBranchName); // ilike for case-insensitive check
+
+                        if (checkError) throw checkError;
+
+                        if (existingBranches && existingBranches.length > 0) {
+                            setError("Já existe uma filial com este nome. Por favor, escolha outro.");
+                            showToast("Filial já existe.", "error");
+                            setIsLoading(false);
+                            return;
+                        }
+
                         const { error: insertError } = await supabase
                             .from('filiais')
                             .insert([
                                 {
-                                    name: newBranchName.trim(),
+                                    name: trimmedBranchName,
                                     created_by_username: userId,
                                     responsible: responsibleInput.trim(),
                                 },
@@ -386,11 +403,10 @@
                         if (insertError) throw insertError;
 
                         setNewBranchName('');
-                        setResponsibleInput(""); // Limpa o campo de responsável para a próxima adição
+                        setResponsibleInput("");
                         setError(null);
                         showToast("Filial adicionada com sucesso!", "success");
 
-                        // Re-fetch branches to update the list
                         const query = supabase.from('filiais').select('*').order('created_at', { ascending: false });
                         if (userRole === 'supervisor') {
                             query.eq('responsible', userId);
@@ -402,20 +418,19 @@
                         console.error("Erro ao adicionar filial:", e);
                         setError("Erro ao adicionar filial.");
                         showToast("Erro ao adicionar filial.", "error");
+                    } finally {
+                        setIsLoading(false);
                     }
-
-                    setIsLoading(false);
                 };
 
                 const handleEditClick = (branch) => {
-                    setEditingBranch({ ...branch }); // Cria uma cópia para edição
-                    setOriginalBranch({ ...branch }); // Armazena a versão original
+                    setEditingBranch({ ...branch });
+                    setOriginalBranch({ ...branch });
                 };
 
                 const handleCancelEdit = () => {
                     setEditingBranch(null);
                     setOriginalBranch(null);
-                    // Reverte a filial na lista para o estado original
                     setBranches(prevBranches =>
                         prevBranches.map(b =>
                             b.id === originalBranch.id ? originalBranch : b
@@ -426,12 +441,14 @@
                 const handleUpdateBranch = async () => {
                     if (!editingBranch) return;
 
-                    if (!editingBranch.name.trim()) {
+                    const trimmedBranchName = editingBranch.name.trim();
+
+                    if (!trimmedBranchName) {
                         setError("O nome da filial não pode estar vazio.");
                         showToast("O nome da filial não pode estar vazio.", "error");
                         return;
                     }
-                    if (!editingBranch.responsible.trim()) { // Validação para garantir que um responsável foi selecionado
+                    if (!editingBranch.responsible.trim()) {
                         setError("Por favor, selecione um responsável para a filial.");
                         showToast("Selecione um responsável.", "error");
                         return;
@@ -439,10 +456,26 @@
 
                     setIsLoading(true);
                     try {
+                        // Check for duplicate branch name (case-insensitive), excluding the current branch being edited
+                        const { data: existingBranches, error: checkError } = await supabase
+                            .from('filiais')
+                            .select('id')
+                            .ilike('name', trimmedBranchName)
+                            .neq('id', editingBranch.id); // Exclude current branch from check
+
+                        if (checkError) throw checkError;
+
+                        if (existingBranches && existingBranches.length > 0) {
+                            setError("Já existe outra filial com este nome. Por favor, escolha outro.");
+                            showToast("Nome de filial duplicado.", "error");
+                            setIsLoading(false);
+                            return;
+                        }
+
                         const { error: updateError } = await supabase
                             .from('filiais')
                             .update({
-                                name: editingBranch.name.trim(),
+                                name: trimmedBranchName,
                                 responsible: editingBranch.responsible.trim()
                             })
                             .eq('id', editingBranch.id);
@@ -452,7 +485,6 @@
                         showToast("Filial atualizada com sucesso!", "success");
                         setEditingBranch(null);
                         setOriginalBranch(null);
-                        // Re-fetch branches to ensure consistency
                         const query = supabase.from('filiais').select('*').order('created_at', { ascending: false });
                         if (userRole === 'supervisor') {
                             query.eq('responsible', userId);
@@ -485,7 +517,7 @@
                     if (!branchToDelete) return;
 
                     setIsLoading(true);
-                    setShowConfirmModal(false); // Close modal
+                    setShowConfirmModal(false);
                     try {
                         const { error: deleteError } = await supabase
                             .from('filiais')
@@ -1576,7 +1608,7 @@
                       .from('filiais')
                       .select('name');
                     if (fetchBranchesError) throw fetchBranchesError;
-                    setAvailableBranches(['Todas as Filiais', ...branchesData.map(b => b.name)]);
+                    setAvailableBranches(['Todos as Filiais', ...branchesData.map(b => b.name)]);
 
                     // Fetch all equipment to map plates to types for filtering records later
                     const { data: allEquipmentData, error: fetchAllEquipmentError } = await supabase
