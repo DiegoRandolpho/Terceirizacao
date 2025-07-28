@@ -777,7 +777,7 @@
                   const { data, error: fetchError } = await supabase
                     .from('equipamentos')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created', { ascending: false });
                   if (fetchError) console.error("Erro ao re-buscar equipamentos:", fetchError);
                   else setEquipmentList(data);
 
@@ -1129,6 +1129,7 @@
               const [plate, setNewPlate] = React.useState('');
               const [newBranch, setNewBranch] = React.useState('');
               const [executionDate, setExecutionDate] = React.useState('');
+              const [endingDate, setEndingDate] = React.useState(''); // Novo estado para a data final
               const [branches, setBranches] = React.useState([]);
               const [availablePlates, setAvailablePlates] = React.useState([]); // New state for available plates
               const [error, setError] = React.useState(null);
@@ -1173,7 +1174,7 @@
               const handleRegisterTransfer = async (e) => {
                 e.preventDefault();
                 setError(null);
-                if (!plate.trim() || !newBranch || !executionDate) {
+                if (!plate.trim() || !newBranch || !executionDate || !endingDate) { // Adicionada validação para endingDate
                   setError("Por favor, preencha todos os campos.");
                   showToast("Preencha todos os campos.", "error");
                   return;
@@ -1184,7 +1185,7 @@
                   const { error: insertError } = await supabase
                     .from('trocasFilial')
                     .insert([
-                      { plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, created_by_username: userId }
+                      { plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: endingDate, created_by_username: userId } // Incluído ending_date
                     ]);
 
                   if (insertError) throw insertError;
@@ -1193,6 +1194,7 @@
                   setNewPlate('');
                   setNewBranch('');
                   setExecutionDate('');
+                  setEndingDate(''); // Limpa o campo da data final
                 } catch (e) {
                   console.error("Erro ao registrar troca de filial:", e);
                   setError("Erro ao registrar troca de filial. Tente novamente.");
@@ -1275,13 +1277,28 @@
                       )
                     ),
                     React.createElement('div', null,
-                      React.createElement('label', { htmlFor: "executionDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data de Execução:"),
+                      React.createElement('label', { htmlFor: "executionDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data de Início:"),
                       React.createElement('div', { className: "relative" },
                         React.createElement('input', {
                           type: "date",
                           id: "executionDate",
                           value: executionDate,
                           onChange: (e) => setExecutionDate(e.target.value),
+                          className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
+                          required: true,
+                          disabled: isLoading
+                        }),
+                        React.createElement(LucideIcon, { name: "CalendarDays", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
+                      )
+                    ),
+                    React.createElement('div', null, // Novo campo para endingDate
+                      React.createElement('label', { htmlFor: "endingDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data Final:"),
+                      React.createElement('div', { className: "relative" },
+                        React.createElement('input', {
+                          type: "date",
+                          id: "endingDate",
+                          value: endingDate,
+                          onChange: (e) => setEndingDate(e.target.value),
                           className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
                           required: true,
                           disabled: isLoading
@@ -1422,7 +1439,7 @@
                   setIsLoading(true);
                   let queryBuilder = supabase
                     .from('trocasFilial')
-                    .select('*')
+                    .select('*, ending_date') // Incluído ending_date na seleção
                     .eq('created_by_username', userId);
 
                   // Apply date filter
@@ -1460,8 +1477,8 @@
                 const rows = registros.map(registro => [
                   registro.newBranch,
                   registro.plate,
-                  new Date(registro.created_at).toLocaleDateString('pt-BR'), // Format created_at as "Data Antiga"
-                  registro.executionDate // "Data Nova"
+                  registro.executionDate, // Agora é a "Data Antiga"
+                  registro.ending_date // Agora é a "Data Nova"
                 ]);
 
                 let csvContent = headers.map(header => `"${header}"`).join(";") + "\n";
@@ -1486,7 +1503,7 @@
                 registro.newBranch.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 registro.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 registro.executionDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                new Date(registro.created_at).toLocaleDateString('pt-BR').toLowerCase().includes(searchTerm.toLowerCase()) // Include created_at in search
+                (registro.ending_date && registro.ending_date.toLowerCase().includes(searchTerm.toLowerCase())) // Inclui ending_date na busca
               );
 
               // Calculate total equipment for chart
@@ -1677,8 +1694,8 @@
                             React.createElement('tr', { key: registro.id, className: "hover:bg-gray-50 transition-colors duration-150" },
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" }, registro.newBranch),
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.plate),
-                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, new Date(registro.created_at).toLocaleDateString('pt-BR')), // "Data Antiga"
-                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.executionDate) // "Data Nova"
+                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.executionDate), // "Data Antiga"
+                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.ending_date) // "Data Nova"
                             )
                           ))
                         )
