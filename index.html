@@ -1368,6 +1368,53 @@
                 fetchAvailableUsers();
               }, [userId, showToast]);
 
+              // New useEffect to fetch and count equipment types
+              React.useEffect(() => {
+                const fetchAndCountEquipment = async () => {
+                  setIsLoading(true);
+                  try {
+                    const { data, error: fetchError } = await supabase
+                      .from('equipamentos')
+                      .select('type'); // Fetch only the 'type' column for counting
+
+                    if (fetchError) {
+                      console.error("Erro ao buscar tipos de equipamento no Supabase:", fetchError);
+                      setError("Erro ao carregar dados de equipamentos. Por favor, recarregue a página.");
+                      showToast("Erro ao carregar equipamentos.", "error");
+                      return;
+                    }
+
+                    const counts = {
+                      'BOMBA LANÇA': 0,
+                      'BOMBA': 0,
+                      'BETONEIRA': 0,
+                    };
+
+                    data.forEach(equipment => {
+                      if (counts.hasOwnProperty(equipment.type)) {
+                        counts[equipment.type]++;
+                      }
+                    });
+
+                    setEquipmentCounts(counts);
+                    // Animate counts after setting them
+                    Object.keys(counts).forEach(type => {
+                        animateCount(counts[type], type);
+                    });
+
+                  } catch (e) {
+                    console.error("Erro inesperado ao contar equipamentos:", e);
+                    setError("Erro ao processar dados de equipamentos.");
+                    showToast("Erro ao processar dados de equipamentos.", "error");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                };
+
+                fetchAndCountEquipment();
+              }, [showToast]); // Run once on mount and when showToast changes (though not strictly necessary for this effect)
+
+
               React.useEffect(() => {
                 if (!userId) return;
 
