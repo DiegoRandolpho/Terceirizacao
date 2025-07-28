@@ -1181,10 +1181,44 @@
 
                 setIsLoading(true);
                 try {
+                  // 1. Check for an existing active record for this plate
+                  const { data: existingRecords, error: fetchExistingError } = await supabase
+                    .from('trocasFilial')
+                    .select('*')
+                    .eq('plate', plate.trim())
+                    .is('ending_date', null)
+                    .order('executionDate', { ascending: false }) // Get the most recent one
+                    .limit(1);
+
+                  if (fetchExistingError) {
+                    throw fetchExistingError;
+                  }
+
+                  // 2. If an active record is found, update its ending_date
+                  if (existingRecords && existingRecords.length > 0) {
+                    const existingRecord = existingRecords[0];
+
+                    // Calculate the day before the new executionDate
+                    const newExecutionDateObj = new Date(executionDate);
+                    newExecutionDateObj.setDate(newExecutionDateObj.getDate() - 1);
+                    const previousDayDate = newExecutionDateObj.toISOString().split('T')[0];
+
+                    const { error: updateError } = await supabase
+                      .from('trocasFilial')
+                      .update({ ending_date: previousDayDate })
+                      .eq('id', existingRecord.id); // Update the specific existing record
+
+                    if (updateError) {
+                      throw updateError;
+                    }
+                    showToast(`Registro anterior da placa ${plate.trim()} atualizado.`, "success");
+                  }
+
+                  // 3. Insert the new record
                   const { error: insertError } = await supabase
                     .from('trocasFilial')
                     .insert([
-                      { plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: null, created_by_username: userId } // ending_date set to null
+                      { plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: null, created_by_username: userId }
                     ]);
 
                   if (insertError) throw insertError;
