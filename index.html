@@ -133,38 +133,20 @@
         window.onload = function() {
             console.log("window.onload disparado.");
 
-            // Supabase client initialization
+            // Supabase client initialization (moved to App component)
             const SUPABASE_URL = 'https://gfivmnnysomfwrffybeh.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaXZtbm55c29tZndyZmZ5YmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTY3NjgsImV4cCI6MjA2ODg3Mjc2OH0.NxetXJoCLh4q9zAqn_olimziI3YP4MAJzB8ed4qf8cg';
-
-            let supabase;
-
-            // Function to initialize Supabase and render the App
-            const initializeSupabaseAndRenderApp = () => {
-                try {
-                    console.log("Tentando inicializar o cliente Supabase...");
-                    // Corrected: Use 'supabase' (lowercase) as the global object
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    console.log("Cliente Supabase inicializado com sucesso.");
-                    ReactDOM.render(React.createElement(App, null), document.getElementById('root'));
-                } catch (e) {
-                    console.error("Erro ao inicializar o cliente Supabase:", e);
-                    ReactDOM.render(
-                        React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: 'red' } },
-                            React.createElement('h1', null, 'Erro ao Inicializar Supabase'),
-                            React.createElement('p', null, `Ocorreu um erro ao inicializar o cliente Supabase: ${e.message}. Verifique as suas credenciais e a configuração do projeto Supabase.`)
-                        ),
-                        document.getElementById('root')
-                    );
-                }
-            };
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaXZtbm55c29tZndyZmZ5YmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTY3NjgsImexciI6MjA2ODg3Mjc2OH0.NxetXJoCLh4q9zAqn_olimziI3YP4MAJzB8ed4qf8cg';
 
             // Dynamically load Supabase library
             const supabaseScript = document.createElement('script');
             supabaseScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/dist/umd/supabase.min.js";
             supabaseScript.onload = () => {
                 console.log("Biblioteca Supabase carregada com sucesso.");
-                initializeSupabaseAndRenderApp();
+                // Now that Supabase is loaded, render the App component
+                ReactDOM.render(React.createElement(App, {
+                    supabaseUrl: SUPABASE_URL,
+                    supabaseAnonKey: SUPABASE_ANON_KEY
+                }), document.getElementById('root'));
             };
             supabaseScript.onerror = (error) => {
                 console.error("Erro ao carregar a biblioteca Supabase:", error);
@@ -183,7 +165,7 @@
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
             // Componente para a tela de Login
-            function LoginPage({ onLogin }) {
+            function LoginPage({ supabase, showToast }) { // Added supabase prop
               const [username, setUsername] = React.useState('');
               const [password, setPassword] = React.useState('');
               const [error, setError] = React.useState('');
@@ -199,47 +181,42 @@
                   setIsLoggingIn(false);
                   return;
                 }
+                if (!supabase) {
+                    showToast("Serviço de autenticação não disponível. Tente novamente mais tarde.", "error");
+                    setIsLoggingIn(false);
+                    return;
+                }
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                let role = null;
-
-                // REMOVIDO: Lógica de login hardcoded para 'admin'
                 try {
-                    console.log("Tentando login com username:", username.toLowerCase(), "e password:", password); // Log de depuração
-                    // Query the public app_users table for authentication
-                    const { data, error: fetchError } = await supabase
-                      .from('app_users') // Supabase table name
-                      .select('*')
-                      .eq('username', username.toLowerCase())
-                      .eq('password', password); // IMPORTANT: Em produção, hash de senhas é crucial!
+                    // Authenticate with Supabase built-in auth
+                    // Assuming username is email for Supabase auth
+                    const { data, error: authError } = await supabase.auth.signInWithPassword({
+                        email: username.toLowerCase(),
+                        password: password,
+                    });
 
-                    console.log("Resultado da consulta Supabase (data):", data); // Log de depuração
-                    console.log("Resultado da consulta Supabase (erro):", fetchError); // Log de depuração
-
-                    if (fetchError) {
-                        console.error("Erro ao buscar usuário no Supabase:", fetchError);
-                        setError("Erro ao autenticar. Por favor, tente novamente.");
-                    } else if (data && data.length > 0) {
-                        role = data[0].role;
+                    if (authError) {
+                        console.error("Erro de autenticação Supabase:", authError);
+                        if (authError.message.includes("Invalid login credentials")) {
+                            setError('Usuário ou senha inválidos.');
+                        } else {
+                            setError(`Erro ao autenticar: ${authError.message}`);
+                        }
+                        showToast(`Erro de login: ${authError.message}`, "error");
+                    } else if (data.user) {
+                        // Authentication successful, onAuthStateChange in App will handle the rest
+                        // showToast("Login bem-sucedido! Redirecionando...", "success"); // Toast will be shown by App component's listener
                     } else {
-                        setError('Usuário ou senha inválidos.');
+                        setError('Ocorreu um erro inesperado durante o login.');
+                        showToast("Erro inesperado durante o login.", "error");
                     }
                 } catch (e) {
-                    console.error("Erro inesperado ao buscar usuário no Supabase:", e);
-                    setError("Erro ao autenticar. Por favor, tente novamente.");
+                    console.error("Erro inesperado durante o login:", e);
+                    setError("Erro inesperado durante o login. Tente novamente.");
+                    showToast("Erro inesperado durante o login.", "error");
+                } finally {
+                    setIsLoggingIn(false);
                 }
-
-
-                if (role) {
-                  onLogin(role, username); // Pass username as userId for data partitioning
-                } else {
-                  // Se o erro já foi definido acima (usuário/senha inválidos ou erro Supabase), não sobrescreva
-                  if (!error) {
-                    setError('Usuário ou senha inválidos.');
-                  }
-                }
-                setIsLoggingIn(false);
               };
 
               return (
@@ -305,7 +282,7 @@
             }
 
             // Componente para Gerenciamento de Filiais
-            function BranchManagement({ userId, userRole, showToast }) {
+            function BranchManagement({ supabase, userId, userRole, showToast }) { // Added supabase prop
                 const [newBranchName, setNewBranchName] = React.useState('');
                 const [branches, setBranches] = React.useState([]);
                 const [responsibleInput, setResponsibleInput] = React.useState(""); // Este é para o campo de adição de nova filial
@@ -318,7 +295,7 @@
                 const [availableSupervisors, setAvailableSupervisors] = React.useState([]); // Novo estado para supervisores disponíveis
 
                 React.useEffect(() => {
-                    if (!userId || !userRole) return;
+                    if (!supabase || !userId || !userRole) return;
 
                     const fetchBranchesAndSupervisors = async () => {
                         setIsLoading(true);
@@ -357,7 +334,7 @@
                     };
 
                     fetchBranchesAndSupervisors();
-                }, [userId, userRole, showToast]);
+                }, [supabase, userId, userRole, showToast]);
 
                 const handleAddBranch = async (e) => {
                     e.preventDefault();
@@ -369,6 +346,10 @@
                     if (!responsibleInput.trim()) { // Validação para garantir que um responsável foi selecionado
                         setError("Por favor, selecione um responsável para a nova filial.");
                         showToast("Selecione um responsável.", "error");
+                        return;
+                    }
+                    if (!supabase) {
+                        showToast("Serviço de banco de dados não disponível.", "error");
                         return;
                     }
 
@@ -437,6 +418,10 @@
                         showToast("Selecione um responsável.", "error");
                         return;
                     }
+                    if (!supabase) {
+                        showToast("Serviço de banco de dados não disponível.", "error");
+                        return;
+                    }
 
                     setIsLoading(true);
                     try {
@@ -484,6 +469,10 @@
 
                 const handleDeleteBranch = async () => {
                     if (!branchToDelete) return;
+                    if (!supabase) {
+                        showToast("Serviço de banco de dados não disponível.", "error");
+                        return;
+                    }
 
                     setIsLoading(true);
                     setShowConfirmModal(false);
@@ -683,7 +672,7 @@
                 );
             }
 
-            function EquipmentManagement({ userId, showToast }) {
+            function EquipmentManagement({ supabase, userId, showToast }) { // Added supabase prop
               const [newPlate, setNewPlate] = React.useState('');
               const [newEquipmentType, setNewEquipmentType] = React.useState('');
               const [equipmentList, setEquipmentList] = React.useState([]);
@@ -699,7 +688,7 @@
               const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
 
               React.useEffect(() => {
-                // No longer filtering by userId here, so all equipment will be fetched.
+                if (!supabase) return;
                 const fetchEquipment = async () => {
                   setIsLoading(true);
                   const { data, error: fetchError } = await supabase
@@ -718,7 +707,7 @@
                   setIsLoading(false);
                 };
                 fetchEquipment();
-              }, [showToast]); // Removed userId from dependency array as it's no longer used for filtering here
+              }, [supabase, showToast]);
 
               const handleAddEquipment = async (e) => {
                 e.preventDefault();
@@ -726,6 +715,10 @@
                   setError("Por favor, preencha a placa e selecione o tipo de equipamento.");
                   showToast("Preencha todos os campos.", "error");
                   return;
+                }
+                if (!supabase) {
+                    showToast("Serviço de banco de dados não disponível.", "error");
+                    return;
                 }
                 setIsLoading(true);
                 try {
@@ -792,6 +785,10 @@
                     showToast("Preencha todos os campos.", "error");
                     return;
                 }
+                if (!supabase) {
+                    showToast("Serviço de banco de dados não disponível.", "error");
+                    return;
+                }
 
                 setIsLoading(true);
                 try {
@@ -833,6 +830,10 @@
 
               const handleDeleteEquipment = async () => {
                 if (!equipmentToDelete) return;
+                if (!supabase) {
+                    showToast("Serviço de banco de dados não disponível.", "error");
+                    return;
+                }
 
                 setIsLoading(true);
                 setShowConfirmModal(false); // Close modal
@@ -1055,7 +1056,7 @@
             }
 
             // Novo Componente: Gerenciamento de Usuários
-            function UserManagement({ userId, showToast }) {
+            function UserManagement({ supabase, userId, showToast }) { // Added supabase prop
               const [newUsername, setNewUsername] = React.useState('');
               const [newPassword, setNewPassword] = React.useState('');
               const [newUserRole, setNewUserRole] = React.useState('usuario');
@@ -1069,7 +1070,7 @@
               const roles = ['administrador', 'supervisor', 'usuario'];
 
               React.useEffect(() => {
-                if (!userId) return;
+                if (!supabase || !userId) return;
                 const fetchUsers = async () => {
                   setIsLoading(true);
                   const { data, error: fetchError } = await supabase
@@ -1088,7 +1089,7 @@
                   setIsLoading(false);
                 };
                 fetchUsers();
-              }, [userId, showToast]);
+              }, [supabase, userId, showToast]);
 
               const handleAddUser = async (e) => {
                 e.preventDefault();
@@ -1097,33 +1098,61 @@
                   showToast("Preencha o nome de usuário e a senha.", "error");
                   return;
                 }
+                if (!supabase) {
+                    showToast("Serviço de banco de dados não disponível.", "error");
+                    return;
+                }
                 setIsLoading(true);
                 try {
-                  const { error: insertError } = await supabase
-                    .from('app_users') // Public table
-                    .insert([
-                      { username: newUsername.trim(), password: newPassword, role: newUserRole }
-                    ]);
+                    // Create user in Supabase Auth
+                    const { data: authSignUpData, error: authSignUpError } = await supabase.auth.signUp({
+                        email: newUsername.trim(), // Assuming username is email for Supabase auth
+                        password: newPassword,
+                        options: {
+                            data: {
+                                username: newUsername.trim() // Store username in user_metadata
+                            }
+                        }
+                    });
 
-                  if (insertError) throw insertError;
+                    if (authSignUpError) {
+                        console.error("Erro ao criar usuário no Supabase Auth:", authSignUpError);
+                        setError(`Erro ao criar usuário: ${authSignUpError.message}`);
+                        showToast(`Erro ao criar usuário: ${authSignUpError.message}`, "error");
+                        setIsLoading(false);
+                        return;
+                    }
 
-                  setNewUsername('');
-                  setNewPassword('');
-                  setNewUserRole('usuario');
-                  setError(null);
-                  showToast("Usuário adicionado com sucesso!", "success");
-                  // Re-fetch data
-                  const { data, error: fetchError } = await supabase
-                    .from('app_users')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                  if (fetchError) console.error("Erro ao re-buscar usuários:", fetchError);
-                  else setUsersList(data);
+                    // If Supabase Auth user is created, then insert into app_users table
+                    const { error: insertError } = await supabase
+                        .from('app_users') // Public table
+                        .insert([
+                            { username: newUsername.trim(), password: newPassword, role: newUserRole, supabase_auth_id: authSignUpData.user.id }
+                        ]);
+
+                    if (insertError) {
+                        // If app_users insert fails, consider deleting the Supabase Auth user to prevent inconsistencies
+                        await supabase.auth.admin.deleteUser(authSignUpData.user.id);
+                        throw insertError;
+                    }
+
+                    setNewUsername('');
+                    setNewPassword('');
+                    setNewUserRole('usuario');
+                    setError(null);
+                    showToast("Usuário adicionado com sucesso!", "success");
+                    // Re-fetch data
+                    const { data, error: fetchError } = await supabase
+                        .from('app_users')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    if (fetchError) console.error("Erro ao re-buscar usuários:", fetchError);
+                    else setUsersList(data);
 
                 } catch (e) {
-                  console.error("Erro ao adicionar usuário:", e);
-                  setError("Erro ao adicionar usuário. Tente novamente.");
-                  showToast("Erro ao adicionar usuário.", "error");
+                    console.error("Erro ao adicionar usuário:", e);
+                    setError("Erro ao adicionar usuário. Tente novamente.");
+                    showToast("Erro ao adicionar usuário.", "error");
                 }
                 setIsLoading(false);
               };
@@ -1135,25 +1164,38 @@
 
               const handleDeleteUser = async () => {
                 if (!userToDelete) return;
+                if (!supabase) {
+                    showToast("Serviço de banco de dados não disponível.", "error");
+                    return;
+                }
 
                 setIsLoading(true);
                 setShowConfirmModal(false); // Close modal
                 try {
-                  const { error: deleteError } = await supabase
-                    .from('app_users') // Public table
-                    .delete()
-                    .eq('id', userToDelete.id);
+                    // Delete from Supabase Auth first
+                    if (userToDelete.supabase_auth_id) {
+                        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userToDelete.supabase_auth_id);
+                        if (authDeleteError) {
+                            console.error("Erro ao deletar usuário no Supabase Auth:", authDeleteError);
+                            // Even if auth delete fails, try to delete from app_users to maintain consistency
+                        }
+                    }
 
-                  if (deleteError) throw deleteError;
+                    const { error: deleteError } = await supabase
+                        .from('app_users') // Public table
+                        .delete()
+                        .eq('id', userToDelete.id);
 
-                  showToast("Usuário excluído com sucesso!", "success");
-                  // Re-fetch data
-                  const { data, error: fetchError } = await supabase
-                    .from('app_users')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                  if (fetchError) console.error("Erro ao re-buscar usuários:", fetchError);
-                  else setUsersList(data);
+                    if (deleteError) throw deleteError;
+
+                    showToast("Usuário excluído com sucesso!", "success");
+                    // Re-fetch data
+                    const { data, error: fetchError } = await supabase
+                        .from('app_users')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    if (fetchError) console.error("Erro ao re-buscar usuários:", fetchError);
+                    else setUsersList(data);
 
                 } catch (e) {
                   console.error("Erro ao deletar usuário:", e);
@@ -1176,9 +1218,9 @@
                   ),
                   React.createElement('form', { onSubmit: handleAddUser, className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
                     React.createElement('div', null,
-                      React.createElement('label', { htmlFor: "newUsername", className: "block text-sm font-medium text-gray-700 mb-1" }, "Nome de Usuário"),
+                      React.createElement('label', { htmlFor: "newUsername", className: "block text-sm font-medium text-gray-700 mb-1" }, "Nome de Usuário (Email)"),
                       React.createElement('input', {
-                        type: "text",
+                        type: "email", // Changed to type email for Supabase auth
                         id: "newUsername",
                         value: newUsername,
                         onChange: (e) => setNewUsername(e.target.value),
@@ -1283,7 +1325,7 @@
             }
 
             // Componente para Troca de Filial
-            function BranchTransfer({ userId, setCurrentPage, showToast }) {
+            function BranchTransfer({ supabase, userId, setCurrentPage, showToast }) { // Added supabase prop
               const [plate, setNewPlate] = React.useState('');
               const [newBranch, setNewBranch] = React.useState('');
               const [executionDate, setExecutionDate] = React.useState(''); // Data de Alteração
@@ -1294,7 +1336,7 @@
 
 
               React.useEffect(() => {
-                if (!userId) return;
+                if (!supabase || !userId) return;
                 const fetchData = async () => {
                   setIsLoading(true);
                   // Fetch branches
@@ -1326,7 +1368,7 @@
                   setIsLoading(false);
                 };
                 fetchData();
-              }, [userId, showToast]);
+              }, [supabase, userId, showToast]);
 
               const handleRegisterTransfer = async (e) => {
                 e.preventDefault();
@@ -1335,6 +1377,10 @@
                   setError("Por favor, preencha todos os campos.");
                   showToast("Preencha todos os campos.", "error");
                   return;
+                }
+                if (!supabase) {
+                    showToast("Serviço de banco de dados não disponível.", "error");
+                    return;
                 }
 
                 setIsLoading(true);
@@ -1502,7 +1548,7 @@
 
 
             // Novo Componente: Dashboard (agora com funcionalidades de alteração de placas)
-            function Dashboard({ userId, showToast }) {
+            function Dashboard({ supabase, userId, showToast }) { // Added supabase prop
               const [equipmentCounts, setEquipmentCounts] = React.useState({
                 'BOMBA LANÇA': 0,
                 'BOMBA': 0,
@@ -1542,7 +1588,7 @@
 
 
               React.useEffect(() => {
-                if (!userId) return;
+                if (!supabase || !userId) return;
 
                 const fetchAvailableUsers = async () => {
                   const { data, error: fetchError } = await supabase
@@ -1558,10 +1604,11 @@
                   }
                 };
                 fetchAvailableUsers();
-              }, [userId, showToast]);
+              }, [supabase, userId, showToast]);
 
               // New useEffect to fetch and count equipment types
               React.useEffect(() => {
+                if (!supabase) return;
                 const fetchAndCountEquipment = async () => {
                   setIsLoading(true);
                   try {
@@ -1604,11 +1651,11 @@
                 };
 
                 fetchAndCountEquipment();
-              }, [showToast]); // Run once on mount and when showToast changes (though not strictly necessary for this effect)
+              }, [supabase, showToast]); // Run once on mount and when showToast changes (though not strictly necessary for this effect)
 
 
               React.useEffect(() => {
-                if (!userId) return;
+                if (!supabase || !userId) return;
 
                 const fetchRegistros = async () => {
                   setIsLoading(true);
@@ -1641,7 +1688,7 @@
                   setIsLoading(false);
                 };
                 fetchRegistros();
-              }, [userId, startDate, endDate, selectedUser, showToast]);
+              }, [supabase, userId, startDate, endDate, selectedUser, showToast]);
 
               const handleApplyFilters = () => {
                 // Re-fetching is handled by useEffect when state changes
@@ -1895,15 +1942,15 @@
 
 
             // Componente principal da Aplicação
-            function App() {
+            function App({ supabaseUrl, supabaseAnonKey }) {
+              const [supabaseClient, setSupabaseClient] = React.useState(null); // New state for Supabase client
               const [userId, setUserId] = React.useState(null); // This will now store the username
               const [userRole, setUserRole] = React.useState(null);
-              const [isAuthReady, setIsAuthReady] = React.useState(false);
+              const [isAuthReady, setIsAuthReady] = React.useState(false); // Track if auth state has been checked
               const [currentPage, setCurrentPage] = React.useState('emptyPanel');
               const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
               const [isCadastroOpen, setIsCadastroOpen] = React.useState(false);
               const [isOperacionalOpen, setIsOperacionalOpen] = React.useState(false);
-              const [error, setError] = React.useState(null);
               const [toastMessage, setToastMessage] = React.useState(null);
               const [toastType, setToastType] = React.useState(null);
 
@@ -1917,29 +1964,84 @@
                   setToastType(null);
               };
 
-
-              // Simulate Firebase Auth state for React Context
+              // Initialize Supabase client once
               React.useEffect(() => {
-                // In a real Supabase app, you would use supabase.auth.onAuthStateChange
-                // For this direct HTML conversion, we assume authentication happens via LoginPage
-                // and userId/userRole are set directly by onLogin.
-                // We set isAuthReady to true immediately to allow LoginPage to render.
-                setIsAuthReady(true);
-              }, []);
+                if (!supabaseClient && window.supabase) {
+                    const client = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                    setSupabaseClient(client);
+                    console.log("Supabase client initialized within App component.");
+                }
+              }, [supabaseClient, supabaseUrl, supabaseAnonKey]);
 
-              const handleLogin = (role, username) => {
-                setUserRole(role);
-                setUserId(username); // Set userId to the logged-in username for data partitioning
-                setCurrentPage('emptyPanel');
-                showToast("Login realizado com sucesso!", "success");
-              };
+              // Set up auth listener after client is initialized
+              React.useEffect(() => {
+                if (!supabaseClient || !supabaseClient.auth) {
+                    console.log("Supabase client or auth module not available for auth listener.");
+                    setIsAuthReady(false); // Keep loading state
+                    return;
+                }
 
-              const handleLogout = () => {
-                // In a real Supabase app, you would call supabase.auth.signOut() here
-                setUserRole(null);
-                setUserId(null);
-                setCurrentPage('login');
-                showToast("Sessão encerrada.", "success");
+                console.log("Setting up Supabase auth listener.");
+                const { data: authListener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                    console.log("Auth state changed:", event, session);
+                    if (session) {
+                        // User is logged in via Supabase auth. Now fetch their custom role.
+                        const userEmail = session.user.email;
+                        const { data: appUserData, error: appUserError } = await supabaseClient
+                            .from('app_users')
+                            .select('role, username') // Also select username for userId
+                            .eq('username', userEmail) // Assuming username in app_users is the email
+                            .single();
+
+                        if (appUserError) {
+                            console.error("Erro ao buscar função do usuário no app_users:", appUserError);
+                            setUserId(null);
+                            setUserRole(null);
+                            setCurrentPage('login');
+                            showToast("Erro ao carregar perfil do usuário. Tente fazer login novamente.", "error");
+                        } else if (appUserData) {
+                            setUserId(appUserData.username); // Set userId to the custom username
+                            setUserRole(appUserData.role);
+                            setCurrentPage('emptyPanel'); // Or 'dashboard'
+                            showToast("Sessão restaurada!", "success");
+                        } else {
+                            // User authenticated with Supabase but no entry in app_users
+                            console.warn("Usuário autenticado no Supabase, mas sem entrada em 'app_users'.");
+                            setUserId(null);
+                            setUserRole(null);
+                            setCurrentPage('login');
+                            showToast("Perfil de usuário não encontrado. Entre em contato com o administrador.", "error");
+                        }
+                    } else {
+                        // User is logged out or no session
+                        setUserId(null);
+                        setUserRole(null);
+                        setCurrentPage('login');
+                        showToast("Sessão encerrada.", "success");
+                    }
+                    setIsAuthReady(true);
+                });
+
+                return () => {
+                    authListener.subscription.unsubscribe();
+                };
+              }, [supabaseClient, showToast]); // Re-run when supabaseClient changes
+
+              const handleLogout = async () => {
+                if (!supabaseClient) {
+                    showToast("Serviço de autenticação não disponível.", "error");
+                    return;
+                }
+                try {
+                    const { error: signOutError } = await supabaseClient.auth.signOut();
+                    if (signOutError) {
+                        throw signOutError;
+                    }
+                    // The onAuthStateChange listener will handle clearing state and navigating to login
+                } catch (e) {
+                    console.error("Erro ao fazer logout:", e);
+                    showToast("Erro ao fazer logout.", "error");
+                }
               };
 
               const toggleSidebar = () => {
@@ -1967,7 +2069,7 @@
               }
 
               if (!userRole) {
-                return React.createElement(LoginPage, { onLogin: handleLogin });
+                return React.createElement(LoginPage, { supabase: supabaseClient, showToast: showToast }); // Pass supabaseClient to LoginPage
               }
 
               return (
@@ -2090,30 +2192,21 @@
                       React.createElement('h1', { className: "text-4xl font-extrabold text-blue-600 text-center flex-grow" }, "TERC SISTEMAS")
                     ),
 
-                    error && (
-                      React.createElement('div', { className: "max-w-full w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 shadow-md", role: "alert" },
-                        React.createElement('strong', { className: "font-bold" }, "Erro:"),
-                        React.createElement('span', { className: "block sm:inline" }, " ", error)
-                      )
-                    ),
+                    toastMessage && React.createElement(Toast, { message: toastMessage, type: toastType, onClose: clearToast }),
 
                     React.createElement('div', { className: "max-w-full w-full" },
                       currentPage === 'emptyPanel' && React.createElement(EmptyPanel, null),
-                      currentPage === 'dashboard' && React.createElement(Dashboard, { userId: userId, showToast: showToast }),
-                      currentPage === 'branchManagement' && userRole === 'administrador' && React.createElement(BranchManagement, { userId: userId, userRole: userRole, showToast: showToast }),
-                      currentPage === 'equipmentManagement' && userRole === 'administrador' && React.createElement(EquipmentManagement, { userId: userId, showToast: showToast }),
-                      currentPage === 'userManagement' && userRole === 'administrador' && React.createElement(UserManagement, { userId: userId, showToast: showToast }),
-                      // currentPage === 'regionalManagement' && userRole === 'administrador' && React.createElement(RegionalManagement, { userId: userId, showToast: showToast }), // REMOVIDO
-                      // currentPage === 'plantManagement' && userRole === 'administrador' && React.createElement(PlantManagement, { userId: userId, showToast: showToast }), // Render new component - commented out as PlantManagement is not defined
-                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast })
-                    ),
-                    toastMessage && React.createElement(Toast, { message: toastMessage, type: toastType, onClose: clearToast })
+                      currentPage === 'dashboard' && React.createElement(Dashboard, { supabase: supabaseClient, userId: userId, showToast: showToast }),
+                      currentPage === 'branchManagement' && userRole === 'administrador' && React.createElement(BranchManagement, { supabase: supabaseClient, userId: userId, userRole: userRole, showToast: showToast }),
+                      currentPage === 'equipmentManagement' && userRole === 'administrador' && React.createElement(EquipmentManagement, { supabase: supabaseClient, userId: userId, showToast: showToast }),
+                      currentPage === 'userManagement' && userRole === 'administrador' && React.createElement(UserManagement, { supabase: supabaseClient, userId: userId, showToast: showToast }),
+                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { supabase: supabaseClient, userId: userId, setCurrentPage: setCurrentPage, showToast: showToast })
+                    )
                   )
                 )
               );
             }
 
-            // ReactDOM.render(React.createElement(App, null), document.getElementById('root')); // This will be called after Supabase loads
         }; // End of window.onload
     </script>
 </body>
