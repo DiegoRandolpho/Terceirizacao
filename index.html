@@ -1090,41 +1090,56 @@
               }, [userId, showToast]);
 
               const handleAddUser = async (e) => {
-                e.preventDefault();
-                if (!newUsername.trim() || !newPassword.trim()) {
-                  setError("Por favor, preencha o nome de usuário e a senha.");
-                  showToast("Preencha o nome de usuário e a senha.", "error");
-                  return;
-                }
-                setIsLoading(true);
-                try {
-                  const { error: insertError } = await supabase
-                    .from('app_users') // Public table
-                    .insert([
-                      { username: newUsername.trim(), password: newPassword, role: newUserRole }
-                    ]);
+                  e.preventDefault();
+                  if (!newUsername.trim() || !newPassword.trim()) {
+                      setError("Por favor, preencha o nome de usuário e a senha.");
+                      showToast("Preencha o nome de usuário e a senha.", "error");
+                      return;
+                  }
+                  setIsLoading(true);
+                  try {
+                      // Check if username already exists
+                      const { data: existingUsers, error: checkError } = await supabase
+                          .from('app_users')
+                          .select('username')
+                          .eq('username', newUsername.trim());
 
-                  if (insertError) throw insertError;
+                      if (checkError) throw checkError;
 
-                  setNewUsername('');
-                  setNewPassword('');
-                  setNewUserRole('usuario');
-                  setError(null);
-                  showToast("Usuário adicionado com sucesso!", "success");
-                  // Re-fetch data
-                  const { data, error: fetchError } = await supabase
-                    .from('app_users')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                  if (fetchError) console.error("Erro ao re-buscar usuários:", fetchError);
-                  else setUsersList(data);
+                      if (existingUsers && existingUsers.length > 0) {
+                          setError("Nome de usuário já existe. Por favor, escolha outro.");
+                          showToast("Nome de usuário já existe.", "error");
+                          setIsLoading(false);
+                          return;
+                      }
 
-                } catch (e) {
-                  console.error("Erro ao adicionar usuário:", e);
-                  setError("Erro ao adicionar usuário. Tente novamente.");
-                  showToast("Erro ao adicionar usuário.", "error");
-                }
-                setIsLoading(false);
+                      const { error: insertError } = await supabase
+                          .from('app_users') // Public table
+                          .insert([
+                              { username: newUsername.trim(), password: newPassword, role: newUserRole }
+                          ]);
+
+                      if (insertError) throw insertError;
+
+                      setNewUsername('');
+                      setNewPassword('');
+                      setNewUserRole('usuario');
+                      setError(null);
+                      showToast("Usuário adicionado com sucesso!", "success");
+                      // Re-fetch data
+                      const { data, error: fetchError } = await supabase
+                          .from('app_users')
+                          .select('*')
+                          .order('created_at', { ascending: false });
+                      if (fetchError) console.error("Erro ao re-buscar usuários:", fetchError);
+                      else setUsersList(data);
+
+                  } catch (e) {
+                      console.error("Erro ao adicionar usuário:", e);
+                      setError("Erro ao adicionar usuário. Tente novamente.");
+                      showToast("Erro ao adicionar usuário.", "error");
+                  }
+                  setIsLoading(false);
               };
 
               const confirmDeleteUser = (user) => {
@@ -1548,10 +1563,11 @@
                 const fetchAvailableFilters = async () => {
                   setIsLoading(true);
                   try {
-                    // Fetch available users
+                    // Fetch available users with role 'supervisor'
                     const { data: usersData, error: fetchUsersError } = await supabase
                       .from('app_users')
-                      .select('username');
+                      .select('username')
+                      .eq('role', 'supervisor'); // Filter by supervisor role
                     if (fetchUsersError) throw fetchUsersError;
                     setAvailableUsers(['Todos os Responsáveis', ...usersData.map(u => u.username)]);
 
@@ -1709,14 +1725,21 @@
                 // Re-fetching is handled by useEffect when state changes
               };
 
+              // Helper function to format date
+              const formatDate = (dateString) => {
+                  if (!dateString) return '';
+                  const [year, month, day] = dateString.split('-');
+                  return `${day}/${month}/${year}`;
+              };
+
               const exportToCSV = () => {
                 // Modified headers and rows for CSV export
                 const headers = ["Filial", "Placa", "Data de Início", "Data Final"]; // Adicionado Data Final
                 const rows = registros.map(registro => [
                   registro.newBranch,
                   registro.plate,
-                  registro.executionDate, // Data de Início
-                  registro.ending_date || '' // Data Final (vazio se for null)
+                  formatDate(registro.executionDate), // Formatar data para CSV
+                  registro.ending_date ? formatDate(registro.ending_date) : '' // Formatar data para CSV (se existir)
                 ]);
 
                 let csvContent = headers.map(header => `"${header}"`).join(";") + "\n";
@@ -1924,7 +1947,7 @@
                             React.createElement('tr', { key: registro.id, className: "hover:bg-gray-50 transition-colors duration-150" },
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" }, registro.newBranch),
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.plate),
-                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, registro.executionDate)
+                              React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500" }, formatDate(registro.executionDate))
                             )
                           ))
                         )
