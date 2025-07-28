@@ -2041,6 +2041,7 @@
                 const [availableSupervisors, setAvailableSupervisors] = React.useState([]);
                 const [error, setError] = React.useState(null);
                 const [isLoading, setIsLoading] = React.useState(false);
+                const [displayOrder, setDisplayOrder] = React.useState([]); // Novo estado para controlar a ordem de exibição
 
                 React.useEffect(() => {
                     const fetchDistributionData = async () => {
@@ -2082,7 +2083,19 @@
                                 }
                             });
 
+                            // Determine which groups to display
+                            const currentDisplayOrder = [];
+                            supervisors.forEach(supervisor => {
+                                if (groupedBranches[supervisor] && groupedBranches[supervisor].length > 0) {
+                                    currentDisplayOrder.push(supervisor);
+                                }
+                            });
+                            if (groupedBranches['Sem Responsável / Outros'] && groupedBranches['Sem Responsável / Outros'].length > 0) {
+                                currentDisplayOrder.push('Sem Responsável / Outros');
+                            }
+
                             setBranchesByResponsible(groupedBranches);
+                            setDisplayOrder(currentDisplayOrder); // Set the display order
 
                         } catch (e) {
                             console.error("Erro ao buscar dados de distribuição:", e);
@@ -2123,7 +2136,7 @@
                             React.createElement('div', { className: "text-center text-gray-500 py-8" }, "Carregando distribuição...")
                         ) : (
                             React.createElement('div', { className: "flex flex-wrap gap-6 justify-center" },
-                                [...availableSupervisors, 'Sem Responsável / Outros'].map(responsible => (
+                                displayOrder.map(responsible => ( // Usar displayOrder para renderizar
                                     React.createElement('div', { key: responsible, className: "flex-none w-full md:w-1/2 lg:w-1/3 xl:w-1/4 p-2" },
                                         React.createElement('div', { className: "bg-gray-100 rounded-lg shadow-md p-4 h-full flex flex-col" },
                                             React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4 border-b pb-2" }, responsible),
