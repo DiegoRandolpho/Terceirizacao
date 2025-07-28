@@ -1513,11 +1513,14 @@
                 'BETONEIRA': 0,
               });
               const [registros, setRegistros] = React.useState([]);
+              const [allEquipment, setAllEquipment] = React.useState([]); // Novo estado para armazenar todos os equipamentos
               const [error, setError] = React.useState(null);
               const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
               const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
               const [selectedBranch, setSelectedBranch] = React.useState('Todas as Filiais'); // Novo estado para o filtro de filial
               const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']); // Novo estado para as filiais disponíveis
+              const [selectedEquipmentType, setSelectedEquipmentType] = React.useState('Todos os Tipos'); // Novo estado para o filtro de tipo de equipamento
+              const equipmentTypes = ['Todos os Tipos', "BOMBA LANÇA", "BOMBA", "BETONEIRA"]; // Tipos de equipamento disponíveis
               const [isLoading, setIsLoading] = React.useState(false);
 
               // Animated counter effect
@@ -1559,6 +1562,13 @@
                     if (fetchBranchesError) throw fetchBranchesError;
                     setAvailableBranches(['Todas as Filiais', ...branchesData.map(b => b.name)]);
 
+                    // Fetch all equipment to map plates to types for filtering records later
+                    const { data: allEquipmentData, error: fetchAllEquipmentError } = await supabase
+                        .from('equipamentos')
+                        .select('plate, type');
+                    if (fetchAllEquipmentError) throw fetchAllEquipmentError;
+                    setAllEquipment(allEquipmentData);
+
                   } catch (e) {
                     console.error("Erro ao buscar filtros disponíveis:", e);
                     setError("Erro ao carregar opções de filtro. Por favor, recarregue a página.");
@@ -1574,14 +1584,19 @@
               React.useEffect(() => {
                 const fetchAndCountEquipment = async () => {
                   setIsLoading(true);
-                  try { // Added try block
+                  try {
                     let equipmentQuery = supabase
                       .from('equipamentos')
-                      .select('type, plate, created_by_username'); // Fetch type, plate, and created_by_username
+                      .select('type, plate, created_by_username');
 
                     // Apply user filter to equipment count
                     if (selectedUser !== 'Todos os Responsáveis') {
                       equipmentQuery = equipmentQuery.eq('created_by_username', selectedUser);
+                    }
+                    
+                    // Apply equipment type filter
+                    if (selectedEquipmentType !== 'Todos os Tipos') {
+                        equipmentQuery = equipmentQuery.eq('type', selectedEquipmentType);
                     }
 
                     const { data: equipmentData, error: fetchError } = await equipmentQuery;
@@ -1634,18 +1649,17 @@
                         animateCount(counts[type], type);
                     });
 
-                  } catch (e) { // Catch block
+                  } catch (e) {
                     console.error("Erro inesperado ao contar equipamentos:", e);
                     setError("Erro ao processar dados de equipamentos.");
                     showToast("Erro ao processar dados de equipamentos.", "error");
-                  } finally { // Finally block
+                  } finally {
                     setIsLoading(false);
                   }
                 };
 
                 fetchAndCountEquipment();
-              }, [userId, selectedUser, selectedBranch, showToast]); // Added selectedUser and selectedBranch to dependencies
-
+              }, [userId, selectedUser, selectedBranch, selectedEquipmentType, showToast]);
 
               React.useEffect(() => {
                 if (!userId) return;
@@ -1675,13 +1689,21 @@
                     setError("Erro ao carregar dados de alteração de placas. Por favor, recarregue a página.");
                     showToast("Erro ao carregar registros.", "error");
                   } else {
-                    setRegistros(data);
+                    // Filter by equipment type after fetching all records
+                    const filteredData = data.filter(registro => {
+                        if (selectedEquipmentType === 'Todos os Tipos') {
+                            return true;
+                        }
+                        const equipment = allEquipment.find(eq => eq.plate === registro.plate);
+                        return equipment && equipment.type === selectedEquipmentType;
+                    });
+                    setRegistros(filteredData); // Set filtered records
                     setError(null);
                   }
                   setIsLoading(false);
                 };
                 fetchRegistros();
-              }, [userId, selectedUser, selectedBranch, showToast]); // Adicionado selectedBranch às dependências
+              }, [userId, selectedUser, selectedBranch, selectedEquipmentType, allEquipment, showToast]); // Adicionado selectedEquipmentType e allEquipment às dependências
 
               const handleApplyFilters = () => {
                 // Re-fetching is handled by useEffect when state changes
@@ -1715,7 +1737,7 @@
                 }
               };
 
-              // Filtragem para a visualização na tabela do dashboard (agora sem searchTerm)
+              // Filtragem para a visualização na tabela do dashboard (já filtrado pelo useEffect)
               const filteredRegistrosForDisplay = registros;
 
 
@@ -1744,7 +1766,7 @@
 
                   React.createElement('div', { className: "mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50" },
                     React.createElement('h3', { className: "text-xl font-semibold text-gray-700 mb-4" }, "Filtrar Registros"),
-                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-end" },
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end" },
                       React.createElement('div', { className: "relative" },
                         React.createElement('label', { htmlFor: "branchFilter", className: "block text-sm font-medium text-gray-700 mb-1" }, "Filial"),
                         React.createElement('div', { className: "flex items-center border border-gray-300 rounded-md shadow-sm" },
@@ -1777,6 +1799,25 @@
                           },
                             availableUsers.map(user => (
                               React.createElement('option', { key: user, value: user }, user)
+                            ))
+                          ),
+                          React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
+                        )
+                      ),
+
+                      React.createElement('div', { className: "relative" },
+                        React.createElement('label', { htmlFor: "equipmentTypeFilter", className: "block text-sm font-medium text-gray-700 mb-1" }, "Tipo de Equipamento"),
+                        React.createElement('div', { className: "flex items-center border border-gray-300 rounded-md shadow-sm" },
+                          React.createElement(LucideIcon, { name: "Truck", className: "h-5 w-5 text-gray-400 ml-3" }),
+                          React.createElement('select', {
+                            id: "equipmentTypeFilter",
+                            value: selectedEquipmentType,
+                            onChange: (e) => setSelectedEquipmentType(e.target.value),
+                            className: "block w-full px-3 py-2 bg-transparent focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none pr-8 transition duration-150 ease-in-out",
+                            disabled: isLoading
+                          },
+                            equipmentTypes.map(type => (
+                              React.createElement('option', { key: type, value: type }, type)
                             ))
                           ),
                           React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
