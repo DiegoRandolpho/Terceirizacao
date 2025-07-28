@@ -693,6 +693,7 @@
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
               const [editingEquipment, setEditingEquipment] = React.useState(null); // New state for editing
               const [originalEquipment, setOriginalEquipment] = React.useState(null); // To store original data for cancel
+              const [searchTerm, setSearchTerm] = React.useState(''); // New state for search term
 
 
               const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
@@ -862,6 +863,12 @@
                 }
               };
 
+              // Filtered list based on search term
+              const filteredEquipmentList = equipmentList.filter(equipment =>
+                  equipment.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  equipment.type.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+
               return (
                 React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                   React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Equipamentos"),
@@ -919,6 +926,23 @@
                       )
                     )
                   ),
+                  React.createElement('div', { className: "mb-4" },
+                      React.createElement('label', { htmlFor: "searchEquipment", className: "block text-sm font-medium text-gray-700 mb-1" }, "Buscar por Placa ou Tipo:"),
+                      React.createElement('div', { className: "relative" },
+                          React.createElement('input', {
+                              type: "text",
+                              id: "searchEquipment",
+                              value: searchTerm,
+                              onChange: (e) => setSearchTerm(e.target.value),
+                              className: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
+                              placeholder: "Buscar placa ou tipo...",
+                              disabled: isLoading
+                          }),
+                          React.createElement('div', { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" },
+                              React.createElement(LucideIcon, { name: "Search", className: "h-5 w-5 text-gray-400" })
+                          )
+                      )
+                  ),
                   React.createElement('div', { className: "overflow-x-auto rounded-lg shadow-md border border-gray-200" },
                     React.createElement('table', { className: "min-w-full divide-y divide-gray-200" },
                       React.createElement('thead', { className: "bg-gray-100" },
@@ -929,16 +953,16 @@
                         )
                       ),
                       React.createElement('tbody', { className: "bg-white divide-y divide-gray-200" },
-                        isLoading && equipmentList.length === 0 ? (
+                        isLoading && filteredEquipmentList.length === 0 ? (
                             React.createElement('tr', null,
                                 React.createElement('td', { colSpan: "3", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Carregando equipamentos...")
                             )
-                        ) : equipmentList.length === 0 ? (
+                        ) : filteredEquipmentList.length === 0 ? (
                           React.createElement('tr', null,
                             React.createElement('td', { colSpan: "3", className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" }, "Nenhum equipamento cadastrado.")
                           )
                         ) : (
-                          equipmentList.map((equipment) => (
+                          filteredEquipmentList.map((equipment) => (
                             React.createElement('tr', { key: equipment.id, className: "hover:bg-gray-50 transition-colors duration-150" },
                               React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" },
                                 editingEquipment && editingEquipment.id === equipment.id ? (
