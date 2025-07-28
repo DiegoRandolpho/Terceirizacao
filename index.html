@@ -103,8 +103,9 @@
                     React.createElement('span', { className: "font-bold text-xl" }, icon),
                     React.createElement('p', null, message),
                     React.createElement('button', { onClick: onClose, className: "ml-4 font-bold opacity-75 hover:opacity-100 transition-opacity" }, 'X')
-                );
-            }
+                )
+            );
+        }
 
         // Componente de Confirmação Modal
         function ConfirmationModal({ message, onConfirm, onCancel }) {
@@ -1514,14 +1515,10 @@
               const [registros, setRegistros] = React.useState([]);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [error, setError] = React.useState(null);
-              // REMOVED: const [startDate, setStartDate] = React.useState('');
-              // REMOVED: const [endDate, setEndDate] = React.useState('');
+              const [startDate, setStartDate] = React.useState('');
+              const [endDate, setEndDate] = React.useState('');
               const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
               const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
-              // NEW: State for branch filter
-              const [selectedBranch, setSelectedBranch] = React.useState('Todas as Filiais');
-              const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']);
-
               const [isLoading, setIsLoading] = React.useState(false);
 
               // Animated counter effect
@@ -1561,24 +1558,6 @@
                 };
                 fetchAvailableUsers();
               }, [userId, showToast]);
-
-              // NEW: useEffect to fetch available branches
-              React.useEffect(() => {
-                const fetchAvailableBranches = async () => {
-                  const { data, error: fetchError } = await supabase
-                    .from('filiais')
-                    .select('name');
-
-                  if (fetchError) {
-                    console.error("Erro ao buscar filiais disponíveis no Supabase:", fetchError);
-                    setError("Erro ao carregar lista de filiais. Por favor, recarregue a página.");
-                    showToast("Erro ao carregar filiais.", "error");
-                  } else {
-                    setAvailableBranches(['Todas as Filiais', ...data.map(f => f.name)]);
-                  }
-                };
-                fetchAvailableBranches();
-              }, [showToast]); // No userId dependency here, as branches are global
 
               // New useEffect to fetch and count equipment types
               React.useEffect(() => {
@@ -1638,19 +1617,14 @@
                     // .is('ending_date', null) // REMOVIDO: Não filtrar por ending_date para a visualização completa
                     .eq('created_by_username', userId);
 
-                  // REMOVED: Apply date filter
-                  // if (startDate && endDate) {
-                  //   queryBuilder = queryBuilder.gte('executionDate', startDate).lte('executionDate', endDate);
-                  // }
+                  // Apply date filter
+                  if (startDate && endDate) {
+                    queryBuilder = queryBuilder.gte('executionDate', startDate).lte('executionDate', endDate);
+                  }
 
                   // Apply user filter
                   if (selectedUser !== 'Todos os Responsáveis') {
                     queryBuilder = queryBuilder.eq('created_by_username', selectedUser);
-                  }
-
-                  // NEW: Apply branch filter
-                  if (selectedBranch !== 'Todas as Filiais') {
-                    queryBuilder = queryBuilder.eq('newBranch', selectedBranch);
                   }
 
                   const { data, error: fetchError } = await queryBuilder.order('created_at', { ascending: false });
@@ -1666,7 +1640,7 @@
                   setIsLoading(false);
                 };
                 fetchRegistros();
-              }, [userId, selectedUser, selectedBranch, showToast]); // Updated dependencies
+              }, [userId, startDate, endDate, selectedUser, showToast]);
 
               const handleApplyFilters = () => {
                 // Re-fetching is handled by useEffect when state changes
@@ -1674,13 +1648,12 @@
 
               const exportToCSV = () => {
                 // Modified headers and rows for CSV export
-                const headers = ["Filial", "Placa", "Data de Início", "Data Final", "Responsável"]; // Adicionado Responsável
+                const headers = ["Filial", "Placa", "Data de Início", "Data Final"]; // Adicionado Data Final
                 const rows = registros.map(registro => [
                   registro.newBranch,
                   registro.plate,
                   registro.executionDate, // Data de Início
-                  registro.ending_date || '', // Data Final (vazio se for null)
-                  registro.created_by_username // Responsável
+                  registro.ending_date || '' // Data Final (vazio se for null)
                 ]);
 
                 let csvContent = headers.map(header => `"${header}"`).join(";") + "\n";
@@ -1725,28 +1698,36 @@
 
                   React.createElement('div', { className: "mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50" },
                     React.createElement('h3', { className: "text-xl font-semibold text-gray-700 mb-4" }, "Filtrar Registros"),
-                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 items-end" }, {/* Adjusted grid layout */}
-                      {/* NEW: Usina Filter */}
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end" },
                       React.createElement('div', { className: "relative" },
-                        React.createElement('label', { htmlFor: "plantFilter", className: "block text-sm font-medium text-gray-700 mb-1" }, "Usina"),
+                        React.createElement('label', { htmlFor: "startDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data Início"),
                         React.createElement('div', { className: "flex items-center border border-gray-300 rounded-md shadow-sm" },
-                          React.createElement(LucideIcon, { name: "Factory", className: "h-5 w-5 text-gray-400 ml-3" }),
-                          React.createElement('select', {
-                            id: "plantFilter",
-                            value: selectedBranch,
-                            onChange: (e) => setSelectedBranch(e.target.value),
-                            className: "block w-full px-3 py-2 bg-transparent focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none pr-8 transition duration-150 ease-in-out",
+                          React.createElement('input', {
+                            type: "date",
+                            id: "startDate",
+                            value: startDate,
+                            onChange: (e) => setStartDate(e.target.value),
+                            className: "block w-full px-3 py-2 bg-transparent focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
                             disabled: isLoading
-                          },
-                            availableBranches.map(branch => (
-                              React.createElement('option', { key: branch, value: branch }, branch)
-                            ))
-                          ),
-                          React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" })
+                          }),
+                          React.createElement(LucideIcon, { name: "CalendarDays", className: "h-5 w-5 text-gray-400 mr-2" })
+                        )
+                      ),
+                      React.createElement('div', { className: "relative" },
+                        React.createElement('label', { htmlFor: "endDate", className: "block text-sm font-medium text-gray-700 mb-1" }, "Data Fim"),
+                        React.createElement('div', { className: "flex items-center border border-gray-300 rounded-md shadow-sm" },
+                          React.createElement('input', {
+                            type: "date",
+                            id: "endDate",
+                            value: endDate,
+                            onChange: (e) => setEndDate(e.target.value),
+                            className: "block w-full px-3 py-2 bg-transparent focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out",
+                            disabled: isLoading
+                          }),
+                          React.createElement(LucideIcon, { name: "CalendarDays", className: "h-5 w-5 text-gray-400 mr-2" })
                         )
                       ),
 
-                      {/* Responsável Filter (keep as is) */}
                       React.createElement('div', { className: "relative" },
                         React.createElement('label', { htmlFor: "responsibleUser", className: "block text-sm font-medium text-gray-700 mb-1" }, "Responsável"),
                         React.createElement('div', { className: "flex items-center border border-gray-300 rounded-md shadow-sm" },
@@ -1766,8 +1747,7 @@
                         )
                       ),
 
-                      {/* Apply Filters Button (adjust styling if needed) */}
-                      React.createElement('div', { className: "md:col-span-2 flex justify-center md:justify-start" }, {/* Changed to md:col-span-2 */}
+                      React.createElement('div', { className: "md:col-span-3 lg:col-span-1 flex justify-center md:justify-start" },
                         React.createElement('button', {
                           onClick: handleApplyFilters,
                           className: "inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out transform hover:scale-105 w-full md:w-auto",
