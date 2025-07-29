@@ -246,9 +246,9 @@
               return (
                 React.createElement('div', { className: "flex items-center justify-center min-h-screen bg-gray-100 font-sans" },
                   React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-lg w-full max-w-md" },
-                    // Tersys title
+                    // TERC SISTEMAS title
                     React.createElement('div', { className: "flex flex-col items-center justify-center mb-6" },
-                        React.createElement('h2', { className: "text-4xl font-extrabold text-blue-600 text-center" }, "Tersys")
+                        React.createElement('h2', { className: "text-4xl font-extrabold text-blue-600 text-center" }, "TERC SISTEMAS")
                     ),
                     error && (
                       React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert" },
@@ -1536,7 +1536,7 @@
                       isLoading ? (
                         React.createElement('svg', { className: "animate-spin -ml-1 mr-3 h-5 w-5 text-white", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24" },
                           React.createElement('circle', { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }),
-                          React.createElement('path', { className: "opacity-75", fill: "currentColor", d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })
+                          React.createElement('path', { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })
                         )
                       ) : (
                         "Registrar Troca"
@@ -1931,7 +1931,7 @@
                           isLoading ? (
                             React.createElement('svg', { className: "animate-spin -ml-1 mr-3 h-5 w-5 text-white", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24" },
                               React.createElement('circle', { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }),
-                              React.createElement('path', { className: "opacity-75", fill: "currentColor", d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })
+                              React.createElement('path', { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })
                           )
                         ) : (
                           React.createElement(LucideIcon, { name: "Search", className: "mr-2 h-5 w-5" })
@@ -2090,7 +2090,6 @@
                                     currentDisplayOrder.push(supervisor);
                                 }
                             });
-                            // Only add "Sem Responsável / Outros" if it has branches
                             if (groupedBranches['Sem Responsável / Outros'] && groupedBranches['Sem Responsável / Outros'].length > 0) {
                                 currentDisplayOrder.push('Sem Responsável / Outros');
                             }
@@ -2165,8 +2164,8 @@
             function EmptyPanel() {
               return (
                 React.createElement('div', { className: "flex flex-col items-center justify-center min-h-[calc(100vh-16rem)] bg-white p-6 rounded-xl shadow-lg text-center" },
-                  React.createElement('h2', { className: "text-4xl font-extrabold text-blue-600 text-center mb-4" }, "Tersys"),
-                  React.createElement('p', { className: "text-lg text-gray-700 mt-4 max-w-2xl leading-relaxed" }, "O Tersys é um aplicativo desenvolvido para controlar de forma prática e eficiente a troca de placas entre usinas. Ele permite registrar, rastrear e organizar as movimentações de forma centralizada, garantindo agilidade e segurança nas operações.")
+                  React.createElement('h2', { className: "text-4xl font-extrabold text-blue-600 text-center mb-4" }, "SISTEMA DE GERENCIAMENTO"),
+                  React.createElement('p', { className: "text-lg text-gray-700 mt-4 max-w-2xl leading-relaxed" }, "O SISTEMA DE GERENCIAMENTO é um aplicativo desenvolvido para controlar de forma prática e eficiente a troca de placas entre usinas. Ele permite registrar, rastrear e organizar as movimentações de forma centralizada, garantindo agilidade e segurança nas operações.")
                 )
               );
             }
@@ -2412,7 +2411,7 @@
                       React.createElement('button', { className: "text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors", onClick: toggleSidebar },
                         React.createElement(LucideIcon, { name: "Menu", className: "h-6 w-6" })
                       ),
-                      React.createElement('h1', { className: "text-4xl font-extrabold text-blue-600 text-center flex-grow" }, "Tersys")
+                      React.createElement('h1', { className: "text-4xl font-extrabold text-blue-600 text-center flex-grow" }, "TERC SISTEMAS")
                     ),
 
                     error && (
@@ -2429,7 +2428,7 @@
                       currentPage === 'equipmentManagement' && userRole === 'administrador' && React.createElement(EquipmentManagement, { userId: userId, showToast: showToast }),
                       currentPage === 'userManagement' && userRole === 'administrador' && React.createElement(UserManagement, { userId: userId, showToast: showToast }),
                       currentPage === 'outsourcingDistribution' && React.createElement(OutsourcingDistribution, { userId: userId, showToast: showToast, setCurrentPage: setCurrentPage }),
-                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast }),
+                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast }), // Adicionada vírgula aqui
                       toastMessage && React.createElement(Toast, { message: toastMessage, type: toastType, onClose: clearToast })
                     )
                   )
