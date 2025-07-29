@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TERC SISTEMAS</title>
+    <title>Placa App</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter font -->
@@ -13,7 +13,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; /* Light gray background for a professional feel */
+            background-color: #f3f4f6; /* Slightly darker background for a professional feel */
         }
         /* Custom styles for select arrow */
         select {
@@ -41,23 +41,6 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a0a0a0;
         }
-
-        /* Custom animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .animate-scale-in {
-            animation: scaleIn 0.3s ease-out forwards;
-        }
     </style>
 </head>
 <body>
@@ -69,9 +52,6 @@
 
     <script type="text/javascript">
         console.log("Script principal começando a carregar.");
-
-        // URL do logótipo fornecida pelo utilizador
-        const logoUrl = 'https://drive.google.com/uc?export=view&id=1VwUgyzRaVy6F1cG3nz51Odz8X5RZyrEl';
 
         // Manual SVG Icons from Lucide React
         const icons = {
@@ -266,13 +246,9 @@
               return (
                 React.createElement('div', { className: "flex items-center justify-center min-h-screen bg-gray-100 font-sans" },
                   React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-lg w-full max-w-md" },
-                    // Logo image instead of text
+                    // TERSYS title
                     React.createElement('div', { className: "flex flex-col items-center justify-center mb-6" },
-                        React.createElement('img', {
-                            src: logoUrl,
-                            alt: "TERC SISTEMAS Logo",
-                            className: "h-24 w-auto mb-4" // Adjust size as needed
-                        })
+                        React.createElement('h2', { className: "text-4xl font-extrabold text-blue-600 text-center" }, "TERSYS")
                     ),
                     error && (
                       React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", role: "alert" },
@@ -1997,7 +1973,6 @@
                     ),
                   ),
 
-
                   React.createElement('h3', { className: "text-xl font-semibold text-gray-700 mb-4 border-b pb-2 mt-8" }, "Distribuição de Equipamentos"),
                   React.createElement('div', { className: "mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50" },
                       totalEquipment === 0 ? (
@@ -2189,11 +2164,6 @@
             function EmptyPanel() {
               return (
                 React.createElement('div', { className: "flex flex-col items-center justify-center min-h-[calc(100vh-16rem)] bg-white p-6 rounded-xl shadow-lg text-center" },
-                  React.createElement('img', {
-                      src: logoUrl,
-                      alt: "TERC SISTEMAS Logo",
-                      className: "h-32 w-auto mb-6" // Adjust size as needed
-                  }),
                   React.createElement('h2', { className: "text-4xl font-extrabold text-blue-600 text-center mb-4" }, "SISTEMA DE GERENCIAMENTO"),
                   React.createElement('p', { className: "text-lg text-gray-700 mt-4 max-w-2xl leading-relaxed" }, "O SISTEMA DE GERENCIAMENTO é um aplicativo desenvolvido para controlar de forma prática e eficiente a troca de placas entre usinas. Ele permite registrar, rastrear e organizar as movimentações de forma centralizada, garantindo agilidade e segurança nas operações.")
                 )
@@ -2441,11 +2411,7 @@
                       React.createElement('button', { className: "text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors", onClick: toggleSidebar },
                         React.createElement(LucideIcon, { name: "Menu", className: "h-6 w-6" })
                       ),
-                      React.createElement('img', {
-                          src: logoUrl,
-                          alt: "TERC SISTEMAS Logo",
-                          className: "h-16 w-auto mx-auto" // Adjust size and center
-                      })
+                      React.createElement('h1', { className: "text-4xl font-extrabold text-blue-600 text-center flex-grow" }, "TERSYS")
                     ),
 
                     error && (
@@ -2462,7 +2428,7 @@
                       currentPage === 'equipmentManagement' && userRole === 'administrador' && React.createElement(EquipmentManagement, { userId: userId, showToast: showToast }),
                       currentPage === 'userManagement' && userRole === 'administrador' && React.createElement(UserManagement, { userId: userId, showToast: showToast }),
                       currentPage === 'outsourcingDistribution' && React.createElement(OutsourcingDistribution, { userId: userId, showToast: showToast, setCurrentPage: setCurrentPage }),
-                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast }),
+                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast }), // Adicionada vírgula aqui
                       toastMessage && React.createElement(Toast, { message: toastMessage, type: toastType, onClose: clearToast })
                     )
                   )
