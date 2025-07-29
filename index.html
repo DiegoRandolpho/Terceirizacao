@@ -2429,7 +2429,7 @@
                       currentPage === 'equipmentManagement' && userRole === 'administrador' && React.createElement(EquipmentManagement, { userId: userId, showToast: showToast }),
                       currentPage === 'userManagement' && userRole === 'administrador' && React.createElement(UserManagement, { userId: userId, showToast: showToast }),
                       currentPage === 'outsourcingDistribution' && React.createElement(OutsourcingDistribution, { userId: userId, showToast: showToast, setCurrentPage: setCurrentPage }),
-                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast }), // Adicionada vírgula aqui
+                      currentPage === 'branchTransfer' && React.createElement(BranchTransfer, { userId: userId, setCurrentPage: setCurrentPage, showToast: showToast }),
                       toastMessage && React.createElement(Toast, { message: toastMessage, type: toastType, onClose: clearToast })
                     )
                   )
