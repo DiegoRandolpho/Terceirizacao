@@ -46,10 +46,6 @@
 <body>
     <div id="root"></div>
 
-    <!-- React CDN -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
     <script type="text/javascript">
         console.log("Script principal começando a carregar.");
 
@@ -148,37 +144,30 @@
                     console.log("Tentando inicializar o cliente Supabase...");
                     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     console.log("Cliente Supabase inicializado com sucesso.");
-                    ReactDOM.render(React.createElement(App, null), document.getElementById('root'));
+                    // Use window.ReactDOM.render to ensure ReactDOM is accessed correctly
+                    window.ReactDOM.render(React.createElement(App, null), document.getElementById('root'));
                 } catch (e) {
                     console.error("Erro ao inicializar o cliente Supabase:", e);
-                    ReactDOM.render(
-                        React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: 'red' } },
-                            React.createElement('h1', null, 'Erro ao Inicializar Supabase'),
-                            React.createElement('p', null, `Ocorreu um erro ao inicializar o cliente Supabase: ${e.message}. Verifique as suas credenciais e a configuração do projeto Supabase.`)
-                        ),
-                        document.getElementById('root')
-                    );
+                    // Use window.ReactDOM.render here as well for consistency
+                    if (window.ReactDOM) {
+                        window.ReactDOM.render(
+                            React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: 'red' } },
+                                React.createElement('h1', null, 'Erro ao Inicializar Supabase'),
+                                React.createElement('p', null, `Ocorreu um erro ao inicializar o cliente Supabase: ${e.message}. Verifique as suas credenciais e a configuração do projeto Supabase.`)
+                            ),
+                            document.getElementById('root')
+                        );
+                    } else {
+                        // Fallback if ReactDOM is truly not available
+                        document.getElementById('root').innerHTML = `
+                            <div style="text-align: center; padding: 20px; color: red;">
+                                <h1>Erro ao Inicializar Supabase</h1>
+                                <p>Ocorreu um erro ao inicializar o cliente Supabase: ${e.message}. Verifique as suas credenciais e a configuração do projeto Supabase. Além disso, o React DOM não está disponível.</p>
+                            </div>
+                        `;
+                    }
                 }
             };
-
-            // Dynamically load Supabase library
-            const supabaseScript = document.createElement('script');
-            supabaseScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/dist/umd/supabase.min.js";
-            supabaseScript.onload = () => {
-                console.log("Biblioteca Supabase carregada com sucesso.");
-                initializeSupabaseAndRenderApp();
-            };
-            supabaseScript.onerror = (error) => {
-                console.error("Erro ao carregar a biblioteca Supabase:", error);
-                ReactDOM.render(
-                    React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: 'red' } },
-                        React.createElement('h1', null, 'Erro ao Carregar Aplicação'),
-                        React.createElement('p', null, 'A biblioteca Supabase não foi carregada. Por favor, verifique a sua ligação à internet ou o link CDN do Supabase no código HTML.')
-                    ),
-                    document.getElementById('root')
-                );
-            };
-            document.head.appendChild(supabaseScript);
 
             // Global variable for app ID (from Canvas environment, if applicable, otherwise default)
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -2330,12 +2319,29 @@
                 );
             }
 
-            // Componente para a tela vazia inicial (agora com visual e a descrição)
-            function EmptyPanel() {
+            // Novo Componente: Menu de Acesso Rápido
+            function QuickAccessMenu({ setCurrentPage }) {
+              const menuItems = [
+                { name: "Dashboard de Equipamentos", page: "dashboard", icon: "Truck" },
+                { name: "Distribuição de Terceirização", page: "outsourcingDistribution", icon: "MapPin" },
+                { name: "Troca de Filial", page: "branchTransfer", icon: "ArrowLeftRight" },
+              ];
+
               return (
                 React.createElement('div', { className: "flex flex-col items-center justify-center min-h-[calc(100vh-16rem)] bg-white p-6 rounded-xl shadow-lg text-center" },
-                  // Removido o h2 "SISTEMA DE GERENCIAMENTO"
-                  React.createElement('p', { className: "text-lg text-gray-700 mt-4 max-w-2xl leading-relaxed" }, "O SISTEMA DE GERENCIAMENTO é um aplicativo desenvolvido para controlar de forma prática e eficiente a troca de placas entre usinas. Ele permite registrar, rastrear e organizar as movimentações de forma centralizada, garantindo agilidade e segurança nas operações.")
+                  React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-8" }, "Acesso Rápido"),
+                  React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl" },
+                    menuItems.map(item => (
+                      React.createElement('button', {
+                        key: item.page,
+                        onClick: () => setCurrentPage(item.page),
+                        className: "flex flex-col items-center justify-center p-6 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105 group"
+                      },
+                        React.createElement(LucideIcon, { name: item.icon, className: "h-12 w-12 mb-3 text-white group-hover:text-blue-100 transition-colors" }),
+                        React.createElement('span', { className: "text-lg font-semibold" }, item.name)
+                      )
+                    ))
+                  )
                 )
               );
             }
@@ -2347,7 +2353,8 @@
               const [userId, setUserId] = React.useState(localStorage.getItem('userId'));
               const [userRole, setUserRole] = React.useState(localStorage.getItem('userRole'));
               const [isAuthReady, setIsAuthReady] = React.useState(false);
-              const [currentPage, setCurrentPage] = React.useState('emptyPanel');
+              // Define a página inicial como 'quickAccessMenu' após o login
+              const [currentPage, setCurrentPage] = React.useState('quickAccessMenu');
               const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
               const [isCadastroOpen, setIsCadastroOpen] = React.useState(false);
               const [isOperacionalOpen, setIsOperacionalOpen] = React.useState(false);
@@ -2378,10 +2385,8 @@
                   // Se houver dados no localStorage, o usuário é considerado autenticado
                   // e podemos definir isAuthReady como true.
                   setIsAuthReady(true);
-                  // Opcional: Redirecionar para o dashboard ou uma página padrão após o refresh
-                  // if (currentPage === 'login') { // Evita redirecionar se já estiver em outra página
-                  //   setCurrentPage('dashboard');
-                  // }
+                  // Define a página inicial como 'quickAccessMenu' se já estiver logado
+                  setCurrentPage('quickAccessMenu');
                 } else {
                   // Se não houver dados no localStorage, o usuário não está autenticado
                   setIsAuthReady(true); // Indica que a verificação de autenticação inicial foi concluída
@@ -2393,7 +2398,7 @@
               const handleLogin = (role, username) => {
                 setUserRole(role);
                 setUserId(username); // Set userId to the logged-in username for data partitioning
-                setCurrentPage('emptyPanel');
+                setCurrentPage('quickAccessMenu'); // Redireciona para o menu de acesso rápido após o login
                 showToast("Login realizado com sucesso!", "success");
               };
 
@@ -2598,7 +2603,7 @@
                     ),
 
                     React.createElement('div', { className: "max-w-full w-full" },
-                      currentPage === 'emptyPanel' && React.createElement(EmptyPanel, null),
+                      currentPage === 'quickAccessMenu' && React.createElement(QuickAccessMenu, { setCurrentPage: setCurrentPage }),
                       currentPage === 'dashboard' && React.createElement(Dashboard, { userId: userId, showToast: showToast }),
                       currentPage === 'branchManagement' && userRole === 'administrador' && React.createElement(BranchManagement, { userId: userId, userRole: userRole, showToast: showToast }),
                       currentPage === 'equipmentManagement' && userRole === 'administrador' && React.createElement(EquipmentManagement, { userId: userId, showToast: showToast }),
@@ -2612,7 +2617,66 @@
               );
             }
 
-            // ReactDOM.render(React.createElement(App, null), document.getElementById('root')); // This will be called after Supabase loads
+            // Dynamically load React, ReactDOM, and Supabase libraries in order
+            const reactScript = document.createElement('script');
+            reactScript.src = "https://unpkg.com/react@18/umd/react.production.min.js";
+            reactScript.crossOrigin = "anonymous";
+            reactScript.onload = () => {
+                console.log("Biblioteca React carregada com sucesso.");
+                const reactDOMScript = document.createElement('script');
+                reactDOMScript.src = "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js";
+                reactDOMScript.crossOrigin = "anonymous";
+                reactDOMScript.onload = () => {
+                    console.log("Biblioteca ReactDOM carregada com sucesso.");
+                    const supabaseScript = document.createElement('script');
+                    supabaseScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/dist/umd/supabase.min.js";
+                    supabaseScript.onload = () => {
+                        console.log("Biblioteca Supabase carregada com sucesso.");
+                        initializeSupabaseAndRenderApp();
+                    };
+                    supabaseScript.onerror = (error) => {
+                        console.error("Erro ao carregar a biblioteca Supabase:", error);
+                        if (window.ReactDOM) {
+                            window.ReactDOM.render(
+                                React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: 'red' } },
+                                    React.createElement('h1', null, 'Erro ao Carregar Aplicação'),
+                                    React.createElement('p', null, 'A biblioteca Supabase não foi carregada. Por favor, verifique a sua ligação à internet ou o link CDN do Supabase no código HTML.')
+                                ),
+                                document.getElementById('root')
+                            );
+                        } else {
+                            document.getElementById('root').innerHTML = `
+                                <div style="text-align: center; padding: 20px; color: red;">
+                                    <h1>Erro ao Carregar Aplicação</h1>
+                                    <p>A biblioteca Supabase não foi carregada. Por favor, verifique a sua ligação à internet ou o link CDN do Supabase no código HTML. Além disso, o React DOM não está disponível.</p>
+                                </div>
+                            `;
+                        }
+                    };
+                    document.head.appendChild(supabaseScript);
+                };
+                reactDOMScript.onerror = (error) => {
+                    console.error("Erro ao carregar a biblioteca ReactDOM:", error);
+                    document.getElementById('root').innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: red;">
+                            <h1>Erro ao Carregar Aplicação</h1>
+                            <p>A biblioteca ReactDOM não foi carregada. Por favor, verifique a sua ligação à internet ou o link CDN do ReactDOM no código HTML.</p>
+                        </div>
+                    `;
+                };
+                document.head.appendChild(reactDOMScript);
+            };
+            reactScript.onerror = (error) => {
+                console.error("Erro ao carregar a biblioteca React:", error);
+                document.getElementById('root').innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: red;">
+                        <h1>Erro ao Carregar Aplicação</h1>
+                        <p>A biblioteca React não foi carregada. Por favor, verifique a sua ligação à internet ou o link CDN do React no código HTML.</p>
+                    </div>
+                `;
+            };
+            document.head.appendChild(reactScript);
+
         }; // End of window.onload
     </script>
 </body>
