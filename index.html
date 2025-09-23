@@ -382,7 +382,6 @@
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
               const [editingEquipment, setEditingEquipment] = React.useState(null);
-              const [originalEquipment, setOriginalEquipment] = React.useState(null);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
               const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
@@ -391,7 +390,7 @@
                 const fetchEquipment = async () => {
                   setIsLoading(true);
                   try {
-                    const { data, error: fetchError } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                    const { data, error: fetchError } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                     if (fetchError) throw fetchError;
                     setEquipmentList(data);
                   } catch (err) {
@@ -413,7 +412,7 @@
                   await supabase.from('equipamentos').insert([{ plate: newPlate.trim(), model: newModel.trim(), brand: newBrand.trim(), chassis: newChassis.trim(), type: newEquipmentType, created_by_username: userId }]);
                   showToast("Equipamento adicionado com sucesso!", "success");
                   setNewPlate(''); setNewModel(''); setNewBrand(''); setNewChassis(''); setNewEquipmentType(''); setShowForm(false);
-                  const { data } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                  const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                   setEquipmentList(data);
                 } catch (err) {
                   showToast("Erro ao adicionar equipamento.", "error");
@@ -421,8 +420,8 @@
                 setIsLoading(false);
               };
 
-              const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); setOriginalEquipment({ ...eq }); };
-              const handleCancelEdit = () => { setEditingEquipment(null); setOriginalEquipment(null); };
+              const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); };
+              const handleCancelEdit = () => { setEditingEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
               
               const handleUpdateEquipment = async () => {
@@ -432,7 +431,7 @@
                   await supabase.from('equipamentos').update({ plate: editingEquipment.plate.trim(), model: editingEquipment.model.trim(), brand: editingEquipment.brand.trim(), chassis: editingEquipment.chassis.trim(), type: editingEquipment.type }).eq('id', editingEquipment.id);
                   showToast("Equipamento atualizado!", "success");
                   setEditingEquipment(null);
-                  const { data } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                  const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                   setEquipmentList(data);
                 } catch (err) {
                    showToast("Erro ao atualizar.", "error");
@@ -448,7 +447,7 @@
                 try {
                     await supabase.from('equipamentos').delete().eq('id', equipmentToDelete.id);
                     showToast("Equipamento excluído!", "success");
-                    const { data } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                    const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                     setEquipmentList(data);
                 } catch(e) {
                     showToast("Erro ao excluir.", "error");
@@ -459,7 +458,7 @@
               };
 
               const filteredEquipmentList = equipmentList.filter(eq =>
-                  Object.values(eq).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
+                  Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
 
               return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
@@ -481,28 +480,39 @@
                 ),
                 React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
                 React.createElement('div', { className: "overflow-x-auto" },
-                    React.createElement('table', { className: "min-w-full bg-white" },
-                        React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, React.createElement('th', {className: "p-2"}, "Placa"), React.createElement('th', {className: "p-2"}, "Tipo"), React.createElement('th', {className: "p-2 text-right"}, "Ações"))),
+                    React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                        React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, 
+                            React.createElement('th', {className: "p-2 text-left"}, "Placa"), 
+                            React.createElement('th', {className: "p-2 text-left"}, "Modelo"),
+                            React.createElement('th', {className: "p-2 text-left"}, "Marca"),
+                            React.createElement('th', {className: "p-2 text-left"}, "Chassi"),
+                            React.createElement('th', {className: "p-2 text-left"}, "Tipo"), 
+                            React.createElement('th', {className: "p-2 text-right"}, "Ações"))),
                         React.createElement('tbody', { className: "divide-y" },
                             filteredEquipmentList.map(eq => (
-                                editingEquipment && editingEquipment.id === eq.id ?
-                                React.createElement('tr', { key: eq.id },
-                                    React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full"})),
-                                    React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
-                                    React.createElement('td', { className: "p-2 text-right" },
-                                      React.createElement('div', {className: 'mb-2'}, React.createElement('input', {placeholder: "Modelo", value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full"})),
-                                      React.createElement('div', {className: 'mb-2'}, React.createElement('input', {placeholder: "Marca", value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full"})),
-                                      React.createElement('div', {className: 'mb-2'}, React.createElement('input', {placeholder: "Chassi", value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full"})),
-                                      React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2"}, React.createElement(LucideIcon, {name:'Save'})),
-                                      React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600"}, React.createElement(LucideIcon, {name:'Ban'}))
-                                    )
-                                ) :
-                                React.createElement('tr', { key: eq.id },
-                                    React.createElement('td', { className: "p-2" }, eq.plate),
-                                    React.createElement('td', { className: "p-2" }, eq.type),
-                                    React.createElement('td', { className: "p-2 text-right" },
-                                        React.createElement('button', {onClick: ()=>handleEditClick(eq), className:"text-blue-600 mr-2"}, React.createElement(LucideIcon, {name: 'Edit'})),
-                                        React.createElement('button', {onClick: ()=>confirmDeleteEquipment(eq), className:"text-red-600"}, React.createElement(LucideIcon, {name: 'Trash2'}))
+                                React.createElement('tr', { key: eq.id, className: "hover:bg-gray-50" },
+                                    editingEquipment && editingEquipment.id === eq.id ?
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
+                                        React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                          React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
+                                          React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
+                                        )
+                                    ) :
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "p-2" }, eq.plate),
+                                        React.createElement('td', { className: "p-2" }, eq.model),
+                                        React.createElement('td', { className: "p-2" }, eq.brand),
+                                        React.createElement('td', { className: "p-2" }, eq.chassis),
+                                        React.createElement('td', { className: "p-2" }, eq.type),
+                                        React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                            React.createElement('button', {onClick: ()=>handleEditClick(eq), className:"text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Edit'})),
+                                            React.createElement('button', {onClick: ()=>confirmDeleteEquipment(eq), className:"text-red-600 p-1 hover:bg-red-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Trash2'}))
+                                        )
                                     )
                                 )
                             ))
@@ -1244,10 +1254,13 @@
                 const [currentRecord, setCurrentRecord] = React.useState(null);
                 const initialFormState = { tipo_de_implemento: '', filial: '', preco: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
-                const implementTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
+                const implementTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA", "TODOS"];
+
+                const [searchTerm, setSearchTerm] = React.useState('');
+                const [branchFilter, setBranchFilter] = React.useState('all');
 
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
-
+            
                 React.useEffect(() => {
                     const fetchData = async () => {
                         setIsLoading(true);
@@ -1295,9 +1308,7 @@
                             filial: formData.filial,
                             preco: parseFloat(formData.preco)
                         };
-                        const { error: insertError } = await supabase
-                            .from('precos_fixos')
-                            .insert([newRecord]);
+                        const { error: insertError } = await supabase.from('precos_fixos').insert([newRecord]);
                         if (insertError) throw insertError;
             
                         showToast(`Registro ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, "success");
@@ -1314,7 +1325,7 @@
                 };
             
                 const handleEditClick = (record) => {
-                    setIsEditing(true);
+                    setIsEditing(true); 
                     setCurrentRecord(record);
                     setFormData({
                         tipo_de_implemento: record.tipo_de_implemento,
@@ -1325,10 +1336,16 @@
                 };
             
                 const handleCancel = () => { 
-                    setShowForm(false);
+                    setShowForm(false); 
                     setIsEditing(false); 
                     setFormData(initialFormState); 
                 };
+
+                const filteredRecords = records.filter(r => {
+                    const searchTermMatch = searchTerm === '' || (r.tipo_de_implemento && r.tipo_de_implemento.toLowerCase().includes(searchTerm.toLowerCase()));
+                    const branchMatch = branchFilter === 'all' || r.filial === branchFilter || r.filial === 'TODAS';
+                    return searchTermMatch && branchMatch;
+                });
 
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
@@ -1340,11 +1357,12 @@
                     ),
                     showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                         React.createElement('select', { name: "tipo_de_implemento", value: formData.tipo_de_implemento, onChange: handleInputChange, required: true, className:"p-2 border rounded" },
-                            React.createElement('option', {value: ""}, "Selecione o Implemento"), 
+                             React.createElement('option', {value: ""}, "Selecione o Implemento"), 
                              implementTypes.map(type => React.createElement('option', {key: type, value: type}, type))
                         ),
                         React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, 
                             React.createElement('option', {value: ""}, "Selecione a Filial"), 
+                            React.createElement('option', {value: "TODAS"}, "TODAS"),
                             branches.map(b => React.createElement('option',{key:b, value:b},b))
                         ),
                         React.createElement('input', { type: "number", name: "preco", value: formData.preco, onChange: handleInputChange, placeholder:"Preço", required: true, step: "0.01", className:"p-2 border rounded" }),
@@ -1353,13 +1371,26 @@
                             React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, isEditing ? "Salvar Alterações" : "Salvar")
                         )
                     ),
+                    React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Buscar por Implemento"),
+                            React.createElement('input', { type: "text", placeholder: "Digite o tipo...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Filtrar por Filial"),
+                            React.createElement('select', { value: branchFilter, onChange: e => setBranchFilter(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" },
+                                React.createElement('option', { value: "all" }, "Todas as Filiais"),
+                                branches.map(b => React.createElement('option', { key: b, value: b }, b))
+                            )
+                        )
+                    ),
                     React.createElement('div', { className: "overflow-x-auto" },
                         React.createElement('table', { className: "min-w-full bg-white" },
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Tipo de Implemento", "Filial", "Preço", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center"}, "Carregando...")) : 
-                                records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
-                                records.map(r => React.createElement('tr', {key:r.id},
+                                filteredRecords.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
+                                filteredRecords.map(r => React.createElement('tr', {key:r.id},
                                     React.createElement('td',{className:"p-2"}, r.tipo_de_implemento),
                                     React.createElement('td',{className:"p-2"}, r.filial),
                                     React.createElement('td',{className:"p-2"}, `R$ ${r.preco.toFixed(2).replace('.', ',')}`),
