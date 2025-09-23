@@ -935,7 +935,7 @@
                 const handleCancel = () => { setShowForm(false); setIsEditing(false); setFormData(initialFormState); };
 
                 const filteredDisplacements = displacements.filter(d => {
-                    const searchTermMatch = d.tipo_de_implemento && d.tipo_de_implemento.toLowerCase().includes(searchTerm.toLowerCase());
+                    const searchTermMatch = d.tipo_de_implemento && d.tipo_de_implemento.includes(searchTerm);
                     const originMatch = originFilter === 'all' || d.filial_origem === originFilter;
                     const destinationMatch = destinationFilter === 'all' || d.filial_destino === destinationFilter;
                     return searchTermMatch && originMatch && destinationMatch;
