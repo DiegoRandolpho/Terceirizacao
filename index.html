@@ -149,6 +149,7 @@
                       .eq('username', username.toLowerCase())
                       .eq('password', password)
                       .single();
+
                     if (fetchError || !data) {
                         setError('Usuário ou senha inválidos.');
                     } else {
@@ -284,7 +285,7 @@
                 };
 
                 const handleFieldChange = (e, fieldName) => setEditingBranch(prev => ({ ...prev, [fieldName]: e.target.value }));
-
+                
                 const confirmDeleteBranch = (branch) => {
                     setBranchToDelete(branch);
                     setShowConfirmModal(true);
@@ -400,7 +401,7 @@
                 };
                 fetchEquipment();
               }, [showToast]);
-              
+
               const handleAddEquipment = async (e) => {
                 e.preventDefault();
                 if (!newPlate.trim() || !newModel.trim() || !newBrand.trim() || !newChassis.trim() || !newEquipmentType) {
@@ -423,7 +424,7 @@
               const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); setOriginalEquipment({ ...eq }); };
               const handleCancelEdit = () => { setEditingEquipment(null); setOriginalEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
-
+              
               const handleUpdateEquipment = async () => {
                 if (!editingEquipment) return;
                 setIsLoading(true);
@@ -465,7 +466,6 @@
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Equipamentos"),
                 !showForm && React.createElement('div', { className: "flex justify-center mb-6" }, React.createElement('button', { onClick: () => setShowForm(true), className: "p-2 bg-blue-600 text-white rounded" }, "Cadastrar Novo Equipamento")),
                 showForm && React.createElement('form', { onSubmit: handleAddEquipment, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-                    // Form fields
                     React.createElement('input', { placeholder: "Placa", value: newPlate, onChange: e => setNewPlate(e.target.value), className: "p-2 border rounded" }),
                     React.createElement('input', { placeholder: "Modelo", value: newModel, onChange: e => setNewModel(e.target.value), className: "p-2 border rounded" }),
                     React.createElement('input', { placeholder: "Marca", value: newBrand, onChange: e => setNewBrand(e.target.value), className: "p-2 border rounded" }),
@@ -542,14 +542,14 @@
               const handleAddUser = async (e) => {
                 e.preventDefault();
                 if (!newUsername.trim() || !newFullname.trim() || !newPassword.trim()) { 
-                    showToast("Preencha todos os campos.", "error"); 
+                    showToast("Preencha todos os campos.", "error");
                     return; 
                 }
                 setIsLoading(true);
                 try {
                   const { data: existing } = await supabase.from('app_users').select('username').eq('username', newUsername.trim());
                   if (existing && existing.length > 0) { 
-                      showToast("Nome de usuário já existe.", "error"); 
+                      showToast("Nome de usuário já existe.", "error");
                       setIsLoading(false); 
                       return; 
                   }
@@ -709,7 +709,7 @@
                         const { data: equipmentData } = await supabase.from('equipamentos').select('plate, type, model, brand, chassis');
                         setAllEquipment(equipmentData);
                     } catch (e) {
-                        showToast("Erro ao carregar filtros.", "error");
+                         showToast("Erro ao carregar filtros.", "error");
                     }
                     setIsLoading(false);
                 };
@@ -798,7 +798,8 @@
                       Object.entries(equipmentCounts).map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, React.createElement('p', {className: "font-semibold"}, type), React.createElement('p', {className: "text-2xl font-bold"}, count)))
                   ),
                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
-                   React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ? React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
+                   React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
+                       React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
                        const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
                        const barColor = type === 'BOMBA LANÇA' ? 'bg-blue-500' : type === 'BETONEIRA' ? 'bg-green-500' : 'bg-yellow-500';
                        return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', {className:`${barColor} h-2.5 rounded-full`, style:{width: `${percentage}%`}})))
@@ -878,36 +879,86 @@
             function Displacements({ userId, userRole, showToast }) {
                 const [displacements, setDisplacements] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(true);
+                const [isLoading, setIsLoading] = React.useState(false);
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentDisplacement, setCurrentDisplacement] = React.useState(null);
                 const initialFormState = { tipo_de_implemento: '', filial_origem: '', filial_destino: '', km: '', valor: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
+
                 const [searchTerm, setSearchTerm] = React.useState('');
+                const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
                 const [originFilter, setOriginFilter] = React.useState('all');
                 const [destinationFilter, setDestinationFilter] = React.useState('all');
-
+                const [hasSearched, setHasSearched] = React.useState(false);
+                
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
-            
+
                 React.useEffect(() => {
-                    const fetchData = async () => {
-                        setIsLoading(true);
+                    const fetchBranches = async () => {
                         try {
-                            const { data: dData } = await supabase.from('deslocamentos').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
-                            setDisplacements(dData);
                             const { data: bData } = await supabase.from('filiais').select('name').order('name');
                             setBranches(bData.map(b => b.name));
                         } catch (err) {
-                            showToast("Erro ao carregar dados.", "error");
+                            showToast("Erro ao carregar lista de filiais.", "error");
+                        }
+                    };
+                    fetchBranches();
+                }, [showToast]);
+
+                React.useEffect(() => {
+                    const timerId = setTimeout(() => {
+                        setDebouncedSearchTerm(searchTerm);
+                    }, 500);
+
+                    return () => {
+                        clearTimeout(timerId);
+                    };
+                }, [searchTerm]);
+
+                React.useEffect(() => {
+                    const fetchFilteredData = async () => {
+                        if (debouncedSearchTerm === '' && originFilter === 'all' && destinationFilter === 'all') {
+                            setDisplacements([]);
+                            setHasSearched(false);
+                            return;
+                        }
+                        
+                        setHasSearched(true);
+                        setIsLoading(true);
+                        
+                        try {
+                            let query = supabase
+                                .from('deslocamentos')
+                                .select('*')
+                                .is('data_encerramento', null)
+                                .order('data_criacao', { ascending: false });
+
+                            if (debouncedSearchTerm) {
+                                query = query.ilike('tipo_de_implemento', `%${debouncedSearchTerm}%`);
+                            }
+                            if (originFilter !== 'all') {
+                                query = query.eq('filial_origem', originFilter);
+                            }
+                            if (destinationFilter !== 'all') {
+                                query = query.eq('filial_destino', destinationFilter);
+                            }
+
+                            const { data, error } = await query;
+                            if (error) throw error;
+                            
+                            setDisplacements(data || []);
+                        } catch (err) {
+                            showToast("Erro ao buscar deslocamentos.", "error");
                         }
                         setIsLoading(false);
                     };
-                    fetchData();
-                }, [showToast]);
-            
+                    
+                    fetchFilteredData();
+                }, [debouncedSearchTerm, originFilter, destinationFilter, showToast]);
+
                 const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-            
+                
                 const handleFormSubmit = async (e) => {
                     e.preventDefault();
                     setIsLoading(true);
@@ -917,9 +968,12 @@
                         }
                         await supabase.from('deslocamentos').insert([{ ...formData, km: parseFloat(formData.km), valor: parseFloat(formData.valor) }]);
                         showToast(`Registro ${isEditing ? 'atualizado' : 'criado'}!`, "success");
-                        setShowForm(false); setIsEditing(false); setFormData(initialFormState);
-                        const { data } = await supabase.from('deslocamentos').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
-                        setDisplacements(data);
+                        setShowForm(false); 
+                        setIsEditing(false); 
+                        setFormData(initialFormState);
+                        setSearchTerm('');
+                        setOriginFilter('all');
+                        setDestinationFilter('all');
                     } catch (err) {
                         showToast("Falha ao salvar.", "error");
                     }
@@ -927,20 +981,14 @@
                 };
             
                 const handleEditClick = (d) => {
-                    setIsEditing(true); setCurrentDisplacement(d);
+                    setIsEditing(true);
+                    setCurrentDisplacement(d);
                     setFormData({ tipo_de_implemento: d.tipo_de_implemento, filial_origem: d.filial_origem, filial_destino: d.filial_destino, km: d.km, valor: d.valor });
                     setShowForm(true);
                 };
-            
+
                 const handleCancel = () => { setShowForm(false); setIsEditing(false); setFormData(initialFormState); };
 
-                const filteredDisplacements = displacements.filter(d => {
-                    const searchTermMatch = d.tipo_de_implemento && d.tipo_de_implemento.includes(searchTerm);
-                    const originMatch = originFilter === 'all' || d.filial_origem === originFilter;
-                    const destinationMatch = destinationFilter === 'all' || d.filial_destino === destinationFilter;
-                    return searchTermMatch && originMatch && destinationMatch;
-                });
-            
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
                         React.createElement('h2', { className: "text-2xl font-bold" }, "Precificação de Deslocamentos"),
@@ -982,8 +1030,9 @@
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Tipo", "Origem", "Destino", "KM", "Valor", "Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center"}, "Carregando...")) : 
-                                filteredDisplacements.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
-                                filteredDisplacements.map(d => React.createElement('tr', {key:d.id},
+                                !hasSearched ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center text-gray-500"}, "Utilize os filtros acima para buscar os deslocamentos.")) :
+                                displacements.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado para os filtros aplicados.")) :
+                                displacements.map(d => React.createElement('tr', {key:d.id},
                                     React.createElement('td',{className:"p-2"}, d.tipo_de_implemento),
                                     React.createElement('td',{className:"p-2"}, d.filial_origem),
                                     React.createElement('td',{className:"p-2"}, d.filial_destino),
@@ -1000,7 +1049,7 @@
             function AdditionalCities({ userId, userRole, showToast }) {
                 const [records, setRecords] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(true);
+                const [isLoading, setIsLoading] = React.useState(false);
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentRecord, setCurrentRecord] = React.useState(null);
@@ -1008,35 +1057,74 @@
                 const [formData, setFormData] = React.useState(initialFormState);
                 
                 const [searchTerm, setSearchTerm] = React.useState('');
+                const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
                 const [branchFilter, setBranchFilter] = React.useState('all');
+                const [hasSearched, setHasSearched] = React.useState(false);
 
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
             
                 React.useEffect(() => {
-                    const fetchData = async () => {
-                        setIsLoading(true);
+                    const fetchBranches = async () => {
                         try {
-                            const { data: recordsData, error: recordsError } = await supabase
+                            const { data: bData } = await supabase.from('filiais').select('name').order('name');
+                            setBranches(bData.map(b => b.name) || []);
+                        } catch (err) {
+                            showToast("Erro ao carregar lista de filiais.", "error");
+                        }
+                    };
+                    fetchBranches();
+                }, [showToast]);
+
+                React.useEffect(() => {
+                    const timerId = setTimeout(() => {
+                        setDebouncedSearchTerm(searchTerm);
+                    }, 500);
+
+                    return () => {
+                        clearTimeout(timerId);
+                    };
+                }, [searchTerm]);
+
+                React.useEffect(() => {
+                    const fetchFilteredData = async () => {
+                        if (debouncedSearchTerm === '' && branchFilter === 'all') {
+                            setRecords([]);
+                            setHasSearched(false);
+                            return;
+                        }
+                        
+                        setHasSearched(true);
+                        setIsLoading(true);
+                        
+                        try {
+                            let query = supabase
                                 .from('adicionais_cidades')
                                 .select('*')
                                 .is('data_encerramento', null)
                                 .order('data_criacao', { ascending: false });
-                            if (recordsError) throw recordsError;
-                            setRecords(recordsData || []);
-            
-                            const { data: bData, error: branchError } = await supabase.from('filiais').select('name').order('name');
-                            if (branchError) throw branchError;
-                            setBranches(bData.map(b => b.name) || []);
+
+                            if (debouncedSearchTerm) {
+                                query = query.ilike('cidade', `%${debouncedSearchTerm}%`);
+                            }
+                            if (branchFilter !== 'all') {
+                                query = query.eq('filial', branchFilter);
+                            }
+
+                            const { data, error } = await query;
+                            if (error) throw error;
+                            
+                            setRecords(data || []);
                         } catch (err) {
-                            showToast("Erro ao carregar dados de adicionais de cidades.", "error");
+                            showToast("Erro ao buscar adicionais de cidades.", "error");
                         }
                         setIsLoading(false);
                     };
-                    fetchData();
-                }, [showToast]);
-            
+                    
+                    fetchFilteredData();
+                }, [debouncedSearchTerm, branchFilter, showToast]);
+
                 const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-            
+                
                 const handleFormSubmit = async (e) => {
                     e.preventDefault();
                     if (!formData.filial || !formData.cidade.trim() || formData.km === '' || formData.valor === '') {
@@ -1060,20 +1148,17 @@
                             km: parseFloat(formData.km),
                             valor: parseFloat(formData.valor)
                         };
-
                         const { error: insertError } = await supabase
                             .from('adicionais_cidades')
                             .insert([newRecord]);
-
                         if (insertError) throw insertError;
             
                         showToast(`Registro ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, "success");
                         setShowForm(false); 
                         setIsEditing(false); 
                         setFormData(initialFormState);
-                        
-                        const { data } = await supabase.from('adicionais_cidades').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
-                        setRecords(data || []);
+                        setSearchTerm('');
+                        setBranchFilter('all');
                     } catch (err) {
                         console.error("Erro ao salvar registro:", err);
                         showToast("Falha ao salvar o registro.", "error");
@@ -1082,7 +1167,7 @@
                 };
             
                 const handleEditClick = (record) => {
-                    setIsEditing(true); 
+                    setIsEditing(true);
                     setCurrentRecord(record);
                     setFormData({
                         filial: record.filial,
@@ -1094,16 +1179,10 @@
                 };
             
                 const handleCancel = () => { 
-                    setShowForm(false); 
+                    setShowForm(false);
                     setIsEditing(false); 
                     setFormData(initialFormState); 
                 };
-
-                const filteredRecords = records.filter(r => {
-                    const searchTermMatch = r.cidade && r.cidade.toLowerCase().includes(searchTerm.toLowerCase());
-                    const branchMatch = branchFilter === 'all' || r.filial === branchFilter;
-                    return searchTermMatch && branchMatch;
-                });
             
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
@@ -1141,8 +1220,9 @@
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Cidade", "KM", "Valor", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center"}, "Carregando...")) : 
-                                filteredRecords.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
-                                filteredRecords.map(r => React.createElement('tr', {key:r.id},
+                                !hasSearched ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Utilize os filtros acima para buscar.")) :
+                                records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado para os filtros aplicados.")) :
+                                records.map(r => React.createElement('tr', {key:r.id},
                                     React.createElement('td',{className:"p-2"}, r.filial),
                                     React.createElement('td',{className:"p-2"}, r.cidade),
                                     React.createElement('td',{className:"p-2"}, r.km),
@@ -1167,7 +1247,7 @@
                 const implementTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
 
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
-            
+
                 React.useEffect(() => {
                     const fetchData = async () => {
                         setIsLoading(true);
@@ -1192,7 +1272,7 @@
                 }, [showToast]);
             
                 const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-            
+                
                 const handleFormSubmit = async (e) => {
                     e.preventDefault();
                     if (!formData.tipo_de_implemento || !formData.filial || formData.preco === '') {
@@ -1215,18 +1295,15 @@
                             filial: formData.filial,
                             preco: parseFloat(formData.preco)
                         };
-
                         const { error: insertError } = await supabase
                             .from('precos_fixos')
                             .insert([newRecord]);
-
                         if (insertError) throw insertError;
             
                         showToast(`Registro ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, "success");
                         setShowForm(false); 
                         setIsEditing(false); 
                         setFormData(initialFormState);
-                        
                         const { data } = await supabase.from('precos_fixos').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
                         setRecords(data || []);
                     } catch (err) {
@@ -1237,7 +1314,7 @@
                 };
             
                 const handleEditClick = (record) => {
-                    setIsEditing(true); 
+                    setIsEditing(true);
                     setCurrentRecord(record);
                     setFormData({
                         tipo_de_implemento: record.tipo_de_implemento,
@@ -1248,7 +1325,7 @@
                 };
             
                 const handleCancel = () => { 
-                    setShowForm(false); 
+                    setShowForm(false);
                     setIsEditing(false); 
                     setFormData(initialFormState); 
                 };
@@ -1263,7 +1340,7 @@
                     ),
                     showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                         React.createElement('select', { name: "tipo_de_implemento", value: formData.tipo_de_implemento, onChange: handleInputChange, required: true, className:"p-2 border rounded" },
-                             React.createElement('option', {value: ""}, "Selecione o Implemento"), 
+                            React.createElement('option', {value: ""}, "Selecione o Implemento"), 
                              implementTypes.map(type => React.createElement('option', {key: type, value: type}, type))
                         ),
                         React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, 
@@ -1305,7 +1382,7 @@
                     branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
                     equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
                     userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-                };
+              };
 
               const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
               const hoverColors = ['hover:bg-gray-900', 'hover:bg-yellow-600', 'hover:bg-gray-900'];
@@ -1342,7 +1419,6 @@
 
             function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
                 const [selectedLinks, setSelectedLinks] = React.useState(currentLinks || []);
-
                 const ALL_PAGES = {
                     dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
                     outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
@@ -1354,11 +1430,9 @@
                     equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
                     userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
                 };
-
                 const availablePages = Object.keys(ALL_PAGES).filter(key => {
                     return userRole === 'administrador' || !ALL_PAGES[key].adminOnly;
                 });
-
                 const handleLinkChange = (pageKey) => {
                     const newSelectedLinks = [...selectedLinks];
                     const index = newSelectedLinks.indexOf(pageKey);
@@ -1369,7 +1443,6 @@
                         if (newSelectedLinks.length < 9) {
                             newSelectedLinks.push(pageKey);
                         } else {
-                            // Ideally, this would be a toast notification
                             alert("Você pode selecionar no máximo 9 atalhos.");
                         }
                     }
@@ -1416,13 +1489,13 @@
                 const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
                 const handleLogin = (role, id, fullname, links) => { 
-                    setUserRole(role); 
+                    setUserRole(role);
                     setUserId(id); 
                     setUserFullname(fullname);
                     setQuickLinks(links || []);
                 };
                 const handleLogout = () => { 
-                    localStorage.clear(); 
+                    localStorage.clear();
                     setUserRole(null); 
                     setUserId(null);
                     setUserFullname(null);
@@ -1430,7 +1503,7 @@
                 };
                 const showToast = (message, type = 'success') => setToast({ show: true, message, type });
                 const closeToast = () => setToast({ show: false, message: '', type: '' });
-
+                
                 const toggleMenu = (menu) => {
                     if (isSidebarCollapsed) {
                         setIsSidebarCollapsed(false);
@@ -1438,11 +1511,11 @@
                         setOpenMenu(openMenu === menu ? '' : menu);
                     }
                 };
-                
+
                 const toggleSidebarCollapse = () => {
                     setIsSidebarCollapsed(!isSidebarCollapsed);
                     if (!isSidebarCollapsed) {
-                        setOpenMenu(''); 
+                        setOpenMenu('');
                     }
                 };
 
@@ -1529,7 +1602,7 @@
                                      React.createElement(MenuCategory, { title: "Dashboard", icon: "LayoutDashboard", menuKey: "dashboard" },
                                         React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
                                         React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' })
-                                     ),
+                                    ),
                                      React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
                                         React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' })
                                      ),
@@ -1542,7 +1615,7 @@
                                         React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
                                         React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
                                         React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' })
-                                     )
+                                    )
                                 )
                             ),
                             React.createElement('div', {className: 'mt-auto pt-4 border-t border-gray-700'},
@@ -1556,7 +1629,7 @@
                             )
                         ),
                         React.createElement('main', { className: "flex-1 p-4 md:p-8 flex flex-col" },
-                           React.createElement('header', { className: "w-full bg-white p-4 rounded-xl shadow-lg mb-8 flex justify-between items-center" },
+                            React.createElement('header', { className: "w-full bg-white p-4 rounded-xl shadow-lg mb-8 flex justify-between items-center" },
                                 React.createElement('button', { className: "md:hidden text-gray-700 p-2", onClick: () => setIsSidebarOpen(true) }, React.createElement(LucideIcon, { name: "Menu" })),
                                 React.createElement('div', { className: "text-right text-sm text-gray-600" },
                                     React.createElement('p', null, "Nome: ", React.createElement('strong', null, userFullname)),
@@ -1570,7 +1643,7 @@
                                 onClose: () => setIsEditModalOpen(false), 
                                 onSave: handleSaveQuickLinks,
                                 userRole: userRole
-                            })
+                             })
                         )
                     )
                 );
@@ -1579,3 +1652,4 @@
     </script>
 </body>
 </html>
+
