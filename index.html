@@ -1349,17 +1349,19 @@
               const [branches, setBranches] = React.useState([]);
               const [availablePlates, setAvailablePlates] = React.useState([]);
               const [isLoading, setIsLoading] = React.useState(false);
-              const [status, setStatus] = React.useState('ATIVO');
+              // O estado 'status' foi removido daqui
 
               React.useEffect(() => {
                 const fetchData = async () => {
                   setIsLoading(true);
                   try {
                     const { data: branchesData } = await supabase.from('filiais').select('name');
+            
                     setBranches(branchesData.map(b => b.name));
                     const { data: platesData } = await supabase.from('equipamentos').select('plate');
                     setAvailablePlates(platesData.map(e => e.plate));
                   } catch (e) {
+                    
                     showToast("Erro ao carregar dados.", "error");
                   }
                   setIsLoading(false);
@@ -1369,7 +1371,8 @@
 
               const handleRegisterTransfer = async (e) => {
                 e.preventDefault();
-                if (!plate.trim() || !newBranch || !executionDate) { showToast("Preencha todos os campos.", "error"); return; }
+                if (!plate.trim() || !newBranch || !executionDate) { showToast("Preencha todos os campos.", "error"); return;
+                }
                 setIsLoading(true);
                 try {
                   const { data: existingRecords } = await supabase.from('trocasFilial').select('*').eq('plate', plate.trim()).is('ending_date', null).order('executionDate', { ascending: false }).limit(1);
@@ -1379,9 +1382,11 @@
                     const prevDay = new Date(prevDate.getTime() - (24 * 60 * 60 * 1000)).toISOString().split('T')[0];
                     await supabase.from('trocasFilial').update({ ending_date: prevDay, status: 'INATIVO' }).eq('id', existingRecords[0].id);
                   }
-                  await supabase.from('trocasFilial').insert([{ plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: null, created_by_username: userId, status: status }]);
+                  // MODIFICAÇÃO 1: O status agora é fixo como 'ATIVO'
+                  await supabase.from('trocasFilial').insert([{ plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: null, created_by_username: userId, status: 'ATIVO' }]);
                   showToast("Troca registrada com sucesso!", "success");
-                  setPlate(''); setNewBranch(''); setExecutionDate(''); setStatus('ATIVO');
+                  // MODIFICAÇÃO 2: A redefinição do estado de status foi removida
+                  setPlate(''); setNewBranch(''); setExecutionDate('');
                 } catch (e) {
                   showToast("Erro ao registrar troca.", "error");
                 }
@@ -1392,17 +1397,19 @@
                 React.createElement('div', { className: "flex items-center mb-6" },
                   React.createElement('button', { onClick: () => setCurrentPage('quickAccessMenu'), className: "p-2 mr-4 border rounded" }, React.createElement(LucideIcon, {name: 'ArrowLeft'})),
                   React.createElement('h2', { className: "text-2xl font-bold text-gray-800 flex-grow text-center" }, "Troca de Filial de Equipamento")
+     
                 ),
                 React.createElement('form', { onSubmit: handleRegisterTransfer, className: "space-y-6" },
                   React.createElement('select', { value: plate, onChange: e => setPlate(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {}, "Selecione a Placa"), availablePlates.map(p => React.createElement('option', {key: p, value: p}, p))),
-                  React.createElement('select', { value: newBranch, onChange: e => setNewBranch(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {}, "Selecione a Nova Filial"), branches.map(b => React.createElement('option', {key: b, value: b}, b))),
+                  React.createElement('select', { value: newBranch, onChange: 
+                  e => setNewBranch(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {}, "Selecione a Nova Filial"), branches.map(b => React.createElement('option', {key: b, value: b}, b))),
                   React.createElement('input', { type: "date", value: executionDate, onChange: e => setExecutionDate(e.target.value), className: "w-full p-2 border rounded" }),
-                  React.createElement('select', { value: status, onChange: e => setStatus(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {value: "ATIVO"}, "ATIVO"), React.createElement('option', {value: "INATIVO"}, "INATIVO")),
-                  React.createElement('button', { type: "submit", className: "w-full p-3 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Registrando...' : 'Registrar Troca')
+                  // MODIFICAÇÃO 3: O campo de seleção de Status foi removido daqui
+                  React.createElement('button', { type: "submit", className: "w-full p-3 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ?
+                  'Registrando...' : 'Registrar Troca')
                 )
               );
             }
-
             function Dashboard({ userId, showToast }) {
               const [equipmentCounts, setEquipmentCounts] = React.useState({ 'BOMBA LANÇA': 0, 'BOMBA': 0, 'BETONEIRA': 0 });
               const [registros, setRegistros] = React.useState([]);
