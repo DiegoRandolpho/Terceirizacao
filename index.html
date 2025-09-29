@@ -141,6 +141,27 @@
             const SUPABASE_URL = 'https://gfivmnnysomfwrffybeh.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaXZtbm55c29tZndyZmZ5YmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTY3NjgsImV4cCI6MjA2ODg3Mjc2OH0.NxetXJoCLh4q9zAqn_olimziI3YP4MAJzB8ed4qf8cg';
             let supabase;
+            const ALL_PAGES = {
+    dashboard: { title: 'Rel. Equipamentos', icon: 'Truck' },
+    turnoverDashboard: { title: 'Rel. Turnover', icon: 'Users' },
+    thirdPartyByRegion: { title: 'Terceiros por Região', icon: 'Building' },
+    outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
+    plateHistory: { title: 'Consulta Placas', icon: 'Search' },
+    expenseQuery: { title: 'Consulta Despesas', icon: 'DollarSign' },
+    branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
+    displacementReleases: { title: 'Lanç. Deslocamento', icon: 'CalendarDays' },
+    displacementApprovals: { title: 'Aprovação', icon: 'UserCheck' },
+    fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
+    displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
+    additionalCities: { title: 'Adic. Cidades', icon: 'MapPin' },
+    branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
+    equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
+    userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
+    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
+    concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
+    contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
+};
+
 
             const initializeSupabaseAndRenderApp = () => {
                 try {
@@ -639,9 +660,10 @@ function ThirdPartyManagement({ userId, showToast }) {
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
     
+    // ATUALIZADO: Adicionado 'email' ao estado inicial do formulário
     const initialFormState = { 
         apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '', 
-        razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '' 
+        razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '', email: '' 
     };
 
     const [formData, setFormData] = React.useState(initialFormState);
@@ -684,6 +706,7 @@ function ThirdPartyManagement({ userId, showToast }) {
         }
         setIsLoading(true);
         try {
+            // ATUALIZADO: Incluído 'email' no registro a ser salvo
             const record = {
                 apelido: formData.apelido.trim(),
                 codSAP: formData.codSAP.trim(),
@@ -695,7 +718,8 @@ function ThirdPartyManagement({ userId, showToast }) {
                 bairro: formData.bairro.trim(),
                 cidade: formData.cidade.trim(),
                 estado: formData.estado.trim(),
-                cep: formData.cep.trim()
+                cep: formData.cep.trim(),
+                email: formData.email.trim()
             };
 
             if (isEditing) {
@@ -720,6 +744,7 @@ function ThirdPartyManagement({ userId, showToast }) {
     const handleEditClick = (terceiro) => {
         setIsEditing(true);
         setCurrentTerceiro(terceiro);
+        // ATUALIZADO: Carrega o email no formulário de edição
         setFormData({
             apelido: terceiro.apelido || '',
             codSAP: terceiro.codSAP || '',
@@ -731,7 +756,8 @@ function ThirdPartyManagement({ userId, showToast }) {
             bairro: terceiro.bairro || '',
             cidade: terceiro.cidade || '',
             estado: terceiro.estado || '',
-            cep: terceiro.cep || ''
+            cep: terceiro.cep || '',
+            email: terceiro.email || ''
         });
         setShowForm(true);
     };
@@ -782,11 +808,14 @@ function ThirdPartyManagement({ userId, showToast }) {
             React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
+            // NOVO: Campo de input para o E-mail
+            React.createElement('input', { name: "email", type: "email", value: formData.email, onChange: handleInputChange, placeholder: "E-mail", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cep", value: formData.cep, onChange: handleInputChange, placeholder: "CEP", className: "p-2 border rounded" }),
             React.createElement('input', { name: "rua", value: formData.rua, onChange: handleInputChange, placeholder: "Rua", className: "p-2 border rounded" }),
             React.createElement('input', { name: "bairro", value: formData.bairro, onChange: handleInputChange, placeholder: "Bairro", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder: "Cidade", className: "p-2 border rounded" }),
             React.createElement('input', { name: "estado", value: formData.estado, onChange: handleInputChange, placeholder: "Estado", className: "p-2 border rounded" }),
+
             React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
                 React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                 React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
@@ -797,12 +826,14 @@ function ThirdPartyManagement({ userId, showToast }) {
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        // ATUALIZADO: Adicionado 'E-mail' ao cabeçalho
+                        ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "E-mail", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
                     )
                 ),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
-                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
+                    // ATUALIZADO: colSpan aumentado para 9
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Carregando...")) :
+                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
                     filteredList.map(t =>
                         React.createElement('tr', { key: t.id, className: "hover:bg-blue-50 even:bg-slate-50" },
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, t.apelido)),
@@ -811,6 +842,8 @@ function ThirdPartyManagement({ userId, showToast }) {
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.codSAP),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(t.cnpj)),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(t.cpf)),
+                            // NOVO: Célula para exibir o E-mail
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.email),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `${t.rua || ''}, ${t.bairro || ''} - ${t.cidade || ''}/${t.estado || ''}`),
                             React.createElement('td', { className: "px-6 py-4 text-center" },
                                 React.createElement('div', { className: "flex justify-center gap-x-4" },
@@ -826,6 +859,7 @@ function ThirdPartyManagement({ userId, showToast }) {
         showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
     );
 }
+
 
 /* FIM DO CÓDIGO PARA REINSERIR */
 function UserManagement({ userId, showToast }) {
@@ -1164,9 +1198,85 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
     );
 }
+/* INÍCIO DO CÓDIGO PARA REINSERIR O WhatsAppButton */
 
-/* FIM DO CÓDIGO CORRIGIDO */
+function WhatsAppButton({ phoneNumber, message }) {
+    const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
+    const whatsappUrl = `https://wa.me/${cleanedPhoneNumber}?text=${encodeURIComponent(message)}`;
+
+    return React.createElement('a', {
+        href: whatsappUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        title: 'Fale Conosco no WhatsApp',
+        className: "fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
+    },
+        React.createElement(LucideIcon, { name: 'WhatsApp', className: 'h-8 w-8' })
+    );
+}
+
+/* FIM DO CÓDIGO */
+/* INÍCIO DO CÓDIGO PARA REINSERIR EditShortcutsModal */
+
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA EditShortcutsModal */
+
+function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
+    // Esta função também passa a usar a lista ALL_PAGES global
+    const [selectedLinks, setSelectedLinks] = React.useState(currentLinks || []);
+    
+    const availablePages = Object.keys(ALL_PAGES).filter(key => {
+        return userRole === 'administrador' || !ALL_PAGES[key].adminOnly;
+    });
+    
+    const handleLinkChange = (pageKey) => {
+        const newSelectedLinks = [...selectedLinks];
+        const index = newSelectedLinks.indexOf(pageKey);
+
+        if (index > -1) {
+            newSelectedLinks.splice(index, 1);
+        } else {
+            if (newSelectedLinks.length < 9) {
+                newSelectedLinks.push(pageKey);
+            } else {
+                alert("Você pode selecionar no máximo 9 atalhos.");
+            }
+        }
+        setSelectedLinks(newSelectedLinks);
+    };
+
+    return React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" },
+        React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg" },
+            React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center" }, "Editar Atalhos da Página Inicial"),
+            React.createElement('p', {className: "text-center text-gray-600 mb-6"}, "Selecione até 9 atalhos para exibir na sua página inicial."),
+            React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-4 mb-8" },
+                availablePages.map(key => {
+                    const page = ALL_PAGES[key];
+                    const isSelected = selectedLinks.includes(key);
+                    return React.createElement('div', {
+                        key: key,
+                        onClick: () => handleLinkChange(key),
+                        className: `p-4 border rounded-lg cursor-pointer flex flex-col items-center justify-center text-center transition-colors ${isSelected ? 'bg-blue-100 border-blue-500' : 'hover:bg-gray-100'}`
+                    },
+                        React.createElement(LucideIcon, { name: page.icon, className: `h-8 w-8 mb-2 ${isSelected ? 'text-blue-600' : 'text-gray-500'}` }),
+                        React.createElement('span', { className: `text-sm font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}` }, page.title)
+                    );
+                })
+            ),
+            React.createElement('div', { className: "flex justify-end space-x-4" },
+                React.createElement('button', { onClick: onClose, className: "px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition" }, "Cancelar"),
+                React.createElement('button', { onClick: () => onSave(selectedLinks), className: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" }, "Salvar")
+            )
+        )
+    );
+}
+
+/* FIM DO CÓDIGO ATUALIZADO */
+
+/* FIM DO CÓDIGO */
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA ContractManagement */
+
 function ContractManagement({ userId, userRole, showToast }) {
+    // ATUALIZADO: "Contratação" volta a ser a categoria inicial
     const [category, setCategory] = React.useState('Contratação');
     const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
     const [formData, setFormData] = React.useState(initialFormState);
@@ -1176,16 +1286,17 @@ function ContractManagement({ userId, userRole, showToast }) {
     const [history, setHistory] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    // NOVO: Função para criar a "tag" de categoria
+    // ATUALIZADO: Adicionado o case para a nova tag 'Contratação'
     const getCategoryBadge = (category) => {
         const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
         switch (category) {
-            case 'Contratação':
+            case 'Contratação': // ADICIONADO
+            case 'Concessão de Placa (Entrada)':
                 return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, category);
             case 'Troca de Placa':
                 return React.createElement('span', { className: `bg-yellow-100 text-yellow-800 ${baseClasses}` }, category);
             case 'Encerramento':
-            case 'Encerramento de Placa':
+            case 'Concessão de Placa (Saída)':
                 return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, category);
             default:
                 return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, category);
@@ -1216,7 +1327,7 @@ function ContractManagement({ userId, userRole, showToast }) {
 
     React.useEffect(() => {
         const fetchActiveConcessions = async () => {
-            if ((category === 'Troca de Placa' || category === 'Encerramento de Placa') && formData.codSAP) {
+            if ((category === 'Troca de Placa' || category === 'Concessão de Placa (Saída)') && formData.codSAP) {
                 setIsLoading(true);
                 const { data, error } = await supabase
                     .from('concessao')
@@ -1251,8 +1362,10 @@ function ContractManagement({ userId, userRole, showToast }) {
             const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
             if (contractError) throw contractError;
             
+            // ATUALIZADO: Adicionado 'Contratação' para usar a mesma lógica de 'Entrada'
             switch (category) {
                 case 'Contratação':
+                case 'Concessão de Placa (Entrada)':
                     const { error: hireError } = await supabase.from('concessao').insert([{
                         codSAP: formData.codSAP,
                         placa: formData.placa,
@@ -1264,12 +1377,7 @@ function ContractManagement({ userId, userRole, showToast }) {
                 case 'Troca de Placa':
                     const endDate = new Date(formData.data_alteracao);
                     endDate.setDate(endDate.getDate() - 1);
-                    const { error: endError } = await supabase
-                        .from('concessao')
-                        .update({ data_fim: endDate.toISOString().split('T')[0] })
-                        .eq('codSAP', formData.codSAP)
-                        .eq('placa', formData.placa_antiga)
-                        .is('data_fim', null);
+                    const { error: endError } = await supabase.from('concessao').update({ data_fim: endDate.toISOString().split('T')[0] }).eq('codSAP', formData.codSAP).eq('placa', formData.placa_antiga).is('data_fim', null);
                     if (endError) throw endError;
                     const { error: newPlateError } = await supabase.from('concessao').insert([{
                         codSAP: formData.codSAP,
@@ -1279,21 +1387,12 @@ function ContractManagement({ userId, userRole, showToast }) {
                     }]);
                     if (newPlateError) throw newPlateError;
                     break;
-                case 'Encerramento de Placa':
-                    const { error: terminatePlateError } = await supabase
-                        .from('concessao')
-                        .update({ data_fim: formData.data_alteracao })
-                        .eq('codSAP', formData.codSAP)
-                        .eq('placa', formData.placa)
-                        .is('data_fim', null);
+                case 'Concessão de Placa (Saída)':
+                    const { error: terminatePlateError } = await supabase.from('concessao').update({ data_fim: formData.data_alteracao }).eq('codSAP', formData.codSAP).eq('placa', formData.placa).is('data_fim', null);
                     if (terminatePlateError) throw terminatePlateError;
                     break;
                 case 'Encerramento':
-                    const { error: terminateError } = await supabase
-                        .from('concessao')
-                        .update({ data_fim: formData.data_alteracao })
-                        .eq('codSAP', formData.codSAP)
-                        .is('data_fim', null);
+                    const { error: terminateError } = await supabase.from('concessao').update({ data_fim: formData.data_alteracao }).eq('codSAP', formData.codSAP).is('data_fim', null);
                     if (terminateError) throw terminateError;
                     break;
             }
@@ -1301,7 +1400,7 @@ function ContractManagement({ userId, userRole, showToast }) {
             setFormData(initialFormState);
             fetchInitialData();
         } catch (err) {
-            showToast(`Erro na operação: ${err.message}`, 'error');
+            showToast(`Erro na operação: ${err.message}`, "error");
         }
         setIsLoading(false);
     };
@@ -1322,8 +1421,10 @@ function ContractManagement({ userId, userRole, showToast }) {
             React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
             React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
         ];
+        // ATUALIZADO: Adicionado 'Contratação' para usar os mesmos campos de 'Entrada'
         switch (category) {
             case 'Contratação':
+            case 'Concessão de Placa (Entrada)':
                 return [
                     ...commonFields,
                     React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
@@ -1345,7 +1446,7 @@ function ContractManagement({ userId, userRole, showToast }) {
                     ),
                     React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
                 ];
-            case 'Encerramento de Placa':
+            case 'Concessão de Placa (Saída)':
                 return [
                     ...commonFields.slice(0, 1),
                     React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
@@ -1365,7 +1466,8 @@ function ContractManagement({ userId, userRole, showToast }) {
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
         React.createElement('div', { className: "mb-6" },
             React.createElement('div', { className: "flex justify-center border-b" },
-                ['Contratação', 'Troca de Placa', 'Encerramento', 'Encerramento de Placa'].map(cat => (
+                // ATUALIZADO: Adicionada a nova aba "Contratação"
+                ['Contratação', 'Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
                     React.createElement('button', {
                         key: cat,
                         onClick: () => { setCategory(cat); setFormData(initialFormState); },
@@ -1383,8 +1485,6 @@ function ContractManagement({ userId, userRole, showToast }) {
             )
         ),
         React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
-        
-        // ATUALIZADO: Tabela com novo estilo
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
@@ -1408,8 +1508,7 @@ function ContractManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
-
+/* FIM DO CÓDIGO ATUALIZADO */
             function BranchTransfer({ userId, setCurrentPage, showToast }) {
               const [plate, setPlate] = React.useState('');
               const [newBranch, setNewBranch] = React.useState('');
@@ -1659,7 +1758,234 @@ function ContractManagement({ userId, userRole, showToast }) {
         )
     );
 }
+/* INÍCIO DO CÓDIGO PARA ADICIONAR A FUNÇÃO TurnoverDashboard */
+/* INÍCIO DO CÓDIGO DO NOVO COMPONENTE ThirdPartyByRegion */
 
+function ThirdPartyByRegion({ showToast }) {
+    const [reportData, setReportData] = React.useState([]);
+    const [filteredData, setFilteredData] = React.useState([]);
+    const [branches, setBranches] = React.useState([]);
+    const [selectedBranch, setSelectedBranch] = React.useState('all');
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    // Efeito para buscar e cruzar todos os dados necessários
+    React.useEffect(() => {
+        const fetchReportData = async () => {
+            setIsLoading(true);
+            try {
+                // 1. Pega a localização atual de todas as placas ativas
+                const { data: locations, error: locationsError } = await supabase
+                    .from('trocasFilial')
+                    .select('plate, newBranch')
+                    .is('ending_date', null);
+                if (locationsError) throw locationsError;
+                const locationMap = new Map(locations.map(l => [l.plate, l.newBranch]));
+
+                // 2. Pega todas as concessões ativas (placa -> terceiro)
+                const { data: concessions, error: concessionsError } = await supabase
+                    .from('concessao')
+                    .select('placa, codSAP')
+                    .is('data_fim', null);
+                if (concessionsError) throw concessionsError;
+
+                // 3. Pega os detalhes de todos os terceiros
+                const { data: terceiros, error: terceirosError } = await supabase
+                    .from('terceiros')
+                    .select('codSAP, apelido, razao, cnpj');
+                if (terceirosError) throw terceirosError;
+                const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t]));
+
+                // 4. Junta todas as informações
+                const joinedData = concessions.map(con => {
+                    const terceiroInfo = terceirosMap.get(con.codSAP);
+                    const region = locationMap.get(con.placa);
+                    if (!terceiroInfo || !region) return null; // Ignora se não encontrar dados completos
+
+                    return {
+                        id: `${con.placa}-${con.codSAP}`,
+                        region: region,
+                        apelido: terceiroInfo.apelido,
+                        razao: terceiroInfo.razao,
+                        cnpj: terceiroInfo.cnpj,
+                        placa: con.placa,
+                    };
+                }).filter(Boolean); // Remove os nulos
+
+                setReportData(joinedData);
+                setFilteredData(joinedData); // Inicialmente mostra tudo
+                
+                // 5. Pega a lista de filiais para o filtro
+                const { data: branchList, error: branchError } = await supabase.from('filiais').select('name').order('name');
+                if (branchError) throw branchError;
+                setBranches(branchList.map(b => b.name));
+
+            } catch (err) {
+                showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
+            }
+            setIsLoading(false);
+        };
+
+        fetchReportData();
+    }, [showToast]);
+
+    // Efeito para aplicar o filtro quando o usuário muda a seleção
+    React.useEffect(() => {
+        if (selectedBranch === 'all') {
+            setFilteredData(reportData);
+        } else {
+            setFilteredData(reportData.filter(item => item.region === selectedBranch));
+        }
+    }, [selectedBranch, reportData]);
+
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Relatório de Terceiros por Região"),
+        
+        // Filtro por Região
+        React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 max-w-sm mx-auto" },
+             React.createElement('label', { htmlFor: 'branch-filter', className: "block text-sm font-medium text-gray-700 mb-1" }, "Filtrar por Filial (Região)"),
+             React.createElement('select', { 
+                id: 'branch-filter',
+                value: selectedBranch, 
+                onChange: e => setSelectedBranch(e.target.value), 
+                className: "w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+             },
+                React.createElement('option', { value: 'all' }, 'Todas as Filiais'),
+                branches.map(b => React.createElement('option', { key: b, value: b }, b))
+            )
+        ),
+        
+        // Tabela de Resultados
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ["Região (Filial)", "Apelido", "Placa", "Razão Social", "CNPJ"].map(h => 
+                            React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h)
+                        )
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
+                    filteredData.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-slate-500" }, "Nenhum terceiro encontrado para a região selecionada.")) :
+                    filteredData.map(item => React.createElement('tr', { key: item.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, item.region)
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.apelido),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.placa),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.razao),
+                        React.createElement('td', { className: "px-6 py-4" }, formatCNPJ(item.cnpj))
+                    ))
+                )
+            )
+        )
+    );
+}
+
+/* FIM DO CÓDIGO DO NOVO COMPONENTE */
+            
+function TurnoverDashboard({ showToast }) {
+    const [stats, setStats] = React.useState({ contratacoes: 0, encerramentos: 0, trocas: 0, turnover: 0 });
+    const [periodo, setPeriodo] = React.useState('');
+    const [periodOptions, setPeriodOptions] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+
+    React.useEffect(() => {
+        // Gera as opções de período (últimos 12 meses + próximos 3)
+        const options = [];
+        const today = new Date();
+        for (let i = 12; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            options.push(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
+        }
+        for (let i = 1; i < 4; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            options.push(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
+        }
+        setPeriodOptions(options);
+        // Define o período atual como padrão
+        setPeriodo(`${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`);
+    }, []);
+
+    React.useEffect(() => {
+        if (!periodo) return;
+
+        const fetchStats = async () => {
+            setIsLoading(true);
+            try {
+                const [month, year] = periodo.split('/');
+                const startDate = new Date(year, month - 1, 1).toISOString();
+                const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
+                
+                // 1. Busca movimentações no período
+                const { data: contractData, error: contractError } = await supabase
+                    .from('contrato_distrato')
+                    .select('categoria')
+                    .gte('data_alteracao', startDate)
+                    .lte('data_alteracao', endDate);
+                if (contractError) throw contractError;
+
+                const contratacoes = contractData.filter(r => r.categoria === 'Concessão de Placa (Entrada)').length;
+                const encerramentos = contractData.filter(r => r.categoria === 'Encerramento').length;
+                const trocas = contractData.filter(r => r.categoria === 'Troca de Placa').length;
+
+                // 2. Calcula a média de terceiros ativos
+                const startOfMonthStr = new Date(year, month - 1, 1).toISOString().split('T')[0];
+                const endOfMonthStr = new Date(year, month, 0).toISOString().split('T')[0];
+
+                const { count: ativosInicio, error: inicioError } = await supabase.from('concessao').select('*', { count: 'exact', head: true }).lte('data_inicio', startOfMonthStr).or(`data_fim.is.null,data_fim.gte.${startOfMonthStr}`);
+                if (inicioError) throw inicioError;
+                
+                const { count: ativosFim, error: fimError } = await supabase.from('concessao').select('*', { count: 'exact', head: true }).lte('data_inicio', endOfMonthStr).or(`data_fim.is.null,data_fim.gte.${endOfMonthStr}`);
+                if (fimError) throw fimError;
+
+                const mediaAtivos = (ativosInicio + ativosFim) / 2;
+                const turnover = mediaAtivos > 0 ? ((contratacoes + encerramentos) / mediaAtivos) * 100 : 0;
+
+                setStats({ contratacoes, encerramentos, trocas, turnover });
+
+            } catch (err) {
+                showToast(`Erro ao buscar dados do dashboard: ${err.message}`, "error");
+            }
+            setIsLoading(false);
+        };
+
+        fetchStats();
+    }, [periodo, showToast]);
+
+    const StatCard = ({ title, value, unit = '' }) => {
+        return React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm text-center" },
+            React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, title),
+            isLoading ? 
+            React.createElement('div', { className: "h-8 w-16 bg-slate-200 rounded animate-pulse mx-auto mt-2" }) :
+            React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, `${value}${unit}`)
+        );
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-center mb-6" },
+            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Dashboard de Turnover de Terceiros"),
+            React.createElement('div', { className: "w-full sm:w-auto mt-4 sm:mt-0" },
+                React.createElement('select', { 
+                    value: periodo, 
+                    onChange: e => setPeriodo(e.target.value), 
+                    className: "w-full p-2 border rounded-md shadow-sm" 
+                },
+                    periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt))
+                )
+            )
+        ),
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
+            React.createElement(StatCard, { title: "Entradas (Contratação)", value: stats.contratacoes }),
+            React.createElement(StatCard, { title: "Saídas (Encerramento)", value: stats.encerramentos }),
+            React.createElement(StatCard, { title: "Turnover", value: stats.turnover.toFixed(2), unit: "%" }),
+            React.createElement(StatCard, { title: "Trocas de Placa", value: stats.trocas })
+        )
+    );
+}
+
+/* FIM DO CÓDIGO */
             function OutsourcingDistribution({ userId, showToast, setCurrentPage }) {
                 const [branchesByResponsible, setBranchesByResponsible] = React.useState({});
                 const [isLoading, setIsLoading] = React.useState(false);
@@ -2832,129 +3158,49 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         )
     );
 }
-            function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
-              const ALL_PAGES = {
-                    dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
-                    outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
-                    branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
-                    concessionManagement: { title: 'Concessão', icon: 'FileText' },
-                    contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
-                    displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
-                    additionalCities: { title: 'Adic. Cidades', icon: 'Building' },
-                    fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
-                    branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
-                    equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
-                    userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-                    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
-              };
+            /* INÍCIO DO CÓDIGO CORRIGIDO PARA QuickAccessMenu */
 
-              const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
-              const hoverColors = ['hover:bg-gray-900', 'hover:bg-yellow-600', 'hover:bg-gray-900'];
-              const iconColors = ['text-gray-300', 'text-yellow-100', 'text-gray-300'];
+/* INÍCIO DO CÓDIGO CORRIGIDO E DEFINITIVO PARA QuickAccessMenu */
 
-              return (
-                React.createElement('div', { className: "flex flex-col items-center justify-center bg-white p-6 rounded-xl shadow-lg text-center" },
-                  React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-8" }, "Bem-vindo ao TERSYS!"),
-                  React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl" },
-                    (quickLinks || []).map((linkKey, index) => {
-                        const page = ALL_PAGES[linkKey];
-                        if (!page) return null;
-                        const colorIndex = index % colors.length;
-                        return React.createElement('button', { 
-                            key: linkKey,
-                            onClick: () => setCurrentPage(linkKey), 
-                            className: `p-6 ${colors[colorIndex]} text-white rounded-xl shadow-md ${hoverColors[colorIndex]} transition flex flex-col items-center justify-center` 
-                        },
-                          React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 ${iconColors[colorIndex]}` }),
-                          React.createElement('span', { className: "text-xl font-semibold" }, page.title)
-                        )
-                    })
-                  ),
-                   React.createElement('button', {
-                        onClick: onEdit,
-                        className: "mt-8 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    }, 
-                    React.createElement(LucideIcon, {name: 'Edit', className: 'mr-2'}),
-                    "Editar Atalhos"
-                   )
-                )
-              );
-            }
-            function WhatsAppButton({ phoneNumber, message }) {
-                const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
-                const whatsappUrl = `https://wa.me/${cleanedPhoneNumber}?text=${encodeURIComponent(message)}`;
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
 
-                return React.createElement('a', {
-                href: whatsappUrl,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-                title: 'Fale Conosco no WhatsApp',
-                className: "fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
-             },
-                React.createElement(LucideIcon, { name: 'WhatsApp', className: 'h-8 w-8' })
-            );
-        }
-            function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
-                const [selectedLinks, setSelectedLinks] = React.useState(currentLinks || []);
-                const ALL_PAGES = {
-                    dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
-                    outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
-                    branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
-                    concessionManagement: { title: 'Concessão', icon: 'FileText' },
-                    contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
-                    displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
-                    additionalCities: { title: 'Adic. Cidades', icon: 'Building' },
-                    fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
-                    branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
-                    equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
-                    userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-                    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
-                };
-                const availablePages = Object.keys(ALL_PAGES).filter(key => {
-                    return userRole === 'administrador' || !ALL_PAGES[key].adminOnly;
-                });
-                const handleLinkChange = (pageKey) => {
-                    const newSelectedLinks = [...selectedLinks];
-                    const index = newSelectedLinks.indexOf(pageKey);
-
-                    if (index > -1) {
-                        newSelectedLinks.splice(index, 1);
-                    } else {
-                        if (newSelectedLinks.length < 9) {
-                            newSelectedLinks.push(pageKey);
-                        } else {
-                            alert("Você pode selecionar no máximo 9 atalhos.");
-                        }
-                    }
-                    setSelectedLinks(newSelectedLinks);
-                };
-
-                return React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" },
-                    React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg" },
-                        React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center" }, "Editar Atalhos da Página Inicial"),
-                        React.createElement('p', {className: "text-center text-gray-600 mb-6"}, "Selecione até 9 atalhos para exibir na sua página inicial."),
-                        React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-4 mb-8" },
-                            availablePages.map(key => {
-                                const page = ALL_PAGES[key];
-                                const isSelected = selectedLinks.includes(key);
-                                return React.createElement('div', {
-                                    key: key,
-                                    onClick: () => handleLinkChange(key),
-                                    className: `p-4 border rounded-lg cursor-pointer flex flex-col items-center justify-center text-center transition-colors ${isSelected ? 'bg-blue-100 border-blue-500' : 'hover:bg-gray-100'}`
-                                },
-                                    React.createElement(LucideIcon, { name: page.icon, className: `h-8 w-8 mb-2 ${isSelected ? 'text-blue-600' : 'text-gray-500'}` }),
-                                    React.createElement('span', { className: `text-sm font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}` }, page.title)
-                                );
-                            })
-                        ),
-                        React.createElement('div', { className: "flex justify-end space-x-4" },
-                            React.createElement('button', { onClick: onClose, className: "px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition" }, "Cancelar"),
-                            React.createElement('button', { onClick: () => onSave(selectedLinks), className: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" }, "Salvar")
-                        )
+function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
+    // Esta função agora usa a lista ALL_PAGES global que definimos acima
+    const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
+    const hoverColors = ['hover:bg-gray-900', 'hover:bg-yellow-600', 'hover:bg-gray-900'];
+    const iconColors = ['text-gray-300', 'text-yellow-100', 'text-gray-300'];
+    
+    return (
+        React.createElement('div', { className: "flex flex-col items-center justify-center bg-white p-6 rounded-xl shadow-lg text-center" },
+            React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-8" }, "Bem-vindo ao TERSYS!"),
+            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl" },
+                (quickLinks || []).map((linkKey, index) => {
+                    const page = ALL_PAGES[linkKey];
+                    if (!page) return null;
+                    const colorIndex = index % colors.length;
+                    return React.createElement('button', {
+                        key: linkKey,
+                        onClick: () => setCurrentPage(linkKey),
+                        className: `p-6 ${colors[colorIndex]} text-white rounded-xl shadow-md ${hoverColors[colorIndex]} transition flex flex-col items-center justify-center`
+                    },
+                        React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 flex items-center justify-center ${iconColors[colorIndex]}` }),
+                        React.createElement('span', { className: "text-xl font-semibold" }, page.title)
                     )
-                );
-            }
+                })
+            ),
+            React.createElement('button', {
+                onClick: onEdit,
+                className: "mt-8 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            },
+                React.createElement(LucideIcon, { name: 'Edit', className: 'mr-2' }),
+                "Editar Atalhos"
+            )
+        )
+    );
+}
 
+/* FIM DO CÓDIGO ATUALIZADO */
+            
             // Componente Principal da Aplicação
             function App() {
                 const [userRole, setUserRole] = React.useState(localStorage.getItem('userRole'));
@@ -3056,6 +3302,8 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 const renderPage = () => {
                     switch (currentPage) {
                         case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
+                        case 'turnoverDashboard': return React.createElement(TurnoverDashboard, { showToast });
+                        case 'thirdPartyByRegion': return React.createElement(ThirdPartyByRegion, { showToast });
                         case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
                         case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
                         case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
@@ -3083,41 +3331,44 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                         React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-80'}` },
                             React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between md:justify-center'}` },
                                 !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-20 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
-                                isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-20 w-20", onClick: toggleSidebarCollapse}),
+                                isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-10 w-10", onClick: toggleSidebarCollapse}),
                                 !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
                             ),
                             React.createElement('nav', { className: "flex-grow" },
-                                React.createElement('ul', { className: "space-y-2" },
-                                     React.createElement(MenuCategory, { title: "Dashboard", icon: "LayoutDashboard", menuKey: "dashboard" },
-                                        React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
-                                        React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' })
-                                     ),
-                                     // ATUALIZADO: Itens removidos daqui
-                                     React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
-                                        React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
-                                        React.createElement(MenuItem, { page: 'displacementReleases', icon: 'Truck', text: 'Lanç. Deslocamento' }),
-                                        React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
-                                        React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Despesa' })
-                                     ),
-                                     React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
-                                        React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'FileText', text: 'Aprovação' })
-                                     ),               
-                                     React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
-                                        React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
-                                        React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
-                                        React.createElement(MenuItem, { page: 'additionalCities', icon: 'Building', text: 'Adic. Cidades' })
-                                     ),
-                                     // ATUALIZADO: Itens adicionados aqui no final
-                                     userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
-                                        React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
-                                        React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
-                                        React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
-                                        React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'Users', text: 'Terceiros' }),
-                                        React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
-                                        React.createElement(MenuItem, { page: 'contractManagement', icon: 'FileText', text: 'Contrato/Distrato' })
-                                    )
-                                )
-                             ),
+    React.createElement('ul', { className: "space-y-2" },
+        // RENOMEADO E ATUALIZADO: A antiga categoria "Dashboard" agora é "Relatórios"
+        React.createElement(MenuCategory, { title: "Relatórios", icon: "FileText", menuKey: "relatorios" },
+            React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
+            React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover' }),
+            React.createElement(MenuItem, { page: 'thirdPartyByRegion', icon: 'Building', text: 'Terceiros por Região' }),
+            React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distr. Região' }),
+            // MOVIDO: Itens que estavam em "Operacional" agora estão aqui
+            React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
+            React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Consulta Despesas' })
+        ),
+        // ATUALIZADO: Itens removidos daqui
+        React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
+            React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
+            React.createElement(MenuItem, { page: 'displacementReleases', icon: 'CalendarDays', text: 'Lanç. Deslocamento' })
+        ),
+        React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
+            React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'FileText', text: 'Aprovação' })
+        ),               
+        React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
+            React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
+            React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
+            React.createElement(MenuItem, { page: 'additionalCities', icon: 'MapPin', text: 'Adic. Cidades' })
+        ),
+        userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
+            React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
+            React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
+            React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
+            React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'User', text: 'Terceiros' }),
+            React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
+            React.createElement(MenuItem, { page: 'contractManagement', icon: 'Edit', text: 'Contrato/Distrato' })
+        )
+    )
+),
                             React.createElement('div', {className: 'mt-auto pt-4 border-t border-gray-700'},
                                 React.createElement('button', { onClick: toggleSidebarCollapse, className: "w-full flex items-center p-3 rounded-lg text-gray-400 hover:bg-gray-700 justify-center mb-2" },
                                     React.createElement(LucideIcon, { name: isSidebarCollapsed ? "ChevronsRight" : "ChevronsLeft", className: "w-6 h-6" })
@@ -3153,7 +3404,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
-
 
 
 
