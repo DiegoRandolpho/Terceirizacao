@@ -662,7 +662,7 @@ function ThirdPartyManagement({ userId, showToast }) {
     
     // ATUALIZADO: Adicionado 'email' ao estado inicial do formulário
     const initialFormState = { 
-        apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '', 
+        apelido: '', codSAP: '', cnpj: '', nome_completo: '', cpf: '', 
         razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '', email: '' 
     };
 
@@ -711,7 +711,7 @@ function ThirdPartyManagement({ userId, showToast }) {
                 apelido: formData.apelido.trim(),
                 codSAP: formData.codSAP.trim(),
                 cnpj: formData.cnpj.replace(/[^\d]/g, ''),
-                nome: formData.nome.trim(),
+                nome_completo: formData.nome.trim(),
                 cpf: formData.cpf.replace(/[^\d]/g, ''),
                 razao: formData.razao.trim(),
                 rua: formData.rua.trim(),
