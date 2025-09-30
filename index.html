@@ -1508,15 +1508,15 @@ function ContractManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO ATUALIZADO */
-            function BranchTransfer({ userId, setCurrentPage, showToast }) {
+function BranchTransfer({ userId, setCurrentPage, showToast }) {
               const [plate, setPlate] = React.useState('');
               const [newBranch, setNewBranch] = React.useState('');
               const [executionDate, setExecutionDate] = React.useState('');
               const [branches, setBranches] = React.useState([]);
               const [availablePlates, setAvailablePlates] = React.useState([]);
               const [isLoading, setIsLoading] = React.useState(false);
-              const [status, setStatus] = React.useState('ATIVO');
+              
+              // A variável de estado 'status' foi REMOVIDA daqui.
 
               React.useEffect(() => {
                 const fetchData = async () => {
@@ -1536,19 +1536,34 @@ function ContractManagement({ userId, userRole, showToast }) {
 
               const handleRegisterTransfer = async (e) => {
                 e.preventDefault();
-                if (!plate.trim() || !newBranch || !executionDate) { showToast("Preencha todos os campos.", "error"); return; }
+                if (!plate.trim() || !newBranch || !executionDate) { showToast("Preencha todos os campos.", "error"); return;
+                }
                 setIsLoading(true);
                 try {
                   const { data: existingRecords } = await supabase.from('trocasFilial').select('*').eq('plate', plate.trim()).is('ending_date', null).order('executionDate', { ascending: false }).limit(1);
+                  
                   if (existingRecords && existingRecords.length > 0) {
                     const prevDate = new Date(executionDate);
                     prevDate.setDate(prevDate.getDate());
                     const prevDay = new Date(prevDate.getTime() - (24 * 60 * 60 * 1000)).toISOString().split('T')[0];
-                    await supabase.from('trocasFilial').update({ ending_date: prevDay, status: 'INATIVO' }).eq('id', existingRecords[0].id);
+                    
+                    // CORREÇÃO: Removido 'status: INATIVO' da atualização.
+                    await supabase.from('trocasFilial').update({ ending_date: prevDay }).eq('id', existingRecords[0].id);
                   }
-                  await supabase.from('trocasFilial').insert([{ plate: plate.trim(), newBranch: newBranch, executionDate: executionDate, ending_date: null, created_by_username: userId, status: status }]);
+
+                  // CORREÇÃO: Removido o campo 'status' da inserção.
+                  await supabase.from('trocasFilial').insert([{ 
+                    plate: plate.trim(), 
+                    newBranch: newBranch, 
+                    executionDate: executionDate, 
+                    ending_date: null, 
+                    created_by_username: userId 
+                  }]);
+
                   showToast("Troca registrada com sucesso!", "success");
-                  setPlate(''); setNewBranch(''); setExecutionDate(''); setStatus('ATIVO');
+                  setPlate(''); 
+                  setNewBranch(''); 
+                  setExecutionDate('');
                 } catch (e) {
                   showToast("Erro ao registrar troca.", "error");
                 }
@@ -1564,8 +1579,11 @@ function ContractManagement({ userId, userRole, showToast }) {
                   React.createElement('select', { value: plate, onChange: e => setPlate(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {}, "Selecione a Placa"), availablePlates.map(p => React.createElement('option', {key: p, value: p}, p))),
                   React.createElement('select', { value: newBranch, onChange: e => setNewBranch(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {}, "Selecione a Nova Filial"), branches.map(b => React.createElement('option', {key: b, value: b}, b))),
                   React.createElement('input', { type: "date", value: executionDate, onChange: e => setExecutionDate(e.target.value), className: "w-full p-2 border rounded" }),
-                  React.createElement('select', { value: status, onChange: e => setStatus(e.target.value), className: "w-full p-2 border rounded" }, React.createElement('option', {value: "ATIVO"}, "ATIVO"), React.createElement('option', {value: "INATIVO"}, "INATIVO")),
-                  React.createElement('button', { type: "submit", className: "w-full p-3 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Registrando...' : 'Registrar Troca')
+                  
+                  // CORREÇÃO: O campo <select> para ATIVO/INATIVO foi REMOVIDO daqui.
+                  
+                  React.createElement('button', { type: "submit", className: "w-full p-3 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ?
+ 'Registrando...' : 'Registrar Troca')
                 )
               );
             }
