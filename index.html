@@ -160,6 +160,7 @@
     thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
     concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
     contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
+    implementManagement: { title: 'Tipos de Implemento', icon: 'Settings', adminOnly: true },
 };
 
 
@@ -457,56 +458,244 @@ function BranchManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
+            function ImplementManagement({ userId, showToast }) {
+                // Estados para controlar a lista, o formulário e o carregamento
+                const [implementos, setImplementos] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [showForm, setShowForm] = React.useState(false);
+                const [isEditing, setIsEditing] = React.useState(false);
+                const initialFormState = { id: null, descricao: '', cor: '#cccccc' };
+                const [formData, setFormData] = React.useState(initialFormState);
+                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+                const [itemToToggle, setItemToToggle] = React.useState(null);
 
-            function EquipmentManagement({ userId, showToast }) {
+                // Função para buscar os dados do Supabase
+                const fetchImplementos = React.useCallback(async () => {
+                    setIsLoading(true);
+                    try {
+                        // Busca todos, incluindo inativos, para o admin poder reativar
+                        const { data, error } = await supabase.from('tipos_implemento').select('*').order('descricao');
+                        if (error) throw error;
+                        setImplementos(data || []);
+                    } catch (err) {
+                        showToast("Erro ao carregar tipos de implemento.", "error");
+                    }
+                    setIsLoading(false);
+                }, [showToast]);
+
+                // Efeito que busca os dados quando a página carrega
+                React.useEffect(() => {
+                    fetchImplementos();
+                }, [fetchImplementos]);
+
+                // Manipuladores de eventos do formulário
+                const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+                
+                const handleFormSubmit = async (e) => {
+                    e.preventDefault();
+                    if (!formData.descricao.trim()) {
+                        showToast("O campo descrição é obrigatório.", "error");
+                        return;
+                    }
+                    setIsLoading(true);
+                    try {
+                        const record = { descricao: formData.descricao.trim(), cor: formData.cor };
+                        if (isEditing) {
+                            // MODO EDIÇÃO: Atualiza um registro existente
+                            const { error } = await supabase.from('tipos_implemento').update(record).eq('id', formData.id);
+                            if (error) throw error;
+                            showToast("Implemento atualizado com sucesso!", "success");
+                        } else {
+                            // MODO CRIAÇÃO: Insere um novo registro
+                            const { error } = await supabase.from('tipos_implemento').insert([record]);
+                            if (error) throw error;
+                            showToast("Implemento cadastrado com sucesso!", "success");
+                        }
+                        // Limpa e esconde o formulário e recarrega a lista
+                        setShowForm(false);
+                        setIsEditing(false);
+                        setFormData(initialFormState);
+                        fetchImplementos();
+                    } catch (err) {
+                        showToast(`Erro ao salvar: ${err.message}`, "error");
+                    }
+                    setIsLoading(false);
+                };
+                
+                // Funções para controlar o formulário de edição
+                const handleEditClick = (implemento) => {
+                    setFormData({ id: implemento.id, descricao: implemento.descricao, cor: implemento.cor || '#cccccc' });
+                    setIsEditing(true);
+                    setShowForm(true);
+                };
+
+                const handleCancel = () => {
+                    setShowForm(false);
+                    setIsEditing(false);
+                    setFormData(initialFormState);
+                };
+
+                // Funções para Ativar / Desativar um item
+                const confirmToggleActive = (item) => {
+                    setItemToToggle(item);
+                    setShowConfirmModal(true);
+                };
+
+                const handleToggleActive = async () => {
+                    if (!itemToToggle) return;
+                    setIsLoading(true);
+                    try {
+                        const newStatus = !itemToToggle.ativo;
+                        const { error } = await supabase.from('tipos_implemento').update({ ativo: newStatus }).eq('id', itemToToggle.id);
+                        if (error) throw error;
+                        showToast(`Implemento ${newStatus ? 'reativado' : 'desativado'} com sucesso!`, 'success');
+                        fetchImplementos(); // Recarrega a lista para mostrar o novo status
+                    } catch (err) {
+                        showToast("Erro ao alterar o status.", "error");
+                    }
+                    setIsLoading(false);
+                    setShowConfirmModal(false);
+                    setItemToToggle(null);
+                };
+
+
+                // Renderização do componente (JSX)
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Tipos de Implemento"),
+                    
+                    // Botão para abrir o formulário
+                    !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+                        React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
+                            React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }), "Adicionar Novo Tipo"
+                        )
+                    ),
+
+                    // Formulário de Criação/Edição
+                    showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('input', { name: "descricao", value: formData.descricao, onChange: handleInputChange, placeholder: "Descrição do Implemento", className: "p-2 border rounded md:col-span-2" }),
+                        React.createElement('div', { className: "flex items-center gap-2" },
+                            React.createElement('label', { htmlFor: 'cor' }, "Cor:"),
+                            React.createElement('input', { type: "color", id: "cor", name: "cor", value: formData.cor, onChange: handleInputChange, className: "h-10 w-10 p-1 border rounded cursor-pointer" })
+                        ),
+                        React.createElement('div', { className: "md:col-span-3 flex justify-end gap-4" },
+                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+                        )
+                    ),
+                    
+                    // Tabela de listagem dos implementos
+                    React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                        React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                            React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                                React.createElement('tr', null,
+                                    ["Descrição", "Cor", "Status", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                                )
+                            ),
+                            React.createElement('tbody', null,
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando..."))
+                                : implementos.map(item =>
+                                    React.createElement('tr', { key: item.id, className: `hover:bg-blue-50 even:bg-slate-50 ${!item.ativo ? 'opacity-50' : ''}` },
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, item.descricao)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 flex items-center gap-2" },
+                                            React.createElement('div', { style: { backgroundColor: item.cor }, className: "h-5 w-5 rounded border" }),
+                                            item.cor
+                                        ),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" },
+                                            React.createElement('span', { className: `inline-flex items-center py-1 px-3 rounded-full text-xs font-medium ${item.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}` },
+                                                item.ativo ? "Ativo" : "Inativo"
+                                            )
+                                        ),
+                                        React.createElement('td', { className: "px-6 py-4 text-center" },
+                                            React.createElement('div', { className: "flex justify-center gap-x-4" },
+                                                React.createElement('button', { onClick: () => handleEditClick(item), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                                React.createElement('button', { onClick: () => confirmToggleActive(item), className: `text-gray-400 ${item.ativo ? 'hover:text-red-600' : 'hover:text-green-600'} transition-colors`, title: item.ativo ? "Desativar" : "Reativar" },
+                                                    React.createElement(LucideIcon, { name: item.ativo ? 'Ban' : 'Save', className: 'h-5 w-5' })
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Modal de Confirmação
+                    showConfirmModal && React.createElement(ConfirmationModal, { 
+                        message: `Deseja realmente ${itemToToggle?.ativo ? 'DESATIVAR' : 'REATIVAR'} o implemento "${itemToToggle?.descricao}"?`,
+                        onConfirm: handleToggleActive,
+                        onCancel: () => setShowConfirmModal(false)
+                    })
+                );
+            }
+           function EquipmentManagement({ userId, showToast }) {
+              // Estados do formulário e da página
               const [newPlate, setNewPlate] = React.useState('');
               const [newModel, setNewModel] = React.useState('');
               const [newBrand, setNewBrand] = React.useState('');
               const [newChassis, setNewChassis] = React.useState('');
               const [newEquipmentType, setNewEquipmentType] = React.useState('');
               const [equipmentList, setEquipmentList] = React.useState([]);
-              const [error, setError] = React.useState(null);
+              const [tiposImplemento, setTiposImplemento] = React.useState([]);
               const [isLoading, setIsLoading] = React.useState(false);
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
               const [editingEquipment, setEditingEquipment] = React.useState(null);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
-              const getTypeBadgeClasses = (type) => {
-                switch (type) {
-                case 'BOMBA':
-                    return 'bg-blue-100 text-blue-800';
-                case 'BETONEIRA':
-                    return 'bg-green-100 text-green-800';
-                case 'BOMBA LANÇA':
-                    return 'bg-yellow-100 text-yellow-800';
-                default:
-                    return 'bg-gray-100 text-gray-800';
-                }
-            };
-              const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
+
+              // ADICIONADO DE VOLTA: Função para verificar se a cor é clara ou escura
+              const isColorLight = (hexColor) => {
+                  if (!hexColor) return false;
+                  const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                  const r = parseInt(color.substring(0, 2), 16); // Red
+                  const g = parseInt(color.substring(2, 4), 16); // Green
+                  const b = parseInt(color.substring(4, 6), 16); // Blue
+                  return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
+              };
+
+              // ADICIONADO DE VOLTA: Função de estilo que usa a coluna 'cor' do banco
+              const getTypeBadgeStyle = (typeDescricao) => {
+                  const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
+                  const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cinza padrão se não encontrar
+                  const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff'; // Preto para fundos claros, branco para escuros
+                  
+                  return {
+                      backgroundColor: bgColor,
+                      color: textColor,
+                      border: `1px solid ${bgColor}`
+                  };
+              };
 
               React.useEffect(() => {
-                const fetchEquipment = async () => {
+                const fetchInitialData = async () => {
                   setIsLoading(true);
                   try {
-                    const { data, error: fetchError } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
-                    if (fetchError) throw fetchError;
-                    setEquipmentList(data);
+                    const [equipmentRes, tiposRes] = await Promise.all([
+                        supabase.from('equipamentos').select('*').order('created_at', { ascending: false }),
+                        // ALTERADO: Adicionada a seleção da coluna 'cor' novamente
+                        supabase.from('tipos_implemento').select('id, descricao, cor').is('ativo', true).order('descricao')
+                    ]);
+      
+                    if (equipmentRes.error) throw equipmentRes.error;
+                    if (tiposRes.error) throw tiposRes.error;
+
+                    setEquipmentList(equipmentRes.data);
+                    setTiposImplemento(tiposRes.data);
+
                   } catch (err) {
-                    showToast("Erro ao carregar equipamentos.", "error");
+                    showToast("Erro ao carregar dados. Verifique o console.", "error");
+                    console.error("ERRO DETALHADO:", err);
                   }
                   setIsLoading(false);
                 };
-                fetchEquipment();
+                fetchInitialData();
               }, [showToast]);
-
+              
+              // (As funções de handleAdd, handleUpdate, handleDelete, etc. não precisam de alteração)
               const handleAddEquipment = async (e) => {
                 e.preventDefault();
                 if (!newPlate.trim() || !newModel.trim() || !newBrand.trim() || !newChassis.trim() || !newEquipmentType) {
-                  showToast("Preencha todos os campos.", "error");
-                  return;
+                  showToast("Preencha todos os campos.", "error"); return;
                 }
                 setIsLoading(true);
                 try {
@@ -520,11 +709,9 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(false);
               };
-
               const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); };
               const handleCancelEdit = () => { setEditingEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
-              
               const handleUpdateEquipment = async () => {
                 if (!editingEquipment) return;
                 setIsLoading(true);
@@ -539,9 +726,7 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(false);
               };
-
               const confirmDeleteEquipment = (eq) => { setEquipmentToDelete(eq); setShowConfirmModal(true); };
-
               const handleDeleteEquipment = async () => {
                 if (!equipmentToDelete) return;
                 setIsLoading(true);
@@ -557,7 +742,6 @@ function BranchManagement({ userId, userRole, showToast }) {
                 setShowConfirmModal(false);
                 setEquipmentToDelete(null);
               };
-
               const filteredEquipmentList = equipmentList.filter(eq =>
                   Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
@@ -570,89 +754,70 @@ function BranchManagement({ userId, userRole, showToast }) {
                     React.createElement('input', { placeholder: "Modelo", value: newModel, onChange: e => setNewModel(e.target.value), className: "p-2 border rounded" }),
                     React.createElement('input', { placeholder: "Marca", value: newBrand, onChange: e => setNewBrand(e.target.value), className: "p-2 border rounded" }),
                     React.createElement('input', { placeholder: "Chassi", value: newChassis, onChange: e => setNewChassis(e.target.value), className: "p-2 border rounded" }),
-                    React.createElement('select', { value: newEquipmentType, onChange: e => setNewEquipmentType(e.target.value), className: "p-2 border rounded" },
+                    React.createElement('select', { value: newEquipmentType, onChange: e => setNewEquipmentType(e.target.value), className: "p-2 border rounded", required: true },
                         React.createElement('option', { value: "" }, "Selecione o Tipo"),
-                        equipmentTypes.map(type => React.createElement('option', { key: type, value: type }, type))
+                        tiposImplemento.map(tipo => React.createElement('option', { key: tipo.id, value: tipo.descricao }, tipo.descricao))
                     ),
                     React.createElement('div', { className: "lg:col-span-3 flex justify-center gap-4" },
-                        React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, "Adicionar"),
+                         React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, "Adicionar"),
                         React.createElement('button', { type: "button", onClick: () => setShowForm(false), className: "p-2 bg-gray-300 rounded" }, "Cancelar")
                     )
                 ),
-                /* INÍCIO DO CÓDIGO PARA SUBSTITUIR */
-
-React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
-    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
-        React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
-            React.createElement('tr', null, 
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Placa"), 
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Modelo"),
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Marca"),
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Chassi"),
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Tipo"), 
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-right border-b-2 border-gray-200"}, "Ações")
-            )
-        ),
-        React.createElement('tbody', { className: "divide-y divide-gray-100" },
-            // Se não houver equipamentos, mostra uma mensagem
-            isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center" }, "Carregando...")) :
-            filteredEquipmentList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center text-gray-500" }, "Nenhum equipamento encontrado.")) :
-            
-            // Mapeia os equipamentos para as linhas da tabela
-            filteredEquipmentList.map(eq => (
-                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50 transition-colors" },
-                    
-                    // Lógica para modo de edição (se houver, manter simples)
-                    editingEquipment && editingEquipment.id === eq.id ?
-                    React.createElement(React.Fragment, null,
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
-                        React.createElement('td', { className: "p-2 text-right" },
-                            React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
-                            React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
-                        )
-                    ) :
-
-                    // Células de Visualização com o novo estilo
-                    React.createElement(React.Fragment, null,
-                        // Destaque na coluna Placa
-                        React.createElement('td', { className: "px-6 py-4" }, React.createElement('span', { className: "font-medium text-gray-800" }, eq.plate)),
-                        React.createElement('td', { className: "px-6 py-4" }, eq.model),
-                        React.createElement('td', { className: "px-6 py-4" }, eq.brand),
-                        React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
-                        // Tag colorida para o Tipo
-                        React.createElement('td', { className: "px-6 py-4" },
-                            React.createElement('span', {
-                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(eq.type)}`
-                            }, eq.type)
+                React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
+                    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
+                        React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
+                            React.createElement('tr', null, ['Placa', 'Modelo', 'Marca', 'Chassi', 'Tipo', 'Ações'].map(h => React.createElement('th', {key:h, className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, h)))
                         ),
-                        // Ícones de ação aprimorados
-                        React.createElement('td', { className: "px-6 py-4" },
-                            React.createElement('div', { className: "flex justify-end gap-x-4" },
-                                React.createElement('button', { onClick: () => handleEditClick(eq), className: "text-gray-400 hover:text-blue-600 transition-colors" }, 
-                                    React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })
-                                ),
-                                React.createElement('button', { onClick: () => confirmDeleteEquipment(eq), className: "text-gray-400 hover:text-red-600 transition-colors" },
-                                    React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' })
+                        React.createElement('tbody', { className: "divide-y divide-gray-100" },
+                            isLoading ?
+                                React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center" }, "Carregando...")) :
+                            filteredEquipmentList.length === 0 ?
+                                React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center text-gray-500" }, "Nenhum equipamento encontrado.")) :
+                            filteredEquipmentList.map(eq => (
+                                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50 transition-colors" },
+                                    editingEquipment && editingEquipment.id === eq.id ?
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, 
+                                            React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, 
+                                                tiposImplemento.map(t=>React.createElement('option',{key:t.id, value:t.descricao}, t.descricao))
+                                            )
+                                        ),
+                                        React.createElement('td', { className: "p-2 text-right" },
+                                            React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
+                                            React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
+                                        )
+                                    ) :
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "px-6 py-4" }, React.createElement('span', { className: "font-medium text-gray-800" }, eq.plate)),
+                                        React.createElement('td', { className: "px-6 py-4" }, eq.model),
+                                        React.createElement('td', { className: "px-6 py-4" }, eq.brand),
+                                        React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
+                                        // ALTERADO: A badge agora usa o estilo dinâmico vindo da função getTypeBadgeStyle
+                                        React.createElement('td', { className: "px-6 py-4" },
+                                            React.createElement('span', {
+                                                style: getTypeBadgeStyle(eq.type), // Usa estilo inline
+                                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
+                                            }, eq.type)
+                                        ),
+                                        React.createElement('td', { className: "px-6 py-4" },
+                                            React.createElement('div', { className: "flex justify-end gap-x-4" },
+                                                React.createElement('button', { onClick: () => handleEditClick(eq), className: "text-gray-400 hover:text-blue-600 transition-colors" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                                React.createElement('button', { onClick: () => confirmDeleteEquipment(eq), className: "text-gray-400 hover:text-red-600 transition-colors" }, React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' }))
+                                            )
+                                        )
+                                    )
                                 )
-                            )
+                            ))
                         )
                     )
-                )
-            ))
-        )
-    )
-),
+                ),
                 showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir equipamento placa "${equipmentToDelete?.plate}"?`, onConfirm: handleDeleteEquipment, onCancel: () => setShowConfirmModal(false) })
               );
             }
-
-            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO UserManagement */
-/* INÍCIO DO CÓDIGO PARA REINSERIR A FUNÇÃO ThirdPartyManagement */
-
 function ThirdPartyManagement({ userId, showToast }) {
     const [terceirosList, setTerceirosList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -996,12 +1161,6 @@ function UserManagement({ userId, showToast }) {
 
 /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
 
-/* INÍCIO DA FUNÇÃO CORRIGIDA E ATUALIZADA */
-
-/* INÍCIO DA FUNÇÃO FINAL COM AUTOCOMPLETAR FUNCIONAL */
-
-/* INÍCIO DA FUNÇÃO FINAL E CORRIGIDA */
-
 function ConcessionManagement({ userId, userRole, showToast }) {
                 // ... (todos os estados permanecem os mesmos) ...
                 const [concessions, setConcessions] = React.useState([]);
@@ -1296,7 +1455,6 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
                 );
             }
-/* INÍCIO DO CÓDIGO PARA REINSERIR O WhatsAppButton */
 
 function WhatsAppButton({ phoneNumber, message }) {
     const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
@@ -1687,196 +1845,213 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
             }
 
                        function Dashboard({ userId, showToast }) {
-    const [equipmentCounts, setEquipmentCounts] = React.useState({ 'BOMBA LANÇA': 0, 'BOMBA': 0, 'BETONEIRA': 0 });
-    const [registros, setRegistros] = React.useState([]);
-    const [allEquipment, setAllEquipment] = React.useState([]);
-    const [allBranches, setAllBranches] = React.useState([]);
-    const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
-    const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
-    const [selectedBranch, setSelectedBranch] = React.useState('Todas as Filiais');
-    const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']);
-    const [selectedEquipmentType, setSelectedEquipmentType] = React.useState('Todos os Tipos');
-    const equipmentTypes = ['Todos os Tipos', "BOMBA LANÇA", "BOMBA", "BETONEIRA"];
-    const [isLoading, setIsLoading] = React.useState(false);
-    
-    const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+                const [equipmentCounts, setEquipmentCounts] = React.useState({});
+                const [registros, setRegistros] = React.useState([]);
+                const [allEquipment, setAllEquipment] = React.useState([]);
+                const [allBranches, setAllBranches] = React.useState([]);
+                const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
+                const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
+                const [selectedBranch, setSelectedBranch] = React.useState('Todas as Filiais');
+                const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']);
+                const [selectedEquipmentType, setSelectedEquipmentType] = React.useState('Todos os Tipos');
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [tiposImplemento, setTiposImplemento] = React.useState([]);
 
-    React.useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const { data: usersData } = await supabase.from('app_users').select('username').eq('role', 'supervisor');
-                setAvailableUsers(['Todos os Responsáveis', ...usersData.map(u => u.username)]);
+                // Funções auxiliares (isColorLight, getTypeBadgeStyle) permanecem as mesmas
+                const isColorLight = (hexColor) => {
+                    if (!hexColor) return false;
+                    const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                    const r = parseInt(color.substring(0, 2), 16);
+                    const g = parseInt(color.substring(2, 4), 16);
+                    const b = parseInt(color.substring(4, 6), 16);
+                    return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
+                };
 
-                const { data: branchesData } = await supabase.from('filiais').select('name, responsible');
-                setAvailableBranches(['Todas as Filiais', ...branchesData.map(b => b.name)]);
-                setAllBranches(branchesData);
-
-                const { data: equipmentData } = await supabase.from('equipamentos').select('plate, type, model, brand, chassis, owned_by');
-                setAllEquipment(equipmentData);
-            } catch (e) {
-                showToast("Erro ao carregar filtros.", "error");
-            }
-            setIsLoading(false);
-        };
-        fetchData();
-    }, [showToast]);
-
-    React.useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (allBranches.length === 0 || allEquipment.length === 0) return;
-            setIsLoading(true);
-            try {
-                const { data: transfersData } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
-                const currentBranchMap = new Map(transfersData.map(t => [t.plate, t.newBranch]));
-
-                let equipmentForCounting = allEquipment;
+                const getTypeBadgeStyle = (typeDescricao) => {
+                    const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
+                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6';
+                    const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
+                    return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
+                };
                 
-                if (selectedUser !== 'Todos os Responsáveis') {
-                    const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
-                    equipmentForCounting = equipmentForCounting.filter(eq => userBranches.includes(currentBranchMap.get(eq.plate)));
-                }
-                if (selectedBranch !== 'Todas as Filiais') {
-                    equipmentForCounting = equipmentForCounting.filter(eq => currentBranchMap.get(eq.plate) === selectedBranch);
-                }
-                if (selectedEquipmentType !== 'Todos os Tipos') {
-                    equipmentForCounting = equipmentForCounting.filter(eq => eq.type === selectedEquipmentType);
-                }
+                const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR') : '';
                 
-                const counts = { 'BOMBA LANÇA': 0, 'BOMBA': 0, 'BETONEIRA': 0 };
-                equipmentForCounting.forEach(eq => { if (counts[eq.type] !== undefined) counts[eq.type]++; });
-                setEquipmentCounts(counts);
+                React.useEffect(() => {
+                    const fetchData = async () => {
+                        setIsLoading(true);
+                        try {
+                            const [usersRes, branchesRes, equipmentRes, tiposImplementoRes] = await Promise.all([
+                                supabase.from('app_users').select('username').eq('role', 'supervisor'),
+                                supabase.from('filiais').select('name, responsible'),
+                                supabase.from('equipamentos').select('plate, type, model, brand, chassis, owned_by'),
+                                supabase.from('tipos_implemento').select('descricao, cor')
+                            ]);
 
-                let query = supabase.from('trocasFilial').select('*').is('ending_date', null).order('newBranch', { ascending: true });
-                if (selectedBranch !== 'Todas as Filiais') query = query.eq('newBranch', selectedBranch);
-                let { data: trocasData } = await query;
+                            if (usersRes.error) throw usersRes.error;
+                            if (branchesRes.error) throw branchesRes.error;
+                            if (equipmentRes.error) throw equipmentRes.error;
+                            if (tiposImplementoRes.error) throw tiposImplementoRes.error;
 
-                if (selectedUser !== 'Todos os Responsáveis') {
-                    const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
-                    trocasData = trocasData.filter(t => userBranches.includes(t.newBranch));
-                }
+                            setTiposImplemento(tiposImplementoRes.data || []);
+                            setAvailableUsers(['Todos os Responsáveis', ...usersRes.data.map(u => u.username)]);
+                            setAvailableBranches(['Todas as Filiais', ...branchesRes.data.map(b => b.name)]);
+                            setAllBranches(branchesRes.data);
+                            setAllEquipment(equipmentRes.data);
 
-                let finalData = trocasData.map(t => {
-                    const eq = allEquipment.find(e => e.plate === t.plate);
-                    return { ...t, 
-                        tipoEquipamento: eq?.type, 
-                        modeloEquipamento: eq?.model, 
-                        marcaEquipamento: eq?.brand, 
-                        chassiEquipamento: eq?.chassis,
-                        propriedadeEquipamento: eq?.owned_by
+                        } catch (e) {
+                            showToast("Erro ao carregar filtros.", "error");
+                        }
+                        setIsLoading(false);
                     };
-                });
+                    fetchData();
+                }, [showToast]);
 
-                if (selectedEquipmentType !== 'Todos os Tipos') {
-                    finalData = finalData.filter(d => d.tipoEquipamento === selectedEquipmentType);
-                }
-                setRegistros(finalData);
-            } catch (e) {
-                showToast("Erro ao carregar dados do dashboard.", "error");
-            }
-            setIsLoading(false);
-        };
-        fetchDashboardData();
-    }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast]);
-    
-    const exportToCSV = () => {
-    // MODIFICAÇÃO 3: Adicionado 'Propriedade' ao cabeçalho do CSV
-    const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
-    // MODIFICAÇÃO 4: Adicionado 'propriedadeEquipamento' aos dados de linha do CSV
-    const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
-    
-    // CORREÇÃO: Trocado "\n" por "\r\n" para compatibilidade com Excel
-    let csvContent = headers.join(";") + "\r\n" + rows.map(e => e.join(";")).join("\r\n");
+                React.useEffect(() => {
+                    const fetchDashboardData = async () => {
+                        if (allBranches.length === 0 || allEquipment.length === 0) return;
+                        setIsLoading(true);
+                        try {
+                            const { data: transfersData } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
+                            const currentBranchMap = new Map(transfersData.map(t => [t.plate, t.newBranch]));
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "dashboard.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+                            let equipmentForCounting = allEquipment;
+                            
+                            if (selectedUser !== 'Todos os Responsáveis') {
+                                const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
+                                equipmentForCounting = equipmentForCounting.filter(eq => userBranches.includes(currentBranchMap.get(eq.plate)));
+                            }
+                            if (selectedBranch !== 'Todas as Filiais') {
+                                equipmentForCounting = equipmentForCounting.filter(eq => currentBranchMap.get(eq.plate) === selectedBranch);
+                            }
+                            if (selectedEquipmentType !== 'Todos os Tipos') {
+                                equipmentForCounting = equipmentForCounting.filter(eq => eq.type === selectedEquipmentType);
+                            }
+                            
+                            const counts = tiposImplemento.reduce((acc, tipo) => ({ ...acc, [tipo.descricao]: 0 }), {});
+                            equipmentForCounting.forEach(eq => { if (counts[eq.type] !== undefined) counts[eq.type]++; });
+                            setEquipmentCounts(counts);
 
-    const totalEquipment = Object.values(equipmentCounts).reduce((a, b) => a + b, 0);
+                            let query = supabase.from('trocasFilial').select('*').is('ending_date', null).order('newBranch', { ascending: true });
+                            if (selectedBranch !== 'Todas as Filiais') query = query.eq('newBranch', selectedBranch);
+                            let { data: trocasData } = await query;
 
-    // Função auxiliar para as tags
-    const getTypeBadgeClasses = (type) => {
-        switch (type) {
-            case 'BOMBA':
-                return 'bg-blue-100 text-blue-800';
-            case 'BETONEIRA':
-                return 'bg-green-100 text-green-800';
-            case 'BOMBA LANÇA':
-                return 'bg-yellow-100 text-yellow-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
+                            if (selectedUser !== 'Todos os Responsáveis') {
+                                const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
+                                trocasData = trocasData.filter(t => userBranches.includes(t.newBranch));
+                            }
 
-    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('div', { className: "flex justify-between items-center mb-6" },
-            React.createElement('h2', { className: "text-2xl font-bold" }, "Dashboard"),
-            React.createElement('button', { onClick: exportToCSV, className: "p-2 bg-green-600 text-white rounded" }, "Exportar CSV")
-        ),
-        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-            React.createElement('select', { value: selectedBranch, onChange: e => setSelectedBranch(e.target.value), className: "p-2 border rounded" }, availableBranches.map(b => React.createElement('option',{key: b, value: b}, b))),
-            React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
-            React.createElement('select', { value: selectedEquipmentType, onChange: e => setSelectedEquipmentType(e.target.value), className: "p-2 border rounded" }, equipmentTypes.map(t => React.createElement('option',{key: t, value: t}, t)))
-        ),
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
-        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" },
-            Object.entries(equipmentCounts).map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, React.createElement('p', {className: "font-semibold"}, type), React.createElement('p', {className: "text-2xl font-bold"}, count)))
-        ),
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
-        React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
-            React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
-                const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
-                const barColor = type === 'BOMBA LANÇA' ? 'bg-blue-500' : type === 'BETONEIRA' ? 'bg-green-500' : 'bg-yellow-500';
-                return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', {className:`${barColor} h-2.5 rounded-full`, style:{width: `${percentage}%`}})))
-            })
-        ),
-        // AQUI COMEÇA A TABELA ATUALIZADA
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
-        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
-            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
-                    React.createElement('tr', null,
-                        ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início"].map(h => 
-                            React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h)
+                            let finalData = trocasData.map(t => {
+                                const eq = allEquipment.find(e => e.plate === t.plate);
+                                return { ...t, 
+                                    tipoEquipamento: eq?.type, 
+                                    modeloEquipamento: eq?.model, 
+                                    marcaEquipamento: eq?.brand, 
+                                    chassiEquipamento: eq?.chassis,
+                                    propriedadeEquipamento: eq?.owned_by
+                                };
+                            });
+                            if (selectedEquipmentType !== 'Todos os Tipos') {
+                                finalData = finalData.filter(d => d.tipoEquipamento === selectedEquipmentType);
+                            }
+                            setRegistros(finalData);
+                        } catch (e) {
+                            showToast("Erro ao carregar dados do dashboard.", "error");
+                        }
+                        setIsLoading(false);
+                    };
+                    fetchDashboardData();
+                }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast, tiposImplemento]);
+                
+                const exportToCSV = () => {
+                    const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
+                    const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
+                    let csvContent = headers.join(";") + "\r\n" + rows.map(e => e.join(";")).join("\r\n");
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "dashboard.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                const totalEquipment = Object.values(equipmentCounts).reduce((a, b) => a + b, 0);
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                        React.createElement('h2', { className: "text-2xl font-bold" }, "Dashboard"),
+                        React.createElement('button', { onClick: exportToCSV, className: "p-2 bg-green-600 text-white rounded" }, "Exportar CSV")
+                    ),
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('select', { value: selectedBranch, onChange: e => setSelectedBranch(e.target.value), className: "p-2 border rounded" }, availableBranches.map(b => React.createElement('option',{key: b, value: b}, b))),
+                        React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
+                        React.createElement('select', { value: selectedEquipmentType, onChange: e => setSelectedEquipmentType(e.target.value), className: "p-2 border rounded" },
+                            React.createElement('option', { value: 'Todos os Tipos' }, 'Todos os Tipos'),
+                            tiposImplemento.map(t => React.createElement('option',{key: t.descricao, value: t.descricao}, t.descricao))
+                        )
+                    ),
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
+                    
+                    // --- ALTERAÇÃO 1 AQUI ---
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" },
+                        Object.entries(equipmentCounts)
+                            .filter(([type, count]) => count > 0) // Adicionado filtro para remover itens com contagem zero
+                            .map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, 
+                                React.createElement('p', {className: "font-semibold"}, type), 
+                                React.createElement('p', {className: "text-2xl font-bold"}, count)
+                            ))
+                    ),
+
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
+
+                    // --- ALTERAÇÃO 2 AQUI ---
+                    React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
+                        React.createElement('p',{}, "Nenhum equipamento para exibir.") : 
+                        Object.entries(equipmentCounts)
+                            .filter(([type, count]) => count > 0) // Adicionado filtro aqui também para consistência
+                            .map(([type, count]) => {
+                                const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
+                                const barStyle = getTypeBadgeStyle(type);
+                                return React.createElement('div', {key: type}, `${type}: ${percentage}%`, 
+                                    React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, 
+                                        React.createElement('div', { style:{ width: `${percentage}%`, backgroundColor: barStyle.backgroundColor }, className:`h-2.5 rounded-full`})
+                                    )
+                                );
+                            })
+                    ),
+
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
+                    React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                        React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                            React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                                React.createElement('tr', null,
+                                    ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                                )
+                            ),
+                            React.createElement('tbody', null,
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
+                                registros.length === 0 ?
+                                React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Nenhum equipamento encontrado.")) :
+                                registros.map(r => React.createElement('tr', { key: r.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.newBranch),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, React.createElement('span', { className: "font-medium text-slate-800" }, r.plate)),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.modeloEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.marcaEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.chassiEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.propriedadeEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" },
+                                        React.createElement('span', {
+                                            style: getTypeBadgeStyle(r.tipoEquipamento),
+                                            className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
+                                        }, r.tipoEquipamento)
+                                    ),
+                                    React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate))
+                                ))
+                            )
                         )
                     )
-                ),
-                React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
-                    registros.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Nenhum equipamento encontrado.")) :
-                    registros.map(r => React.createElement('tr', { 
-                        key: r.id, 
-                        className: "hover:bg-blue-50 even:bg-slate-50" 
-                    },
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.newBranch),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, 
-                            React.createElement('span', { className: "font-medium text-slate-800" }, r.plate)
-                        ),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.modeloEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.marcaEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.chassiEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.propriedadeEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" },
-                            React.createElement('span', {
-                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(r.tipoEquipamento)}`
-                            }, r.tipoEquipamento)
-                        ),
-                        React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate))
-                    ))
-                )
-            )
-        )
-    );
-}
-/* INÍCIO DO CÓDIGO PARA ADICIONAR A FUNÇÃO TurnoverDashboard */
-/* INÍCIO DO CÓDIGO DO NOVO COMPONENTE ThirdPartyByRegion */
-
+                );
+            }
 function ThirdPartyByRegion({ showToast }) {
     const [reportData, setReportData] = React.useState([]);
     const [filteredData, setFilteredData] = React.useState([]);
@@ -3435,6 +3610,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
                         case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
+                        case 'implementManagement': return userRole === 'administrador' ? React.createElement(ImplementManagement, { userId, showToast }) : null;
                         case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
                         case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
                         case 'quickAccessMenu':
@@ -3478,6 +3654,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
         userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
             React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
             React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
+            React.createElement(MenuItem, { page: 'implementManagement', icon: 'Settings', text: 'Tipos de Implemento' }),
             React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
             React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'User', text: 'Terceiros' }),
             React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
@@ -3520,11 +3697,6 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
-
-
-
-
-
 
 
 
