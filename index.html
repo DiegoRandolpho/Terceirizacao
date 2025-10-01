@@ -718,7 +718,7 @@ function ThirdPartyManagement({ userId, showToast }) {
                 bairro: formData.bairro.trim(),
                 cidade: formData.cidade.trim(),
                 estado: formData.estado.trim(),
-                cep: (formData.cep || '').replace(/[^\d]/g, ''),
+                cep: String(formData.cep || '').replace(/[^\d]/g, ''),
                 email: formData.email.trim()
             };
 
