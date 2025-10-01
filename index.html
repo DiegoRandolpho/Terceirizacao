@@ -1040,7 +1040,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         try {
             const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
                 supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
-                supabase.from('terceiros').select('codSAP, apelido, cnpj, nome, cpf'),
+                supabase.from('terceiros').select('codSAP, apelido, cnpj, nome_completo, cpf'),
                 supabase.from('equipamentos').select('plate, type')
             ]);
             if (concessaoRes.error) throw concessaoRes.error;
@@ -1053,7 +1053,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
             const joinedData = concessaoRes.data.map(c => {
                 const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome: 'N/A', cpf: 'N/A' };
                 const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
-                return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
+                return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome_completo, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
             });
             setConcessions(joinedData);
         } catch (err) {
