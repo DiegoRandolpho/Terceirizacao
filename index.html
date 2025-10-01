@@ -1000,6 +1000,8 @@ function UserManagement({ userId, showToast }) {
 
 /* INÍCIO DA FUNÇÃO FINAL COM AUTOCOMPLETAR FUNCIONAL */
 
+/* INÍCIO DA FUNÇÃO FINAL E CORRIGIDA */
+
 function ConcessionManagement({ userId, userRole, showToast }) {
     // Estados do componente
     const [concessions, setConcessions] = React.useState([]);
@@ -1015,19 +1017,17 @@ function ConcessionManagement({ userId, userRole, showToast }) {
     const [allTerceiros, setAllTerceiros] = React.useState([]);
 
     // --- LÓGICA DE AUTOCOMPLETAR ---
-    // Estados para os termos de busca digitados pelo usuário
     const [placaSearch, setPlacaSearch] = React.useState('');
     const [terceiroSearch, setTerceiroSearch] = React.useState('');
-
-    // Estados para as listas de sugestões que serão filtradas e exibidas
     const [filteredPlates, setFilteredPlates] = React.useState([]);
     const [filteredTerceiros, setFilteredTerceiros] = React.useState([]);
-    // --- FIM DA LÓGICA DE AUTOCOMPLETAR ---
+    
+    // LINHA FALTANTE ADICIONADA AQUI:
+    const [searchTerm, setSearchTerm] = React.useState('');
     
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
     const [concessionToEnd, setConcessionToEnd] = React.useState(null);
 
-    // Funções auxiliares de formatação
     const formatDate = (dateString) => {
         if (!dateString) return '—';
         const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
@@ -1051,7 +1051,6 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         return null;
     };
 
-    // Busca inicial dos dados
     const fetchAllData = React.useCallback(async () => {
         setIsLoading(true);
         try {
@@ -1069,11 +1068,9 @@ function ConcessionManagement({ userId, userRole, showToast }) {
             
             setAllPlates(platesData);
             setAllTerceiros(terceirosData);
-            // Inicializa as listas filtradas com todos os dados
             setFilteredPlates(platesData);
             setFilteredTerceiros(terceirosData);
 
-            // Lógica de junção dos dados para a tabela principal
             const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
             const terceirosMap = new Map(terceirosData.map(t => [t.codSAP, t]));
             const joinedData = concessaoRes.data.map(c => {
@@ -1092,32 +1089,26 @@ function ConcessionManagement({ userId, userRole, showToast }) {
 
     const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     
-    // --- NOVAS FUNÇÕES DE CONTROLE DO AUTOCOMPLETAR ---
     const handlePlacaChange = (e) => {
         const value = e.target.value.toUpperCase();
         setPlacaSearch(value);
         setFormData(prev => ({...prev, placa: value}));
-        // Filtra a lista de placas em tempo real
         if (value) {
             setFilteredPlates(allPlates.filter(p => p.toUpperCase().includes(value)));
         } else {
-            setFilteredPlates(allPlates); // Se o campo estiver vazio, mostra todas
+            setFilteredPlates(allPlates);
         }
     };
     
     const handleTerceiroChange = (e) => {
         const value = e.target.value;
         setTerceiroSearch(value);
-
-        // Tenta extrair o codSAP para o formulário
         const match = value.match(/\(([^)]+)\)$/);
         if (match && match[1]) {
             setFormData(prev => ({ ...prev, codSAP: match[1] }));
         } else {
             setFormData(prev => ({ ...prev, codSAP: '' }));
         }
-        
-        // Filtra a lista de terceiros em tempo real
         if (value) {
             const lowerCaseValue = value.toLowerCase();
             setFilteredTerceiros(allTerceiros.filter(t => 
@@ -1301,6 +1292,8 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
     );
 }
+
+/* FIM DA FUNÇÃO FINAL */
 
 /* FIM DA FUNÇÃO FINAL */
 /* INÍCIO DO CÓDIGO PARA REINSERIR O WhatsAppButton */
