@@ -1074,7 +1074,14 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         }
         setIsLoading(true);
         try {
-            const record = { placa: formData.placa, codSAP: formData.codSAP, valorfixo: parseFloat(formData.valorfixo), data_inicio: formData.data_inicio };
+            // Adiciona data_fim ao registro, tratando o campo vazio como nulo
+const record = { 
+    placa: formData.placa, 
+    codSAP: formData.codSAP, 
+    valorfixo: parseFloat(formData.valorfixo), 
+    data_inicio: formData.data_inicio,
+    data_fim: formData.data_fim || null 
+};
             if (isEditing) {
                 const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
                 if (error) throw error;
