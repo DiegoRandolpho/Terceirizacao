@@ -628,7 +628,6 @@ function BranchManagement({ userId, userRole, showToast }) {
                 );
             }
            function EquipmentManagement({ userId, showToast }) {
-              // Estados do formulário e da página (permanecem os mesmos)
               const [newPlate, setNewPlate] = React.useState('');
               const [newModel, setNewModel] = React.useState('');
               const [newBrand, setNewBrand] = React.useState('');
@@ -640,10 +639,9 @@ function BranchManagement({ userId, userRole, showToast }) {
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
               const [editingEquipment, setEditingEquipment] = React.useState(null);
-              const [searchTerm, setSearchTerm] = React.useState('');
+              const [searchTerm, setSearchTerm] = React.useState(''); // A lógica de busca já existia
               const [showForm, setShowForm] = React.useState(false);
 
-              // Funções auxiliares (isColorLight, getTypeBadgeStyle) permanecem as mesmas
               const isColorLight = (hexColor) => {
                   if (!hexColor) return false;
                   const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
@@ -659,7 +657,6 @@ function BranchManagement({ userId, userRole, showToast }) {
                   return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
               };
 
-              // useEffect para buscar dados iniciais (permanece o mesmo)
               React.useEffect(() => {
                 const fetchInitialData = async () => {
                   setIsLoading(true);
@@ -681,7 +678,6 @@ function BranchManagement({ userId, userRole, showToast }) {
                 fetchInitialData();
               }, [showToast]);
 
-              // --- INÍCIO DA ALTERAÇÃO 1 ---
               const handleAddEquipment = async (e) => {
                 e.preventDefault();
                 if (!newPlate.trim() || !newModel.trim() || !newBrand.trim() || !newChassis.trim() || !newEquipmentType) {
@@ -691,34 +687,14 @@ function BranchManagement({ userId, userRole, showToast }) {
                 setIsLoading(true);
                 try {
                   const plateToCheck = newPlate.trim().toUpperCase();
-
-                  // --- INÍCIO DA TRAVA DE DUPLICIDADE ---
-                  const { data: existing, error: checkError } = await supabase
-                    .from('equipamentos')
-                    .select('plate')
-                    .eq('plate', plateToCheck)
-                    .single(); // .single() é mais eficiente para checar existência
-                  
-                  if (checkError && checkError.code !== 'PGRST116') { // Ignora o erro 'PGRST116' que significa "não encontrado"
-                      throw checkError;
-                  }
-
+                  const { data: existing, error: checkError } = await supabase.from('equipamentos').select('plate').eq('plate', plateToCheck).single();
+                  if (checkError && checkError.code !== 'PGRST116') throw checkError;
                   if (existing) {
                     showToast("Placa já cadastrada no sistema.", "error");
                     setIsLoading(false);
-                    return; // Interrompe a execução
+                    return;
                   }
-                  // --- FIM DA TRAVA DE DUPLICIDADE ---
-
-                  await supabase.from('equipamentos').insert([{ 
-                      plate: plateToCheck, // Salva a placa em maiúsculas
-                      model: newModel.trim(), 
-                      brand: newBrand.trim(), 
-                      chassis: newChassis.trim(), 
-                      type: newEquipmentType, 
-                      created_by_username: userId 
-                  }]);
-
+                  await supabase.from('equipamentos').insert([{ plate: plateToCheck, model: newModel.trim(), brand: newBrand.trim(), chassis: newChassis.trim(), type: newEquipmentType, created_by_username: userId }]);
                   showToast("Equipamento adicionado com sucesso!", "success");
                   setNewPlate(''); setNewModel(''); setNewBrand(''); setNewChassis(''); setNewEquipmentType(''); setShowForm(false);
                   const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
@@ -733,40 +709,19 @@ function BranchManagement({ userId, userRole, showToast }) {
               const handleCancelEdit = () => { setEditingEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
               
-              // --- INÍCIO DA ALTERAÇÃO 2 ---
               const handleUpdateEquipment = async () => {
                 if (!editingEquipment) return;
                 setIsLoading(true);
                 try {
                   const plateToCheck = editingEquipment.plate.trim().toUpperCase();
-
-                  // --- INÍCIO DA TRAVA DE DUPLICIDADE NA ATUALIZAÇÃO ---
-                  const { data: existing, error: checkError } = await supabase
-                    .from('equipamentos')
-                    .select('plate')
-                    .eq('plate', plateToCheck)
-                    .neq('id', editingEquipment.id) // Procura a placa em TODOS os outros registros, exceto o que está sendo editado
-                    .single();
-
-                  if (checkError && checkError.code !== 'PGRST116') {
-                      throw checkError;
-                  }
-
+                  const { data: existing, error: checkError } = await supabase.from('equipamentos').select('plate').eq('plate', plateToCheck).neq('id', editingEquipment.id).single();
+                  if (checkError && checkError.code !== 'PGRST116') throw checkError;
                   if (existing) {
                       showToast("Esta placa já pertence a outro equipamento.", "error");
                       setIsLoading(false);
-                      return; // Interrompe a atualização
+                      return;
                   }
-                  // --- FIM DA TRAVA DE DUPLICIDADE NA ATUALIZAÇÃO ---
-
-                  await supabase.from('equipamentos').update({ 
-                      plate: plateToCheck, 
-                      model: editingEquipment.model.trim(), 
-                      brand: editingEquipment.brand.trim(), 
-                      chassis: editingEquipment.chassis.trim(), 
-                      type: editingEquipment.type 
-                  }).eq('id', editingEquipment.id);
-
+                  await supabase.from('equipamentos').update({ plate: plateToCheck, model: editingEquipment.model.trim(), brand: editingEquipment.brand.trim(), chassis: editingEquipment.chassis.trim(), type: editingEquipment.type }).eq('id', editingEquipment.id);
                   showToast("Equipamento atualizado!", "success");
                   setEditingEquipment(null);
                   const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
@@ -799,7 +754,6 @@ function BranchManagement({ userId, userRole, showToast }) {
                   Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
 
-              // O JSX (return) permanece exatamente o mesmo, não precisa ser alterado.
               return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Equipamentos"),
                 !showForm && React.createElement('div', { className: "flex justify-center mb-6" }, React.createElement('button', { onClick: () => setShowForm(true), className: "p-2 bg-blue-600 text-white rounded" }, "Cadastrar Novo Equipamento")),
@@ -817,6 +771,16 @@ function BranchManagement({ userId, userRole, showToast }) {
                         React.createElement('button', { type: "button", onClick: () => setShowForm(false), className: "p-2 bg-gray-300 rounded" }, "Cancelar")
                     )
                 ),
+
+                // --- ADICIONADO: Campo de busca reinserido aqui ---
+                React.createElement('input', {
+                    type: "text",
+                    placeholder: "Buscar por Placa, Modelo, Marca, Chassi ou Tipo...",
+                    value: searchTerm,
+                    onChange: (e) => setSearchTerm(e.target.value),
+                    className: "w-full p-2 border rounded mb-4"
+                }),
+        
                 React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
                     React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
                         React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
