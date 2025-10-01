@@ -996,19 +996,27 @@ function UserManagement({ userId, showToast }) {
 
 /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
 
+/* INÍCIO DA FUNÇÃO CORRIGIDA E ATUALIZADA */
+
 function ConcessionManagement({ userId, userRole, showToast }) {
     const [concessions, setConcessions] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showForm, setShowForm] = React.useState(false);
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentConcession, setCurrentConcession] = React.useState(null);
+
+    // ALTERAÇÃO 1: Adicionado 'data_fim' ao estado do formulário
     const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '', data_fim: '' };
     const [formData, setFormData] = React.useState(initialFormState);
+
     const [allPlates, setAllPlates] = React.useState([]);
     const [allTerceiros, setAllTerceiros] = React.useState([]);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
     const [concessionToEnd, setConcessionToEnd] = React.useState(null);
+
+    // ALTERAÇÃO 2: Adicionado estado para controlar o campo de busca de terceiro
+    const [terceiroSearch, setTerceiroSearch] = React.useState('');
 
     const formatDate = (dateString) => {
         if (!dateString) return '—';
@@ -1016,7 +1024,6 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         return date.toLocaleDateString('pt-BR');
     };
 
-    // NOVO: Função para as tags de tipo de implemento
     const getTypeBadgeClasses = (type) => {
         switch (type) {
             case 'BOMBA': return 'bg-blue-100 text-blue-800';
@@ -1025,14 +1032,13 @@ function ConcessionManagement({ userId, userRole, showToast }) {
             default: return 'bg-gray-100 text-gray-800';
         }
     };
-    
-    // NOVO: Função para a tag de status da concessão
+
     const getConcessionStatusBadge = (isFinished) => {
         const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
         if (isFinished) {
             return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, "Encerrada");
         }
-        return null; // Retorna nulo se não estiver encerrada para mostrar os botões
+        return null;
     };
 
     const fetchAllData = React.useCallback(async () => {
@@ -1040,6 +1046,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
         try {
             const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
                 supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
+                // ALTERAÇÃO 3: Corrigido 'nome' para 'nome_completo' na busca
                 supabase.from('terceiros').select('codSAP, apelido, cnpj, nome_completo, cpf'),
                 supabase.from('equipamentos').select('plate, type')
             ]);
@@ -1051,8 +1058,9 @@ function ConcessionManagement({ userId, userRole, showToast }) {
             const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
             const terceirosMap = new Map(terceirosRes.data.map(t => [t.codSAP, t]));
             const joinedData = concessaoRes.data.map(c => {
-                const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome: 'N/A', cpf: 'N/A' };
+                const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome_completo: 'N/A', cpf: 'N/A' };
                 const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
+                // E também na junção dos dados
                 return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome_completo, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
             });
             setConcessions(joinedData);
@@ -1066,22 +1074,38 @@ function ConcessionManagement({ userId, userRole, showToast }) {
 
     const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+    // ALTERAÇÃO 2 (continuação): Nova função para lidar com a busca de terceiro
+    const handleTerceiroChange = (e) => {
+        const searchValue = e.target.value;
+        setTerceiroSearch(searchValue);
+
+        // Tenta encontrar o codSAP dentro do valor selecionado, ex: "APELIDO (12345)"
+        const match = searchValue.match(/\(([^)]+)\)$/);
+        if (match) {
+            const codSAP = match[1];
+            setFormData(prev => ({ ...prev, codSAP: codSAP }));
+        } else {
+             setFormData(prev => ({ ...prev, codSAP: '' }));
+        }
+    };
+
+
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
-            showToast("Por favor, preencha todos os campos obrigatórios.", "error");
+            showToast("Por favor, preencha os campos obrigatórios.", "error");
             return;
         }
         setIsLoading(true);
         try {
-            // Adiciona data_fim ao registro, tratando o campo vazio como nulo
-const record = { 
-    placa: formData.placa, 
-    codSAP: formData.codSAP, 
-    valorfixo: parseFloat(formData.valorfixo), 
-    data_inicio: formData.data_inicio,
-    data_fim: formData.data_fim || null 
-};
+            // ALTERAÇÃO 1 (continuação): Incluído 'data_fim' no registro a ser salvo
+            const record = {
+                placa: formData.placa,
+                codSAP: formData.codSAP,
+                valorfixo: parseFloat(formData.valorfixo),
+                data_inicio: formData.data_inicio,
+                data_fim: formData.data_fim || null
+            };
             if (isEditing) {
                 const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
                 if (error) throw error;
@@ -1094,6 +1118,7 @@ const record = {
             setShowForm(false);
             setIsEditing(false);
             setFormData(initialFormState);
+            setTerceiroSearch(''); // Limpa o campo de busca
             fetchAllData();
         } catch (err) {
             showToast(`Erro ao salvar concessão: ${err.message}`, "error");
@@ -1102,32 +1127,44 @@ const record = {
     };
 
     const handleEditClick = (concession) => {
-    setIsEditing(true);
-    setCurrentConcession(concession);
-    // Lógica para formatar as datas de início e fim (se existir)
-    const startDate = concession.data_inicio ? new Date(concession.data_inicio).toISOString().split('T')[0] : '';
-    const endDate = concession.data_fim ? new Date(concession.data_fim).toISOString().split('T')[0] : '';
-    setFormData({ 
-        placa: concession.placa, 
-        codSAP: concession.codSAP, 
-        valorfixo: concession.valorfixo, 
-        data_inicio: startDate,
-        data_fim: endDate // Campo adicionado
-    });
-    setShowForm(true);
-};
-    
+        setIsEditing(true);
+        setCurrentConcession(concession);
+        
+        // ALTERAÇÃO 1 (continuação): Lógica para carregar 'data_fim' na edição
+        const startDate = concession.data_inicio ? new Date(concession.data_inicio).toISOString().split('T')[0] : '';
+        const endDate = concession.data_fim ? new Date(concession.data_fim).toISOString().split('T')[0] : '';
+        
+        setFormData({
+            placa: concession.placa,
+            codSAP: concession.codSAP,
+            valorfixo: concession.valorfixo,
+            data_inicio: startDate,
+            data_fim: endDate
+        });
+
+        // ALTERAÇÃO 2 (continuação): Preenche o campo de busca com o apelido correto ao editar
+        const terceiroCorrespondente = allTerceiros.find(t => t.codSAP === concession.codSAP);
+        if (terceiroCorrespondente) {
+            setTerceiroSearch(`${terceiroCorrespondente.apelido} (${terceiroCorrespondente.codSAP})`);
+        } else {
+            setTerceiroSearch('');
+        }
+
+        setShowForm(true);
+    };
+
     const handleCancel = () => {
         setShowForm(false);
         setIsEditing(false);
         setFormData(initialFormState);
+        setTerceiroSearch(''); // Limpa o campo de busca
     };
 
     const confirmEndConcession = (concession) => {
         setConcessionToEnd(concession);
         setShowConfirmModal(true);
     };
-    
+
     const handleEndConcession = async () => {
         if (!concessionToEnd) return;
         setIsLoading(true);
@@ -1152,36 +1189,53 @@ const record = {
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
         userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
-            React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
-                React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
+            React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); setTerceiroSearch(''); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
+                React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
                 "Nova Concessão"
             )
         ),
-        showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
-            React.createElement('select', { name: "placa", value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded" },
-                React.createElement('option', { value: "" }, "Selecione a Placa"),
-                allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+
+        // ALTERAÇÃO 4: Formulário com todos os campos novos e corrigidos
+        showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+            // Campo de Placa pesquisável
+            React.createElement('div', null,
+                React.createElement('input', {
+                    name: "placa", value: formData.placa, onChange: handleInputChange,
+                    className: "w-full p-2 border rounded", placeholder: "Digite para pesquisar a placa...",
+                    list: "lista-de-placas", required: true
+                }),
+                React.createElement('datalist', { id: "lista-de-placas" },
+                    allPlates.map(p => React.createElement('option', { key: p, value: p }))
+                )
             ),
-            React.createElement('select', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded" },
-                React.createElement('option', { value: "" }, "Selecione o Terceiro"),
-                allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+            // Campo de Terceiro (apelido) pesquisável
+            React.createElement('div', null,
+                 React.createElement('input', {
+                    name: "terceiro", value: terceiroSearch, onChange: handleTerceiroChange,
+                    className: "w-full p-2 border rounded", placeholder: "Pesquise o apelido do terceiro...",
+                    list: "lista-de-terceiros", required: true
+                }),
+                React.createElement('datalist', { id: "lista-de-terceiros" },
+                    allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: `${t.apelido} (${t.codSAP})` }))
+                )
             ),
-            React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded" }),
-            React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, placeholder: "Data Fim (Opcional)", className: "p-2 border rounded" }),
-            React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
+            // Outros campos
+            React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true }),
+            React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
+            // Novo campo de Data Fim
+            React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded" }),
+
+            React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
                 React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                 React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
             )
         ),
         React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-    
-        // ATUALIZADO: Tabela com novo estilo
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
+                        ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome Completo", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
                         userRole === 'administrador' && React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
                     )
                 ),
@@ -1202,7 +1256,7 @@ const record = {
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
                             userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
                                 c.data_fim ? getConcessionStatusBadge(true) :
-                                React.createElement('div', { className: 'flex justify-center gap-x-4'},
+                                React.createElement('div', { className: 'flex justify-center gap-x-4' },
                                     React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
                                     React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
                                 )
@@ -1215,6 +1269,8 @@ const record = {
         showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
     );
 }
+
+/* FIM DA FUNÇÃO CORRIGIDA E ATUALIZADA */
 /* INÍCIO DO CÓDIGO PARA REINSERIR O WhatsAppButton */
 
 function WhatsAppButton({ phoneNumber, message }) {
