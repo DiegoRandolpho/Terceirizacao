@@ -628,7 +628,7 @@ function BranchManagement({ userId, userRole, showToast }) {
                 );
             }
            function EquipmentManagement({ userId, showToast }) {
-              // Estados do formulário e da página
+              // Estados do formulário e da página (permanecem os mesmos)
               const [newPlate, setNewPlate] = React.useState('');
               const [newModel, setNewModel] = React.useState('');
               const [newBrand, setNewBrand] = React.useState('');
@@ -643,63 +643,82 @@ function BranchManagement({ userId, userRole, showToast }) {
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
 
-              // ADICIONADO DE VOLTA: Função para verificar se a cor é clara ou escura
+              // Funções auxiliares (isColorLight, getTypeBadgeStyle) permanecem as mesmas
               const isColorLight = (hexColor) => {
                   if (!hexColor) return false;
                   const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
-                  const r = parseInt(color.substring(0, 2), 16); // Red
-                  const g = parseInt(color.substring(2, 4), 16); // Green
-                  const b = parseInt(color.substring(4, 6), 16); // Blue
+                  const r = parseInt(color.substring(0, 2), 16);
+                  const g = parseInt(color.substring(2, 4), 16);
+                  const b = parseInt(color.substring(4, 6), 16);
                   return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
               };
-
-              // ADICIONADO DE VOLTA: Função de estilo que usa a coluna 'cor' do banco
               const getTypeBadgeStyle = (typeDescricao) => {
                   const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
-                  const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cinza padrão se não encontrar
-                  const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff'; // Preto para fundos claros, branco para escuros
-                  
-                  return {
-                      backgroundColor: bgColor,
-                      color: textColor,
-                      border: `1px solid ${bgColor}`
-                  };
+                  const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6';
+                  const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
+                  return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
               };
 
+              // useEffect para buscar dados iniciais (permanece o mesmo)
               React.useEffect(() => {
                 const fetchInitialData = async () => {
                   setIsLoading(true);
                   try {
                     const [equipmentRes, tiposRes] = await Promise.all([
                         supabase.from('equipamentos').select('*').order('created_at', { ascending: false }),
-                        // ALTERADO: Adicionada a seleção da coluna 'cor' novamente
                         supabase.from('tipos_implemento').select('id, descricao, cor').is('ativo', true).order('descricao')
                     ]);
       
                     if (equipmentRes.error) throw equipmentRes.error;
                     if (tiposRes.error) throw tiposRes.error;
-
                     setEquipmentList(equipmentRes.data);
                     setTiposImplemento(tiposRes.data);
-
                   } catch (err) {
-                    showToast("Erro ao carregar dados. Verifique o console.", "error");
-                    console.error("ERRO DETALHADO:", err);
+                    showToast("Erro ao carregar dados iniciais da página.", "error");
                   }
                   setIsLoading(false);
                 };
                 fetchInitialData();
               }, [showToast]);
-              
-              // (As funções de handleAdd, handleUpdate, handleDelete, etc. não precisam de alteração)
+
+              // --- INÍCIO DA ALTERAÇÃO 1 ---
               const handleAddEquipment = async (e) => {
                 e.preventDefault();
                 if (!newPlate.trim() || !newModel.trim() || !newBrand.trim() || !newChassis.trim() || !newEquipmentType) {
-                  showToast("Preencha todos os campos.", "error"); return;
+                  showToast("Preencha todos os campos.", "error");
+                  return;
                 }
                 setIsLoading(true);
                 try {
-                  await supabase.from('equipamentos').insert([{ plate: newPlate.trim(), model: newModel.trim(), brand: newBrand.trim(), chassis: newChassis.trim(), type: newEquipmentType, created_by_username: userId }]);
+                  const plateToCheck = newPlate.trim().toUpperCase();
+
+                  // --- INÍCIO DA TRAVA DE DUPLICIDADE ---
+                  const { data: existing, error: checkError } = await supabase
+                    .from('equipamentos')
+                    .select('plate')
+                    .eq('plate', plateToCheck)
+                    .single(); // .single() é mais eficiente para checar existência
+                  
+                  if (checkError && checkError.code !== 'PGRST116') { // Ignora o erro 'PGRST116' que significa "não encontrado"
+                      throw checkError;
+                  }
+
+                  if (existing) {
+                    showToast("Placa já cadastrada no sistema.", "error");
+                    setIsLoading(false);
+                    return; // Interrompe a execução
+                  }
+                  // --- FIM DA TRAVA DE DUPLICIDADE ---
+
+                  await supabase.from('equipamentos').insert([{ 
+                      plate: plateToCheck, // Salva a placa em maiúsculas
+                      model: newModel.trim(), 
+                      brand: newBrand.trim(), 
+                      chassis: newChassis.trim(), 
+                      type: newEquipmentType, 
+                      created_by_username: userId 
+                  }]);
+
                   showToast("Equipamento adicionado com sucesso!", "success");
                   setNewPlate(''); setNewModel(''); setNewBrand(''); setNewChassis(''); setNewEquipmentType(''); setShowForm(false);
                   const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
@@ -709,14 +728,45 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(false);
               };
+
               const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); };
               const handleCancelEdit = () => { setEditingEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
+              
+              // --- INÍCIO DA ALTERAÇÃO 2 ---
               const handleUpdateEquipment = async () => {
                 if (!editingEquipment) return;
                 setIsLoading(true);
                 try {
-                  await supabase.from('equipamentos').update({ plate: editingEquipment.plate.trim(), model: editingEquipment.model.trim(), brand: editingEquipment.brand.trim(), chassis: editingEquipment.chassis.trim(), type: editingEquipment.type }).eq('id', editingEquipment.id);
+                  const plateToCheck = editingEquipment.plate.trim().toUpperCase();
+
+                  // --- INÍCIO DA TRAVA DE DUPLICIDADE NA ATUALIZAÇÃO ---
+                  const { data: existing, error: checkError } = await supabase
+                    .from('equipamentos')
+                    .select('plate')
+                    .eq('plate', plateToCheck)
+                    .neq('id', editingEquipment.id) // Procura a placa em TODOS os outros registros, exceto o que está sendo editado
+                    .single();
+
+                  if (checkError && checkError.code !== 'PGRST116') {
+                      throw checkError;
+                  }
+
+                  if (existing) {
+                      showToast("Esta placa já pertence a outro equipamento.", "error");
+                      setIsLoading(false);
+                      return; // Interrompe a atualização
+                  }
+                  // --- FIM DA TRAVA DE DUPLICIDADE NA ATUALIZAÇÃO ---
+
+                  await supabase.from('equipamentos').update({ 
+                      plate: plateToCheck, 
+                      model: editingEquipment.model.trim(), 
+                      brand: editingEquipment.brand.trim(), 
+                      chassis: editingEquipment.chassis.trim(), 
+                      type: editingEquipment.type 
+                  }).eq('id', editingEquipment.id);
+
                   showToast("Equipamento atualizado!", "success");
                   setEditingEquipment(null);
                   const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
@@ -726,7 +776,9 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(false);
               };
+
               const confirmDeleteEquipment = (eq) => { setEquipmentToDelete(eq); setShowConfirmModal(true); };
+
               const handleDeleteEquipment = async () => {
                 if (!equipmentToDelete) return;
                 setIsLoading(true);
@@ -742,10 +794,12 @@ function BranchManagement({ userId, userRole, showToast }) {
                 setShowConfirmModal(false);
                 setEquipmentToDelete(null);
               };
+              
               const filteredEquipmentList = equipmentList.filter(eq =>
                   Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
 
+              // O JSX (return) permanece exatamente o mesmo, não precisa ser alterado.
               return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Equipamentos"),
                 !showForm && React.createElement('div', { className: "flex justify-center mb-6" }, React.createElement('button', { onClick: () => setShowForm(true), className: "p-2 bg-blue-600 text-white rounded" }, "Cadastrar Novo Equipamento")),
@@ -796,10 +850,9 @@ function BranchManagement({ userId, userRole, showToast }) {
                                         React.createElement('td', { className: "px-6 py-4" }, eq.model),
                                         React.createElement('td', { className: "px-6 py-4" }, eq.brand),
                                         React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
-                                        // ALTERADO: A badge agora usa o estilo dinâmico vindo da função getTypeBadgeStyle
                                         React.createElement('td', { className: "px-6 py-4" },
                                             React.createElement('span', {
-                                                style: getTypeBadgeStyle(eq.type), // Usa estilo inline
+                                                style: getTypeBadgeStyle(eq.type),
                                                 className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
                                             }, eq.type)
                                         ),
