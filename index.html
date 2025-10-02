@@ -1875,22 +1875,20 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
             }
 /* INÍCIO DO NOVO COMPONENTE DashboardFinanceiro */
 
+/* INÍCIO DO COMPONENTE DashboardFinanceiro COMPLETO */
+
 function DashboardFinanceiro({ showToast }) {
-    // Estados para filtros e dados
     const [periodo, setPeriodo] = React.useState('');
     const [periodOptions, setPeriodOptions] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
-    
-    // Estados para os KPIs e dados dos gráficos
     const [kpis, setKpis] = React.useState({ total: 0, media: 0 });
     const [rankingPlacas, setRankingPlacas] = React.useState([]);
     const [custoPorTipo, setCustoPorTipo] = React.useState([]);
-
-    // Referências para os gráficos para que possam ser destruídos e recriados
+    const [relatorioErros, setRelatorioErros] = React.useState({ count: 0, total: 0, items: [] });
+    
     const barChartRef = React.useRef(null);
     const pieChartRef = React.useRef(null);
 
-    // Efeito para gerar as opções de período (Mês/Ano)
     React.useEffect(() => {
         const options = [];
         const today = new Date();
@@ -1902,20 +1900,29 @@ function DashboardFinanceiro({ showToast }) {
         setPeriodo(`${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`);
     }, []);
 
-    // Efeito principal para buscar e processar os dados quando o período muda
     React.useEffect(() => {
         if (!periodo) return;
 
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // 1. Busca todas as despesas do período
                 const { data: expensesData, error: expensesError } = await supabase
                     .from('despesas_manutencao')
-                    .select('placa, valor')
+                    .select('id, placa, valor, erro_lancamento, descricao')
                     .eq('periodo_referencia', periodo);
                 if (expensesError) throw expensesError;
-                if (!expensesData || expensesData.length === 0) {
+
+                const validExpenses = (expensesData || []).filter(e => !e.erro_lancamento);
+                const errorExpenses = (expensesData || []).filter(e => e.erro_lancamento);
+
+                const totalErros = errorExpenses.reduce((sum, item) => sum + (item.valor || 0), 0);
+                setRelatorioErros({
+                    count: errorExpenses.length,
+                    total: totalErros,
+                    items: errorExpenses.sort((a,b) => a.valor - b.valor)
+                });
+
+                if (validExpenses.length === 0) {
                     setKpis({ total: 0, media: 0 });
                     setRankingPlacas([]);
                     setCustoPorTipo([]);
@@ -1923,47 +1930,26 @@ function DashboardFinanceiro({ showToast }) {
                     return;
                 }
 
-                // 2. Busca os tipos de todos os equipamentos para o JOIN manual
-                const { data: equipamentosData, error: equipamentosError } = await supabase
-                    .from('equipamentos')
-                    .select('plate, type');
+                const { data: equipamentosData, error: equipamentosError } = await supabase.from('equipamentos').select('plate, type');
                 if (equipamentosError) throw equipamentosError;
                 const plateTypeMap = new Map(equipamentosData.map(eq => [eq.plate, eq.type]));
 
-                // 3. Processa os dados
                 let totalDespesas = 0;
                 const despesasPorPlaca = {};
                 const despesasPorTipo = {};
 
-                for (const despesa of expensesData) {
+                for (const despesa of validExpenses) {
                     totalDespesas += despesa.valor || 0;
-                    
-                    // Agrupa por placa
                     despesasPorPlaca[despesa.placa] = (despesasPorPlaca[despesa.placa] || 0) + despesa.valor;
-
-                    // Agrupa por tipo de implemento
                     const tipo = plateTypeMap.get(despesa.placa) || 'Não Identificado';
                     despesasPorTipo[tipo] = (despesasPorTipo[tipo] || 0) + despesa.valor;
                 }
-
-                // 4. Prepara os dados para os estados e gráficos
-                // KPIs
+                
                 const numEquipamentosComDespesa = Object.keys(despesasPorPlaca).length;
-                setKpis({
-                    total: totalDespesas,
-                    media: numEquipamentosComDespesa > 0 ? totalDespesas / numEquipamentosComDespesa : 0
-                });
-
-                // Ranking para o gráfico de barras
-                const rankingArray = Object.entries(despesasPorPlaca)
-                    .map(([placa, total]) => ({ placa, total }))
-                    .sort((a, b) => b.total - a.total)
-                    .slice(0, 10);
+                setKpis({ total: totalDespesas, media: numEquipamentosComDespesa > 0 ? totalDespesas / numEquipamentosComDespesa : 0 });
+                const rankingArray = Object.entries(despesasPorPlaca).map(([placa, total]) => ({ placa, total })).sort((a, b) => a.total - b.total).slice(0, 10);
                 setRankingPlacas(rankingArray);
-
-                // Dados para o gráfico de pizza
-                const custoPorTipoArray = Object.entries(despesasPorTipo)
-                     .map(([tipo, total]) => ({ tipo, total }));
+                const custoPorTipoArray = Object.entries(despesasPorTipo).map(([tipo, total]) => ({ tipo, total }));
                 setCustoPorTipo(custoPorTipoArray);
 
             } catch (err) {
@@ -1971,17 +1957,15 @@ function DashboardFinanceiro({ showToast }) {
             }
             setIsLoading(false);
         };
-
         fetchData();
     }, [periodo, showToast]);
 
-    // Efeito para desenhar/atualizar os gráficos quando os dados mudarem
     React.useEffect(() => {
-        // Destroi gráficos antigos antes de desenhar novos
         if (barChartRef.current) barChartRef.current.destroy();
         if (pieChartRef.current) pieChartRef.current.destroy();
 
-        // Gráfico de Barras
+        const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
         if (rankingPlacas.length > 0) {
             const barCtx = document.getElementById('rankingDespesasChart').getContext('2d');
             barChartRef.current = new Chart(barCtx, {
@@ -1997,14 +1981,20 @@ function DashboardFinanceiro({ showToast }) {
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // Deixa as barras na horizontal para melhor leitura
+                    indexAxis: 'y',
                     responsive: true,
-                    plugins: { legend: { display: false } }
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => currencyFormatter.format(context.raw)
+                            }
+                        }
+                    }
                 }
             });
         }
         
-        // Gráfico de Pizza
         if (custoPorTipo.length > 0) {
             const pieCtx = document.getElementById('custoPorTipoChart').getContext('2d');
             pieChartRef.current = new Chart(pieCtx, {
@@ -2016,50 +2006,96 @@ function DashboardFinanceiro({ showToast }) {
                         backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#6B7280', '#EF4444'],
                     }]
                 },
-                options: { responsive: true }
+                options: { 
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.label}: ${currencyFormatter.format(context.raw)}`
+                            }
+                        }
+                    }
+                }
             });
         }
     }, [rankingPlacas, custoPorTipo]);
+    
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    }
 
-    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-center mb-6" },
-            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Dashboard Financeiro de Manutenção"),
-            React.createElement('select', { 
-                value: periodo, 
-                onChange: e => setPeriodo(e.target.value), 
-                className: "w-full sm:w-auto mt-4 sm:mt-0 p-2 border rounded-md shadow-sm" 
-            }, periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt)))
-        ),
-
-        // Cards de KPI
-        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" },
-            React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
-                React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, "Custo Total no Mês"),
-                isLoading ? React.createElement('div', { className: "h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" }) :
-                React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, `R$ ${kpis.total.toFixed(2).replace('.', ',')}`)
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg space-y-8" },
+        React.createElement('div', null, 
+            React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-center mb-6" },
+                React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Dashboard Financeiro de Manutenção"),
+                React.createElement('select', { 
+                    value: periodo, 
+                    onChange: e => setPeriodo(e.target.value), 
+                    className: "w-full sm:w-auto mt-4 sm:mt-0 p-2 border rounded-md shadow-sm" 
+                }, periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt)))
             ),
-            React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
-                React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, "Média por Equipamento"),
-                isLoading ? React.createElement('div', { className: "h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" }) :
-                React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, `R$ ${kpis.media.toFixed(2).replace('.', ',')}`)
+            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" },
+                React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, "Custo Total Válido no Mês"),
+                    isLoading ? React.createElement('div', { className: "h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" }) :
+                    React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, formatCurrency(kpis.total))
+                ),
+                React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, "Média por Equipamento"),
+                    isLoading ? React.createElement('div', { className: "h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" }) :
+                    React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, formatCurrency(kpis.media))
+                )
+            ),
+            React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-5 gap-6" },
+                React.createElement('div', { className: "lg:col-span-3 bg-slate-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-lg font-semibold text-slate-700 mb-4" }, "Top 10 Equipamentos com Mais Despesas"),
+                    React.createElement('canvas', { id: 'rankingDespesasChart' })
+                ),
+                React.createElement('div', { className: "lg:col-span-2 bg-slate-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-lg font-semibold text-slate-700 mb-4" }, "Distribuição de Custo por Implemento"),
+                    React.createElement('canvas', { id: 'custoPorTipoChart' })
+                )
             )
         ),
-        
-        // Área dos Gráficos
-        React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-5 gap-6" },
-             React.createElement('div', { className: "lg:col-span-3 bg-slate-50 p-6 rounded-lg shadow-sm" },
-                React.createElement('h3', { className: "text-lg font-semibold text-slate-700 mb-4" }, "Top 10 Equipamentos com Mais Despesas"),
-                React.createElement('canvas', { id: 'rankingDespesasChart' })
-             ),
-             React.createElement('div', { className: "lg:col-span-2 bg-slate-50 p-6 rounded-lg shadow-sm" },
-                React.createElement('h3', { className: "text-lg font-semibold text-slate-700 mb-4" }, "Distribuição de Custo por Implemento"),
-                React.createElement('canvas', { id: 'custoPorTipoChart' })
+        React.createElement('div', { className: "mt-8" },
+            React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-4" }, "Relatório de Erros de Lançamento"),
+            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-6" },
+                React.createElement('div', { className: "bg-red-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-red-600 font-semibold uppercase text-sm" }, "Total de Lançamentos com Erro"),
+                    isLoading ? React.createElement('div', { className: "h-8 w-16 bg-red-200 rounded animate-pulse mt-2" }) :
+                    React.createElement('p', { className: "text-3xl font-bold text-red-800 mt-1" }, relatorioErros.count)
+                ),
+                React.createElement('div', { className: "bg-red-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-red-600 font-semibold uppercase text-sm" }, "Valor Total em Erros"),
+                    isLoading ? React.createElement('div', { className: "h-8 w-32 bg-red-200 rounded animate-pulse mt-2" }) :
+                    React.createElement('p', { className: "text-3xl font-bold text-red-800 mt-1" }, formatCurrency(relatorioErros.total))
+                )
+            ),
+            React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                    React.createElement('thead', { className: "text-xs text-red-700 uppercase bg-red-100" },
+                        React.createElement('tr', null,
+                            ["Placa", "Descrição", "Valor"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        )
+                    ),
+                    React.createElement('tbody', null,
+                        isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center" }, "Carregando...")) :
+                        relatorioErros.items.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center text-slate-500" }, "Nenhum erro de lançamento encontrado para este período.")) :
+                        relatorioErros.items.map(item =>
+                            React.createElement('tr', { key: item.id, className: "hover:bg-red-50" },
+                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.placa),
+                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.descricao),
+                                React.createElement('td', { className: "px-6 py-4" }, formatCurrency(item.valor))
+                            )
+                        )
+                    )
+                )
             )
         )
     );
 }
 
-/* FIM DO NOVO COMPONENTE DashboardFinanceiro */
+/* FIM DO COMPONENTE DashboardFinanceiro COMPLETO */
                        function Dashboard({ userId, showToast }) {
                 const [equipmentCounts, setEquipmentCounts] = React.useState({});
                 const [registros, setRegistros] = React.useState([]);
@@ -3486,6 +3522,8 @@ function PlateHistory({ showToast }) {
     );
 }
 
+/* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA */
+
 function ExpenseQuery({ userId, userRole, showToast }) {
     const [periodo, setPeriodo] = React.useState('');
     const [placa, setPlaca] = React.useState('');
@@ -3495,6 +3533,10 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     const [file, setFile] = React.useState(null);
     const [hasSearched, setHasSearched] = React.useState(false);
 
+    // Estados para o modal de confirmação
+    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+    const [expenseToFlag, setExpenseToFlag] = React.useState(null);
+
     const formatPeriodo = (value) => {
         const cleaned = ('' + value).replace(/[^\d]/g, '');
         const truncated = cleaned.slice(0, 6);
@@ -3503,7 +3545,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         }
         return truncated;
     };
-
+    
     const handleSearch = async () => {
         if (!periodo && !placa) {
             showToast("Informe um Período ou uma Placa para buscar.", "error");
@@ -3521,9 +3563,10 @@ function ExpenseQuery({ userId, userRole, showToast }) {
             try {
                 let query = supabase
                     .from('despesas_manutencao')
-                    .select('*')
+                    .select('*') // Busca todas as colunas, incluindo a nova 'erro_lancamento'
                     .order('placa')
                     .range(from, to);
+
                 if (periodo) {
                     query = query.eq('periodo_referencia', periodo);
                 }
@@ -3547,7 +3590,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         setExpenses(allResults);
         setIsLoading(false);
     };
-
+    
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
@@ -3572,8 +3615,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet);
-
-                // ATUALIZADO: Lógica de mapeamento para incluir o "Total" como "valor"
                 const dataToInsert = json
                     .filter(row => row['Tipo Lancamento'] == 2)
                     .map(row => ({
@@ -3582,8 +3623,8 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                         ordem_manutencao: row['Fatura/Doc.Contab'],
                         pedido: row['Pedido'],
                         descricao: row['Material'],
-                        // NOVO: Adiciona o campo "valor" buscando da coluna "Total" do Excel
-                        valor: parseFloat(row['Total']) || 0
+                        valor: parseFloat(row['Total']) || 0,
+                        erro_lancamento: false // Garante que novas importações não sejam erros
                     }));
 
                 if (dataToInsert.length === 0) {
@@ -3603,6 +3644,32 @@ function ExpenseQuery({ userId, userRole, showToast }) {
             setIsImporting(false);
         };
         reader.readAsArrayBuffer(file);
+    };
+    
+    const confirmFlagError = (expense) => {
+        setExpenseToFlag(expense);
+        setShowConfirmModal(true);
+    };
+
+    const handleFlagError = async () => {
+        if (!expenseToFlag) return;
+
+        const newStatus = !expenseToFlag.erro_lancamento;
+        const { error } = await supabase
+            .from('despesas_manutencao')
+            .update({ erro_lancamento: newStatus })
+            .eq('id', expenseToFlag.id);
+
+        if (error) {
+            showToast("Erro ao atualizar o lançamento.", "error");
+        } else {
+            showToast(`Lançamento ${newStatus ? 'marcado como erro' : 'normalizado'}!`, "success");
+            setExpenses(prevExpenses => prevExpenses.map(exp => 
+                exp.id === expenseToFlag.id ? { ...exp, erro_lancamento: newStatus } : exp
+            ));
+        }
+        setShowConfirmModal(false);
+        setExpenseToFlag(null);
     };
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
@@ -3633,41 +3700,47 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 isImporting ? 'Importando...' : 'Importar Dados'
             )
         ),
-
-        // ATUALIZADO: Tabela inteira com o novo estilo visual
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        // ATUALIZADO: Adicionado "Valor" aos cabeçalhos
-                        ["Período", "Placa", "Ordem da Manutenção", "Pedido", "Descrição", "Valor"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        ["Período", "Placa", "Ordem", "Pedido", "Descrição", "Valor", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
                     )
                 ),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
-                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center text-slate-500" }, "Informe um Período ou Placa para iniciar a busca.")) :
-                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
-                    expenses.map(exp =>
-                        React.createElement('tr', { key: exp.id, className: "hover:bg-blue-50 even:bg-slate-50" },
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.periodo_referencia),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, 
-                                React.createElement('span', { className: "font-medium text-slate-800" }, exp.placa)
-                            ),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.ordem_manutencao),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.pedido),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.descricao),
-                            // NOVO: Célula para exibir o valor formatado como moeda
-                            React.createElement('td', { className: "px-6 py-4" }, `R$ ${(exp.valor || 0).toFixed(2).replace('.', ',')}`)
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center" }, "Carregando...")) :
+                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center text-slate-500" }, "Informe um Período ou Placa para iniciar a busca.")) :
+                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
+                    expenses.map(exp => {
+                        const rowClass = exp.erro_lancamento ? "hover:bg-red-100 even:bg-red-50 text-red-700 line-through" : "hover:bg-blue-50 even:bg-slate-50";
+                        return React.createElement('tr', { key: exp.id, className: rowClass },
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.periodo_referencia),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium" }, exp.placa)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.ordem_manutencao),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.pedido),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.descricao),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${(exp.valor || 0).toFixed(2).replace('.', ',')}`),
+                            React.createElement('td', { className: "px-6 py-4 text-center" },
+                                React.createElement('button', {
+                                    onClick: () => confirmFlagError(exp),
+                                    className: `py-1 px-3 text-xs font-bold rounded-full transition ${exp.erro_lancamento ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`,
+                                    title: exp.erro_lancamento ? 'Desfazer marcação de erro' : 'Marcar como erro de lançamento'
+                                }, exp.erro_lancamento ? 'Desfazer' : 'Normalizar')
+                            )
                         )
-                    )
+                    })
                 )
             )
-        )
+        ),
+        showConfirmModal && React.createElement(ConfirmationModal, {
+            message: `Deseja realmente ${expenseToFlag?.erro_lancamento ? 'normalizar este' : 'marcar como erro o'} lançamento da placa "${expenseToFlag?.placa}"?`,
+            onConfirm: handleFlagError,
+            onCancel: () => setShowConfirmModal(false)
+        })
     );
 }
-            /* INÍCIO DO CÓDIGO CORRIGIDO PARA QuickAccessMenu */
 
-/* INÍCIO DO CÓDIGO CORRIGIDO E DEFINITIVO PARA QuickAccessMenu */
+/* FIM DA FUNÇÃO ExpenseQuery COMPLETA */
 
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
 
