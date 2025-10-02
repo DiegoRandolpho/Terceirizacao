@@ -3558,8 +3558,10 @@ function PlateHistory({ showToast }) {
 
 /* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
 
+/* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
+
 function ExpenseQuery({ userId, userRole, showToast }) {
-    // Estados
+    // Estados do componente
     const [periodo, setPeriodo] = React.useState('');
     const [placa, setPlaca] = React.useState('');
     const [expenses, setExpenses] = React.useState([]);
@@ -3570,8 +3572,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
     const [expenseToFlag, setExpenseToFlag] = React.useState(null);
     const [typeFilter, setTypeFilter] = React.useState('Todos');
-    
-    // O estado 'equipmentTypes' agora começa vazio para ser populado dinamicamente
     const [equipmentTypes, setEquipmentTypes] = React.useState([]);
 
     // useEffect para buscar os tipos de implemento existentes ao carregar o componente
@@ -3579,12 +3579,11 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         const fetchTypes = async () => {
             const { data, error } = await supabase.from('equipamentos').select('type');
             if (!error && data) {
-                // Cria uma lista de tipos únicos, remove valores nulos/vazios e ordena
                 const uniqueTypes = [...new Set(data.map(item => item.type).filter(Boolean))].sort();
                 setEquipmentTypes(['Todos', ...uniqueTypes]);
             } else {
                 showToast('Erro ao carregar tipos de implemento.', 'error');
-                setEquipmentTypes(['Todos']); // Define um valor padrão em caso de erro
+                setEquipmentTypes(['Todos']);
             }
         };
         fetchTypes();
@@ -3611,18 +3610,13 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         setExpenses([]);
 
         try {
+            const { data: equipmentData, error: equipmentError } = await supabase.from('equipamentos').select('plate, type');
+            if (equipmentError) throw equipmentError;
+            const plateTypeMap = new Map(equipmentData.map(eq => [eq.plate, eq.type]));
+
             let platesToFilter = null;
-
             if (typeFilter !== 'Todos') {
-                const { data: equipmentData, error: equipmentError } = await supabase
-                    .from('equipamentos')
-                    .select('plate')
-                    .eq('type', typeFilter);
-                
-                if (equipmentError) throw equipmentError;
-
-                platesToFilter = equipmentData.map(eq => eq.plate);
-
+                platesToFilter = equipmentData.filter(eq => eq.type === typeFilter).map(eq => eq.plate);
                 if (platesToFilter.length === 0) {
                     setIsLoading(false);
                     return;
@@ -3637,7 +3631,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 const to = from + pageSize - 1;
                 
                 let query = supabase.from('despesas_manutencao').select('*').order('placa').range(from, to);
-
                 if (periodo) { query = query.eq('periodo_referencia', periodo); }
                 if (placa) { query = query.eq('placa', placa.trim().toUpperCase()); }
                 if (platesToFilter) { query = query.in('placa', platesToFilter); }
@@ -3648,7 +3641,14 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 if (!data || data.length < pageSize) { break; }
                 page++;
             }
-            setExpenses(allResults);
+
+            const expensesWithTypes = allResults.map(expense => ({
+                ...expense,
+                implemento_tipo: plateTypeMap.get(expense.placa) || 'Não Identificado'
+            }));
+
+            setExpenses(expensesWithTypes);
+
         } catch (err) {
             showToast("Erro ao buscar despesas.", "error");
         }
@@ -3776,18 +3776,21 @@ function ExpenseQuery({ userId, userRole, showToast }) {
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        ["Período", "Placa", "Ordem", "Pedido", "Descrição", "Valor", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        ["Período", "Placa", "Tipo de Implemento", "Ordem", "Pedido", "Descrição", "Valor", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
                     )
                 ),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center" }, "Carregando...")) :
-                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center text-slate-500" }, "Utilize os filtros para iniciar a busca.")) :
-                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
+                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Utilize os filtros para iniciar a busca.")) :
+                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
                     expenses.map(exp => {
                         const rowClass = exp.erro_lancamento ? "hover:bg-red-100 even:bg-red-50 text-red-700 line-through" : "hover:bg-blue-50 even:bg-slate-50";
+                        const isUnidentified = exp.implemento_tipo === 'Não Identificado';
+
                         return React.createElement('tr', { key: exp.id, className: rowClass },
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.periodo_referencia),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium" }, exp.placa)),
+                            React.createElement('td', { className: `px-6 py-4 border-r border-slate-200 ${isUnidentified ? 'text-red-600 font-bold' : ''}` }, exp.implemento_tipo),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.ordem_manutencao),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.pedido),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.descricao),
