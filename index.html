@@ -1901,35 +1901,42 @@ function DashboardFinanceiro({ showToast }) {
     }, []);
 
     React.useEffect(() => {
-        if (!periodo) return;
+    if (!periodo) return;
 
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const { data: expensesData, error: expensesError } = await supabase
-                    .from('despesas_manutencao')
-                    .select('id, placa, valor, erro_lancamento, descricao')
-                    .eq('periodo_referencia', periodo);
-                if (expensesError) throw expensesError;
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            // 1. Busca todos os dados do período, sem distinção
+            const { data: expensesData, error: expensesError } = await supabase
+                .from('despesas_manutencao')
+                .select('id, placa, valor, erro_lancamento, descricao')
+                .eq('periodo_referencia', periodo);
+            if (expensesError) throw expensesError;
 
-                const validExpenses = (expensesData || []).filter(e => !e.erro_lancamento);
-                const errorExpenses = (expensesData || []).filter(e => e.erro_lancamento);
+            // 2. Se não houver absolutamente nenhum dado, limpa tudo e sai
+            if (!expensesData || expensesData.length === 0) {
+                setKpis({ total: 0, media: 0 });
+                setRankingPlacas([]);
+                setCustoPorTipo([]);
+                setRelatorioErros({ count: 0, total: 0, items: [] });
+                setIsLoading(false);
+                return;
+            }
 
-                const totalErros = errorExpenses.reduce((sum, item) => sum + (item.valor || 0), 0);
-                setRelatorioErros({
-                    count: errorExpenses.length,
-                    total: totalErros,
-                    items: errorExpenses.sort((a,b) => a.valor - b.valor)
-                });
+            // 3. Separa os lançamentos válidos dos que contêm erro
+            const validExpenses = expensesData.filter(e => !e.erro_lancamento);
+            const errorExpenses = expensesData.filter(e => e.erro_lancamento);
 
-                if (validExpenses.length === 0) {
-                    setKpis({ total: 0, media: 0 });
-                    setRankingPlacas([]);
-                    setCustoPorTipo([]);
-                    setIsLoading(false);
-                    return;
-                }
+            // 4. Processa e atualiza o estado do Relatório de Erros
+            const totalErros = errorExpenses.reduce((sum, item) => sum + (item.valor || 0), 0);
+            setRelatorioErros({
+                count: errorExpenses.length,
+                total: totalErros,
+                items: errorExpenses.sort((a, b) => a.valor - b.valor)
+            });
 
+            // 5. Processa os dados VÁLIDOS para os KPIs e gráficos principais
+            if (validExpenses.length > 0) {
                 const { data: equipamentosData, error: equipamentosError } = await supabase.from('equipamentos').select('plate, type');
                 if (equipamentosError) throw equipamentosError;
                 const plateTypeMap = new Map(equipamentosData.map(eq => [eq.plate, eq.type]));
@@ -1947,18 +1954,27 @@ function DashboardFinanceiro({ showToast }) {
                 
                 const numEquipamentosComDespesa = Object.keys(despesasPorPlaca).length;
                 setKpis({ total: totalDespesas, media: numEquipamentosComDespesa > 0 ? totalDespesas / numEquipamentosComDespesa : 0 });
+                
                 const rankingArray = Object.entries(despesasPorPlaca).map(([placa, total]) => ({ placa, total })).sort((a, b) => a.total - b.total).slice(0, 10);
                 setRankingPlacas(rankingArray);
+
                 const custoPorTipoArray = Object.entries(despesasPorTipo).map(([tipo, total]) => ({ tipo, total }));
                 setCustoPorTipo(custoPorTipoArray);
-
-            } catch (err) {
-                showToast(`Erro ao buscar dados do dashboard: ${err.message}`, "error");
+            } else {
+                // Se não houver lançamentos válidos, zera os KPIs e gráficos
+                setKpis({ total: 0, media: 0 });
+                setRankingPlacas([]);
+                setCustoPorTipo([]);
             }
-            setIsLoading(false);
-        };
-        fetchData();
-    }, [periodo, showToast]);
+
+        } catch (err) {
+            showToast(`Erro ao buscar dados do dashboard: ${err.message}`, "error");
+        }
+        setIsLoading(false);
+    };
+
+    fetchData();
+}, [periodo, showToast]);
 
     React.useEffect(() => {
         if (barChartRef.current) barChartRef.current.destroy();
