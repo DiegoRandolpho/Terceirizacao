@@ -3558,7 +3558,10 @@ function PlateHistory({ showToast }) {
 
 /* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA */
 
+/* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
+
 function ExpenseQuery({ userId, userRole, showToast }) {
+    // Estados do componente
     const [periodo, setPeriodo] = React.useState('');
     const [placa, setPlaca] = React.useState('');
     const [expenses, setExpenses] = React.useState([]);
@@ -3566,11 +3569,14 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     const [isImporting, setIsImporting] = React.useState(false);
     const [file, setFile] = React.useState(null);
     const [hasSearched, setHasSearched] = React.useState(false);
-
-    // Estados para o modal de confirmação
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
     const [expenseToFlag, setExpenseToFlag] = React.useState(null);
+    
+    // Estado para o novo filtro de implemento
+    const [typeFilter, setTypeFilter] = React.useState('Todos');
+    const equipmentTypes = ["Todos", "BOMBA LANÇA", "BOMBA", "BETONEIRA"];
 
+    // Função para formatar o período
     const formatPeriodo = (value) => {
         const cleaned = ('' + value).replace(/[^\d]/g, '');
         const truncated = cleaned.slice(0, 6);
@@ -3580,51 +3586,62 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         return truncated;
     };
     
+    // Função de busca, agora com a lógica do filtro de implemento
     const handleSearch = async () => {
-        if (!periodo && !placa) {
-            showToast("Informe um Período ou uma Placa para buscar.", "error");
+        if (!periodo && !placa && typeFilter === 'Todos') {
+            showToast("Informe ao menos um filtro para buscar.", "error");
             return;
         }
         setIsLoading(true);
         setHasSearched(true);
         setExpenses([]);
-        let allResults = [];
-        let page = 0;
-        const pageSize = 1000;
-        while (true) {
-            const from = page * pageSize;
-            const to = from + pageSize - 1;
-            try {
-                let query = supabase
-                    .from('despesas_manutencao')
-                    .select('*') // Busca todas as colunas, incluindo a nova 'erro_lancamento'
-                    .order('placa')
-                    .range(from, to);
 
-                if (periodo) {
-                    query = query.eq('periodo_referencia', periodo);
+        try {
+            let platesToFilter = null;
+
+            if (typeFilter !== 'Todos') {
+                const { data: equipmentData, error: equipmentError } = await supabase
+                    .from('equipamentos')
+                    .select('plate')
+                    .eq('type', typeFilter);
+                
+                if (equipmentError) throw equipmentError;
+
+                platesToFilter = equipmentData.map(eq => eq.plate);
+
+                if (platesToFilter.length === 0) {
+                    setIsLoading(false);
+                    return;
                 }
-                if (placa) {
-                    query = query.eq('placa', placa.trim().toUpperCase());
-                }
+            }
+            
+            let allResults = [];
+            let page = 0;
+            const pageSize = 1000;
+            while (true) {
+                const from = page * pageSize;
+                const to = from + pageSize - 1;
+                
+                let query = supabase.from('despesas_manutencao').select('*').order('placa').range(from, to);
+
+                if (periodo) { query = query.eq('periodo_referencia', periodo); }
+                if (placa) { query = query.eq('placa', placa.trim().toUpperCase()); }
+                if (platesToFilter) { query = query.in('placa', platesToFilter); }
+
                 const { data, error } = await query;
                 if (error) throw error;
-                if (data) {
-                    allResults = [...allResults, ...data];
-                }
-                if (!data || data.length < pageSize) {
-                    break;
-                }
+                if (data) { allResults = [...allResults, ...data]; }
+                if (!data || data.length < pageSize) { break; }
                 page++;
-            } catch (err) {
-                showToast("Erro ao buscar despesas.", "error");
-                break;
             }
+            setExpenses(allResults);
+        } catch (err) {
+            showToast("Erro ao buscar despesas.", "error");
         }
-        setExpenses(allResults);
         setIsLoading(false);
     };
     
+    // Funções de importação de arquivo
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
@@ -3658,9 +3675,8 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                         pedido: row['Pedido'],
                         descricao: row['Material'],
                         valor: parseFloat(row['Total']) || 0,
-                        erro_lancamento: false // Garante que novas importações não sejam erros
+                        erro_lancamento: false
                     }));
-
                 if (dataToInsert.length === 0) {
                     showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
                     setIsImporting(false);
@@ -3680,6 +3696,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         reader.readAsArrayBuffer(file);
     };
     
+    // Funções para marcar erro de lançamento
     const confirmFlagError = (expense) => {
         setExpenseToFlag(expense);
         setShowConfirmModal(true);
@@ -3706,9 +3723,10 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         setExpenseToFlag(null);
     };
 
+    // Renderização do componente
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
-        React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
+        React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-4 gap-4 items-end" },
             React.createElement('div', null,
                 React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Período (MM/AAAA)"),
                 React.createElement('input', { type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
@@ -3716,6 +3734,12 @@ function ExpenseQuery({ userId, userRole, showToast }) {
             React.createElement('div', null,
                 React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Placa"),
                 React.createElement('input', { type: 'text', placeholder: "Ex: ABC1234", value: placa, onChange: e => setPlaca(e.target.value), className: "w-full p-2 border rounded" })
+            ),
+            React.createElement('div', null,
+                React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Tipo de Implemento"),
+                React.createElement('select', { value: typeFilter, onChange: e => setTypeFilter(e.target.value), className: "w-full p-2 border rounded" },
+                    equipmentTypes.map(type => React.createElement('option', { key: type, value: type }, type))
+                )
             ),
             React.createElement('button', { onClick: handleSearch, disabled: isLoading, className: "w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400" },
                 isLoading ? 'Buscando...' : 'Buscar'
@@ -3743,7 +3767,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 ),
                 React.createElement('tbody', null,
                     isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center" }, "Carregando...")) :
-                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center text-slate-500" }, "Informe um Período ou Placa para iniciar a busca.")) :
+                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center text-slate-500" }, "Utilize os filtros para iniciar a busca.")) :
                     expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
                     expenses.map(exp => {
                         const rowClass = exp.erro_lancamento ? "hover:bg-red-100 even:bg-red-50 text-red-700 line-through" : "hover:bg-blue-50 even:bg-slate-50";
@@ -3759,7 +3783,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                                     onClick: () => confirmFlagError(exp),
                                     className: `py-1 px-3 text-xs font-bold rounded-full transition ${exp.erro_lancamento ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`,
                                     title: exp.erro_lancamento ? 'Desfazer marcação de erro' : 'Marcar como erro de lançamento'
-                                }, exp.erro_lancamento ? 'Desfazer' : 'Erro Lançamento')
+                                }, exp.erro_lancamento ? 'Normalizar' : 'Marcar Erro')
                             )
                         )
                     })
@@ -3774,7 +3798,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO ExpenseQuery COMPLETA */
+/* FIM DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
 
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
 
