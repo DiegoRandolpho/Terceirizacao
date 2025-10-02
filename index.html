@@ -3556,12 +3556,10 @@ function PlateHistory({ showToast }) {
     );
 }
 
-/* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA */
-
 /* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
 
 function ExpenseQuery({ userId, userRole, showToast }) {
-    // Estados do componente
+    // Estados
     const [periodo, setPeriodo] = React.useState('');
     const [placa, setPlaca] = React.useState('');
     const [expenses, setExpenses] = React.useState([]);
@@ -3571,10 +3569,26 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     const [hasSearched, setHasSearched] = React.useState(false);
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
     const [expenseToFlag, setExpenseToFlag] = React.useState(null);
-    
-    // Estado para o novo filtro de implemento
     const [typeFilter, setTypeFilter] = React.useState('Todos');
-    const equipmentTypes = ["Todos", "BOMBA LANÇA", "BOMBA", "BETONEIRA"];
+    
+    // O estado 'equipmentTypes' agora começa vazio para ser populado dinamicamente
+    const [equipmentTypes, setEquipmentTypes] = React.useState([]);
+
+    // useEffect para buscar os tipos de implemento existentes ao carregar o componente
+    React.useEffect(() => {
+        const fetchTypes = async () => {
+            const { data, error } = await supabase.from('equipamentos').select('type');
+            if (!error && data) {
+                // Cria uma lista de tipos únicos, remove valores nulos/vazios e ordena
+                const uniqueTypes = [...new Set(data.map(item => item.type).filter(Boolean))].sort();
+                setEquipmentTypes(['Todos', ...uniqueTypes]);
+            } else {
+                showToast('Erro ao carregar tipos de implemento.', 'error');
+                setEquipmentTypes(['Todos']); // Define um valor padrão em caso de erro
+            }
+        };
+        fetchTypes();
+    }, [showToast]);
 
     // Função para formatar o período
     const formatPeriodo = (value) => {
@@ -3586,7 +3600,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         return truncated;
     };
     
-    // Função de busca, agora com a lógica do filtro de implemento
+    // Função de busca, com a lógica do filtro de implemento
     const handleSearch = async () => {
         if (!periodo && !placa && typeFilter === 'Todos') {
             showToast("Informe ao menos um filtro para buscar.", "error");
@@ -3799,7 +3813,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
 }
 
 /* FIM DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
-
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
 
 function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
