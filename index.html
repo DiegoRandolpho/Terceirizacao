@@ -1327,12 +1327,14 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     setIsLoading(true);
                     try {
                         const record = {
+                            const record = {
                             placa: formData.placa,
                             codSAP: formData.codSAP,
                             valorfixo: parseFloat(formData.valorfixo),
                             data_inicio: formData.data_inicio,
-                            data_fim: formData.data_fim || null
-                        };
+                            data_fim: formData.data_fim || null,
+                            observacao: formData.observacao.trim() // Linha adicionada
+};
                         if (isEditing) {
                             const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
                             if (error) throw error;
@@ -1428,7 +1430,14 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                         // ALTERADO: Adicionado atributo 'max' para limitar o ano
                         React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true, max: "9999-12-31" }),
                         React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded", max: "9999-12-31" }),
-                        
+                        React.createElement('textarea', {
+                            name: "observacao",
+                            value: formData.observacao,
+                            onChange: handleInputChange,
+                            placeholder: "Observações (opcional)",
+                            className: "w-full p-2 border rounded lg:col-span-3", // Ocupa a largura total
+                            rows: 3
+                        }),
                         React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
                             React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                             React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
