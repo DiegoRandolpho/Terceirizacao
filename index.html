@@ -1448,7 +1448,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                         React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                             React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                                 React.createElement('tr', null,
-                                    ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome Completo", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
+                                    ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome Completo", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo", "Observação"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
                                     userRole === 'administrador' && React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
                                 )
                             ),
@@ -1467,6 +1467,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                                         React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
                                         React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
                                         React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 max-w-xs truncate", title: c.observacao }, c.observacao || '—'),
                                         userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
                                             c.data_fim ? getConcessionStatusBadge(true)
                                             : React.createElement('div', { className: 'flex justify-center gap-x-4' },
