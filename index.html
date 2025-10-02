@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TERSYS - Gestão de Terceirização</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     
@@ -143,6 +145,7 @@
             let supabase;
             const ALL_PAGES = {
     dashboard: { title: 'Rel. Equipamentos', icon: 'Truck' },
+    maintenanceDashboard: { title: 'Dash. Manutenção', icon: 'DollarSign' },
     turnoverDashboard: { title: 'Rel. Turnover', icon: 'Users' },
     thirdPartyByRegion: { title: 'Terceiros por Região', icon: 'Building' },
     outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
@@ -1870,7 +1873,193 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                 )
               );
             }
+/* INÍCIO DO NOVO COMPONENTE DashboardFinanceiro */
 
+function DashboardFinanceiro({ showToast }) {
+    // Estados para filtros e dados
+    const [periodo, setPeriodo] = React.useState('');
+    const [periodOptions, setPeriodOptions] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    
+    // Estados para os KPIs e dados dos gráficos
+    const [kpis, setKpis] = React.useState({ total: 0, media: 0 });
+    const [rankingPlacas, setRankingPlacas] = React.useState([]);
+    const [custoPorTipo, setCustoPorTipo] = React.useState([]);
+
+    // Referências para os gráficos para que possam ser destruídos e recriados
+    const barChartRef = React.useRef(null);
+    const pieChartRef = React.useRef(null);
+
+    // Efeito para gerar as opções de período (Mês/Ano)
+    React.useEffect(() => {
+        const options = [];
+        const today = new Date();
+        for (let i = 12; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            options.push(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
+        }
+        setPeriodOptions(options);
+        setPeriodo(`${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`);
+    }, []);
+
+    // Efeito principal para buscar e processar os dados quando o período muda
+    React.useEffect(() => {
+        if (!periodo) return;
+
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                // 1. Busca todas as despesas do período
+                const { data: expensesData, error: expensesError } = await supabase
+                    .from('despesas_manutencao')
+                    .select('placa, valor')
+                    .eq('periodo_referencia', periodo);
+                if (expensesError) throw expensesError;
+                if (!expensesData || expensesData.length === 0) {
+                    setKpis({ total: 0, media: 0 });
+                    setRankingPlacas([]);
+                    setCustoPorTipo([]);
+                    setIsLoading(false);
+                    return;
+                }
+
+                // 2. Busca os tipos de todos os equipamentos para o JOIN manual
+                const { data: equipamentosData, error: equipamentosError } = await supabase
+                    .from('equipamentos')
+                    .select('plate, type');
+                if (equipamentosError) throw equipamentosError;
+                const plateTypeMap = new Map(equipamentosData.map(eq => [eq.plate, eq.type]));
+
+                // 3. Processa os dados
+                let totalDespesas = 0;
+                const despesasPorPlaca = {};
+                const despesasPorTipo = {};
+
+                for (const despesa of expensesData) {
+                    totalDespesas += despesa.valor || 0;
+                    
+                    // Agrupa por placa
+                    despesasPorPlaca[despesa.placa] = (despesasPorPlaca[despesa.placa] || 0) + despesa.valor;
+
+                    // Agrupa por tipo de implemento
+                    const tipo = plateTypeMap.get(despesa.placa) || 'Não Identificado';
+                    despesasPorTipo[tipo] = (despesasPorTipo[tipo] || 0) + despesa.valor;
+                }
+
+                // 4. Prepara os dados para os estados e gráficos
+                // KPIs
+                const numEquipamentosComDespesa = Object.keys(despesasPorPlaca).length;
+                setKpis({
+                    total: totalDespesas,
+                    media: numEquipamentosComDespesa > 0 ? totalDespesas / numEquipamentosComDespesa : 0
+                });
+
+                // Ranking para o gráfico de barras
+                const rankingArray = Object.entries(despesasPorPlaca)
+                    .map(([placa, total]) => ({ placa, total }))
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 10);
+                setRankingPlacas(rankingArray);
+
+                // Dados para o gráfico de pizza
+                const custoPorTipoArray = Object.entries(despesasPorTipo)
+                     .map(([tipo, total]) => ({ tipo, total }));
+                setCustoPorTipo(custoPorTipoArray);
+
+            } catch (err) {
+                showToast(`Erro ao buscar dados do dashboard: ${err.message}`, "error");
+            }
+            setIsLoading(false);
+        };
+
+        fetchData();
+    }, [periodo, showToast]);
+
+    // Efeito para desenhar/atualizar os gráficos quando os dados mudarem
+    React.useEffect(() => {
+        // Destroi gráficos antigos antes de desenhar novos
+        if (barChartRef.current) barChartRef.current.destroy();
+        if (pieChartRef.current) pieChartRef.current.destroy();
+
+        // Gráfico de Barras
+        if (rankingPlacas.length > 0) {
+            const barCtx = document.getElementById('rankingDespesasChart').getContext('2d');
+            barChartRef.current = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: rankingPlacas.map(d => d.placa),
+                    datasets: [{
+                        label: 'Custo Total (R$)',
+                        data: rankingPlacas.map(d => d.total),
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Deixa as barras na horizontal para melhor leitura
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        // Gráfico de Pizza
+        if (custoPorTipo.length > 0) {
+            const pieCtx = document.getElementById('custoPorTipoChart').getContext('2d');
+            pieChartRef.current = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: custoPorTipo.map(d => d.tipo),
+                    datasets: [{
+                        data: custoPorTipo.map(d => d.total),
+                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#6B7280', '#EF4444'],
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+    }, [rankingPlacas, custoPorTipo]);
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-center mb-6" },
+            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Dashboard Financeiro de Manutenção"),
+            React.createElement('select', { 
+                value: periodo, 
+                onChange: e => setPeriodo(e.target.value), 
+                className: "w-full sm:w-auto mt-4 sm:mt-0 p-2 border rounded-md shadow-sm" 
+            }, periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt)))
+        ),
+
+        // Cards de KPI
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" },
+            React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
+                React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, "Custo Total no Mês"),
+                isLoading ? React.createElement('div', { className: "h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" }) :
+                React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, `R$ ${kpis.total.toFixed(2).replace('.', ',')}`)
+            ),
+            React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
+                React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, "Média por Equipamento"),
+                isLoading ? React.createElement('div', { className: "h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" }) :
+                React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, `R$ ${kpis.media.toFixed(2).replace('.', ',')}`)
+            )
+        ),
+        
+        // Área dos Gráficos
+        React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-5 gap-6" },
+             React.createElement('div', { className: "lg:col-span-3 bg-slate-50 p-6 rounded-lg shadow-sm" },
+                React.createElement('h3', { className: "text-lg font-semibold text-slate-700 mb-4" }, "Top 10 Equipamentos com Mais Despesas"),
+                React.createElement('canvas', { id: 'rankingDespesasChart' })
+             ),
+             React.createElement('div', { className: "lg:col-span-2 bg-slate-50 p-6 rounded-lg shadow-sm" },
+                React.createElement('h3', { className: "text-lg font-semibold text-slate-700 mb-4" }, "Distribuição de Custo por Implemento"),
+                React.createElement('canvas', { id: 'custoPorTipoChart' })
+            )
+        )
+    );
+}
+
+/* FIM DO NOVO COMPONENTE DashboardFinanceiro */
                        function Dashboard({ userId, showToast }) {
                 const [equipmentCounts, setEquipmentCounts] = React.useState({});
                 const [registros, setRegistros] = React.useState([]);
@@ -3620,6 +3809,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                 const renderPage = () => {
                     switch (currentPage) {
                         case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
+                        case 'maintenanceDashboard': return React.createElement(DashboardFinanceiro, { showToast });
                         case 'turnoverDashboard': return React.createElement(TurnoverDashboard, { showToast });
                         case 'thirdPartyByRegion': return React.createElement(ThirdPartyByRegion, { showToast });
                         case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
@@ -3658,6 +3848,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
         // RENOMEADO E ATUALIZADO: A antiga categoria "Dashboard" agora é "Relatórios"
         React.createElement(MenuCategory, { title: "Relatórios", icon: "FileText", menuKey: "relatorios" },
             React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
+            React.createElement(MenuItem, { page: 'maintenanceDashboard', icon: 'DollarSign', text: 'Dash. Manutenção' }),
             React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover' }),
             React.createElement(MenuItem, { page: 'thirdPartyByRegion', icon: 'Building', text: 'Terceiros por Região' }),
             React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distr. Região' }),
