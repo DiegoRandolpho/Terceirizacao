@@ -1908,9 +1908,11 @@ function DashboardFinanceiro({ showToast }) {
         try {
             // 1. Busca todos os dados do período, sem distinção
             const { data: expensesData, error: expensesError } = await supabase
+                
                 .from('despesas_manutencao')
                 .select('id, placa, valor, erro_lancamento, descricao')
                 .eq('periodo_referencia', periodo);
+            console.log('DADOS RECEBIDOS DO BANCO:', expensesData);
             if (expensesError) throw expensesError;
 
             // 2. Se não houver absolutamente nenhum dado, limpa tudo e sai
