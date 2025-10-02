@@ -3725,7 +3725,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                                     onClick: () => confirmFlagError(exp),
                                     className: `py-1 px-3 text-xs font-bold rounded-full transition ${exp.erro_lancamento ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`,
                                     title: exp.erro_lancamento ? 'Desfazer marcação de erro' : 'Marcar como erro de lançamento'
-                                }, exp.erro_lancamento ? 'Desfazer' : 'Normalizar')
+                                }, exp.erro_lancamento ? 'Desfazer' : 'Erro Lançamento')
                             )
                         )
                     })
