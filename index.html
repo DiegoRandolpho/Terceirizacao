@@ -1185,7 +1185,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentConcession, setCurrentConcession] = React.useState(null);
-                const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '', data_fim: '' };
+                const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '', data_fim: '', observacao: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
                 const [allPlates, setAllPlates] = React.useState([]);
                 const [allTerceiros, setAllTerceiros] = React.useState([]);
@@ -1359,12 +1359,13 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     const startDate = concession.data_inicio ? new Date(concession.data_inicio).toISOString().split('T')[0] : '';
                     const endDate = concession.data_fim ? new Date(concession.data_fim).toISOString().split('T')[0] : '';
                     setFormData({
-                        placa: concession.placa,
-                        codSAP: concession.codSAP,
-                        valorfixo: concession.valorfixo,
-                        data_inicio: startDate,
-                        data_fim: endDate
-                    });
+                    placa: concession.placa,
+                    codSAP: concession.codSAP,
+                    valorfixo: concession.valorfixo,
+                    data_inicio: startDate,
+                    data_fim: endDate,
+                    observacao: concession.observacao || '' // Linha adicionada
+});
                     setPlacaSearch(concession.placa);
                     const terceiroCorrespondente = allTerceiros.find(t => t.codSAP === concession.codSAP);
                     if (terceiroCorrespondente) {
