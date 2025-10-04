@@ -632,6 +632,8 @@ function BranchManagement({ userId, userRole, showToast }) {
             }
            /* INÍCIO DA FUNÇÃO EquipmentManagement ATUALIZADA */
 
+/* INÍCIO DA FUNÇÃO EquipmentManagement COMPLETA E ATUALIZADA */
+
 function EquipmentManagement({ userId, showToast }) {
     const [newPlate, setNewPlate] = React.useState('');
     const [newModel, setNewModel] = React.useState('');
@@ -660,13 +662,38 @@ function EquipmentManagement({ userId, showToast }) {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const { data: eqData, error: eqError } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
-                if (eqError) throw eqError;
-                setEquipmentList(eqData);
+                let allEquipment = [];
+                let page = 0;
+                const pageSize = 1000;
 
-                const typesData = eqData.map(item => item.type).filter(Boolean);
+                while (true) {
+                    const from = page * pageSize;
+                    const to = from + pageSize - 1;
+
+                    const { data, error } = await supabase
+                        .from('equipamentos')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .range(from, to);
+
+                    if (error) throw error;
+                    
+                    if (data) {
+                        allEquipment = [...allEquipment, ...data];
+                    }
+
+                    if (!data || data.length < pageSize) {
+                        break;
+                    }
+                    page++;
+                }
+                
+                setEquipmentList(allEquipment);
+
+                const typesData = allEquipment.map(item => item.type).filter(Boolean);
                 const uniqueTypes = [...new Set(typesData)].sort();
                 setEquipmentTypes(uniqueTypes);
+
             } catch (err) {
                 showToast("Erro ao carregar dados.", "error");
             }
@@ -675,9 +702,7 @@ function EquipmentManagement({ userId, showToast }) {
         fetchData();
     }, [showToast]);
 
-    // NOVO: Função para exportar os dados para Excel
     const exportToExcel = () => {
-        // Prepara os dados, selecionando e renomeando as colunas
         const dataForExport = filteredEquipmentList.map(eq => ({
             'Placa': eq.plate,
             'Modelo': eq.model,
@@ -687,13 +712,9 @@ function EquipmentManagement({ userId, showToast }) {
             'Data de Cadastro': new Date(eq.created_at).toLocaleDateString('pt-BR')
         }));
 
-        // Cria a planilha a partir dos dados
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
-        // Cria o livro (arquivo Excel)
         const workbook = XLSX.utils.book_new();
-        // Adiciona a planilha ao livro
         XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
-        // Gera e baixa o arquivo
         XLSX.writeFile(workbook, "Cadastro_de_Equipamentos.xlsx");
     };
 
@@ -758,7 +779,6 @@ function EquipmentManagement({ userId, showToast }) {
     );
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        // NOVO: Cabeçalho com o título e o botão de exportar
         React.createElement('div', { className: "flex justify-between items-center mb-4" },
             React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Cadastro de Equipamentos"),
             React.createElement('button', {
@@ -842,7 +862,7 @@ function EquipmentManagement({ userId, showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO EquipmentManagement ATUALIZADA */
+/* FIM DA FUNÇÃO EquipmentManagement COMPLETA E ATUALIZADA */
 function ThirdPartyManagement({ userId, showToast }) {
     const [terceirosList, setTerceirosList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
