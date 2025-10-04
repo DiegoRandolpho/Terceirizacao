@@ -863,30 +863,53 @@ function EquipmentManagement({ userId, showToast }) {
 }
 
 /* FIM DA FUNÇÃO EquipmentManagement COMPLETA E ATUALIZADA */
+/* INÍCIO DA FUNÇÃO ThirdPartyManagement COMPLETA E ATUALIZADA */
+
 function ThirdPartyManagement({ userId, showToast }) {
     const [terceirosList, setTerceirosList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showForm, setShowForm] = React.useState(false);
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
-    
-    // ATUALIZADO: Adicionado 'email' ao estado inicial do formulário
     const initialFormState = { 
         apelido: '', codSAP: '', cnpj: '', nome_completo: '', cpf: '', 
         razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '', email: '' 
     };
-
     const [formData, setFormData] = React.useState(initialFormState);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
     const [terceiroToDelete, setTerceiroToDelete] = React.useState(null);
 
+    // ALTERADO: fetchTerceiros agora busca todos os registros com paginação
     const fetchTerceiros = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.from('terceiros').select('*').order('apelido', { ascending: true });
-            if (error) throw error;
-            setTerceirosList(data || []);
+            let allResults = [];
+            let page = 0;
+            const pageSize = 1000;
+
+            while (true) {
+                const from = page * pageSize;
+                const to = from + pageSize - 1;
+
+                const { data, error } = await supabase
+                    .from('terceiros')
+                    .select('*')
+                    .order('apelido', { ascending: true })
+                    .range(from, to);
+
+                if (error) throw error;
+
+                if (data) {
+                    allResults = [...allResults, ...data];
+                }
+
+                if (!data || data.length < pageSize) {
+                    break;
+                }
+                page++;
+            }
+            setTerceirosList(allResults);
         } catch (err) {
             showToast("Erro ao carregar terceiros.", "error");
         }
@@ -896,6 +919,26 @@ function ThirdPartyManagement({ userId, showToast }) {
     React.useEffect(() => {
         fetchTerceiros();
     }, [fetchTerceiros]);
+
+    // NOVO: Função para exportar os dados para Excel
+    const exportToExcel = () => {
+        const dataForExport = filteredList.map(t => ({
+            'Apelido': t.apelido,
+            'Razão Social': t.razao,
+            'Nome Completo': t.nome_completo,
+            'Cód. SAP': t.codSAP,
+            'CNPJ': formatCNPJ(t.cnpj),
+            'CPF': formatCPF(t.cpf),
+            'E-mail': t.email,
+            'Endereço': `${t.rua || ''}, ${t.bairro || ''} - ${t.cidade || ''}/${t.estado || ''}`,
+            'CEP': t.cep
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Terceiros");
+        XLSX.writeFile(workbook, "Cadastro_de_Terceiros.xlsx");
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -916,13 +959,12 @@ function ThirdPartyManagement({ userId, showToast }) {
         }
         setIsLoading(true);
         try {
-            // ATUALIZADO: Incluído 'email' no registro a ser salvo
             const record = {
                 apelido: formData.apelido.trim(),
                 codSAP: formData.codSAP.trim(),
-                cnpj: formData.cnpj.replace(/[^\d]/g, ''),
+                cnpj: String(formData.cnpj || '').replace(/[^\d]/g, ''),
                 nome_completo: formData.nome_completo.trim(),
-                cpf: formData.cpf.replace(/[^\d]/g, ''),
+                cpf: String(formData.cpf || '').replace(/[^\d]/g, ''),
                 razao: formData.razao.trim(),
                 rua: formData.rua.trim(),
                 bairro: formData.bairro.trim(),
@@ -931,7 +973,6 @@ function ThirdPartyManagement({ userId, showToast }) {
                 cep: String(formData.cep || '').replace(/[^\d]/g, ''),
                 email: formData.email.trim()
             };
-
             if (isEditing) {
                 const { error } = await supabase.from('terceiros').update(record).eq('id', currentTerceiro.id);
                 if (error) throw error;
@@ -954,7 +995,6 @@ function ThirdPartyManagement({ userId, showToast }) {
     const handleEditClick = (terceiro) => {
         setIsEditing(true);
         setCurrentTerceiro(terceiro);
-        // ATUALIZADO: Carrega o email no formulário de edição
         setFormData({
             apelido: terceiro.apelido || '',
             codSAP: terceiro.codSAP || '',
@@ -982,7 +1022,7 @@ function ThirdPartyManagement({ userId, showToast }) {
         setTerceiroToDelete(terceiro);
         setShowConfirmModal(true);
     };
-
+    
     const handleDelete = async () => {
         if (!terceiroToDelete) return;
         setIsLoading(true);
@@ -1004,7 +1044,16 @@ function ThirdPartyManagement({ userId, showToast }) {
     );
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Terceiros"),
+        // NOVO: Cabeçalho com título e botão de exportar
+        React.createElement('div', { className: "flex justify-between items-center mb-4" },
+            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Cadastro de Terceiros"),
+            React.createElement('button', {
+                onClick: exportToExcel,
+                className: "py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center shadow-sm",
+                disabled: isLoading
+            }, "Exportar para Excel")
+        ),
+
         !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
             React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
                 React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
@@ -1018,14 +1067,12 @@ function ThirdPartyManagement({ userId, showToast }) {
             React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
-            // NOVO: Campo de input para o E-mail
             React.createElement('input', { name: "email", type: "email", value: formData.email, onChange: handleInputChange, placeholder: "E-mail", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cep", value: formData.cep, onChange: handleInputChange, placeholder: "CEP", className: "p-2 border rounded" }),
             React.createElement('input', { name: "rua", value: formData.rua, onChange: handleInputChange, placeholder: "Rua", className: "p-2 border rounded" }),
             React.createElement('input', { name: "bairro", value: formData.bairro, onChange: handleInputChange, placeholder: "Bairro", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder: "Cidade", className: "p-2 border rounded" }),
             React.createElement('input', { name: "estado", value: formData.estado, onChange: handleInputChange, placeholder: "Estado", className: "p-2 border rounded" }),
-
             React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
                 React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                 React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
@@ -1036,12 +1083,10 @@ function ThirdPartyManagement({ userId, showToast }) {
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        // ATUALIZADO: Adicionado 'E-mail' ao cabeçalho
                         ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "E-mail", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
                     )
                 ),
                 React.createElement('tbody', null,
-                    // ATUALIZADO: colSpan aumentado para 9
                     isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Carregando...")) :
                     !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
                     filteredList.map(t =>
@@ -1052,7 +1097,6 @@ function ThirdPartyManagement({ userId, showToast }) {
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.codSAP),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(t.cnpj)),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(t.cpf)),
-                            // NOVO: Célula para exibir o E-mail
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.email),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `${t.rua || ''}, ${t.bairro || ''} - ${t.cidade || ''}/${t.estado || ''} - CEP: ${t.cep || ''}`),
                             React.createElement('td', { className: "px-6 py-4 text-center" },
@@ -1070,8 +1114,7 @@ function ThirdPartyManagement({ userId, showToast }) {
     );
 }
 
-
-/* FIM DO CÓDIGO PARA REINSERIR */
+/* FIM DA FUNÇÃO ThirdPartyManagement COMPLETA E ATUALIZADA */
 function UserManagement({ userId, showToast }) {
     const [newUsername, setNewUsername] = React.useState('');
     const [newFullname, setNewFullname] = React.useState('');
