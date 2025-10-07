@@ -2294,24 +2294,33 @@ function AcertoManagement({ userId, userRole, showToast }) {
 }
 
 /* FIM DA FUNÇÃO AcertoManagement COMPLETA E ATUALIZADA */
-/* INÍCIO DO COMPONENTE DashboardFinanceiro COMPLETO E CORRIGIDO */
+/* INÍCIO DO COMPONENTE DashboardFinanceiro COMPLETO E ATUALIZADO */
 
 function DashboardFinanceiro({ showToast }) {
-    // Estados para filtros e dados
+    // Estados principais
     const [periodo, setPeriodo] = React.useState('');
     const [periodOptions, setPeriodOptions] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     
-    // Estados para os KPIs e dados dos gráficos
+    // Estados para os dados dos gráficos e KPIs principais (lançamentos válidos)
     const [kpis, setKpis] = React.useState({ total: 0, media: 0 });
     const [rankingPlacas, setRankingPlacas] = React.useState([]);
     const [custoPorTipo, setCustoPorTipo] = React.useState([]);
+    
+    // Estados para o relatório de erros (KPIs, dados brutos e dados para gráficos)
     const [relatorioErros, setRelatorioErros] = React.useState({ count: 0, total: 0, items: [] });
-    const [relatorioNaoIdentificados, setRelatorioNaoIdentificados] = React.useState([]);
+    const [errorRankingPlacas, setErrorRankingPlacas] = React.useState([]);
+    const [errorCustoPorTipo, setErrorCustoPorTipo] = React.useState([]);
+    
+    // Estados para a interatividade da nova tabela de erros
+    const [expandedRows, setExpandedRows] = React.useState({});
+    const [sortConfig, setSortConfig] = React.useState({ key: 'totalValue', direction: 'ascending' });
 
-    // Referências para os gráficos
+    // Referências para os gráficos para que possam ser destruídos e recriados
     const barChartRef = React.useRef(null);
     const pieChartRef = React.useRef(null);
+    const errorBarChartRef = React.useRef(null);
+    const errorPieChartRef = React.useRef(null);
 
     // Efeito para gerar as opções de período (Mês/Ano)
     React.useEffect(() => {
@@ -2325,20 +2334,19 @@ function DashboardFinanceiro({ showToast }) {
         setPeriodo(`${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`);
     }, []);
 
-    // Efeito principal para buscar e processar os dados
+    // Efeito principal para buscar e processar todos os dados
     React.useEffect(() => {
         if (!periodo) return;
-
         const fetchData = async () => {
             setIsLoading(true);
             setKpis({ total: 0, media: 0 });
             setRankingPlacas([]);
             setCustoPorTipo([]);
             setRelatorioErros({ count: 0, total: 0, items: [] });
-            setRelatorioNaoIdentificados([]);
+            setErrorRankingPlacas([]);
+            setErrorCustoPorTipo([]);
 
             try {
-                // LÓGICA DE PAGINAÇÃO PARA BUSCAR TODOS OS REGISTROS
                 let allExpensesData = [];
                 let page = 0;
                 const pageSize = 1000;
@@ -2349,22 +2357,15 @@ function DashboardFinanceiro({ showToast }) {
 
                     const { data, error } = await supabase
                         .from('despesas_manutencao')
-                        .select('id, placa, valor, erro_lancamento, descricao')
+                        .select('id, placa, valor, erro_lancamento, descricao, ordem_manutencao, pedido, periodo_referencia')
                         .eq('periodo_referencia', periodo)
                         .range(from, to);
 
                     if (error) throw error;
-
-                    if (data) {
-                        allExpensesData = [...allExpensesData, ...data];
-                    }
-
-                    if (!data || data.length < pageSize) {
-                        break;
-                    }
+                    if (data) { allExpensesData = [...allExpensesData, ...data]; }
+                    if (!data || data.length < pageSize) { break; }
                     page++;
                 }
-                // FIM DA LÓGICA DE PAGINAÇÃO
 
                 if (allExpensesData.length === 0) {
                     setIsLoading(false);
@@ -2375,14 +2376,26 @@ function DashboardFinanceiro({ showToast }) {
                 if (equipamentosError) throw equipamentosError;
                 const plateTypeMap = new Map(equipamentosData.map(eq => [eq.plate, eq.type]));
 
-                const naoIdentificados = allExpensesData.filter(exp => !plateTypeMap.has(exp.placa) || !plateTypeMap.get(exp.placa));
-                setRelatorioNaoIdentificados(naoIdentificados);
-
                 const validExpenses = allExpensesData.filter(e => e.erro_lancamento !== true);
                 const errorExpenses = allExpensesData.filter(e => e.erro_lancamento === true);
 
                 const totalErros = errorExpenses.reduce((sum, item) => sum + (item.valor || 0), 0);
-                setRelatorioErros({ count: errorExpenses.length, total: totalErros, items: errorExpenses.sort((a, b) => a.valor - b.valor) });
+                setRelatorioErros({ count: errorExpenses.length, total: totalErros, items: errorExpenses });
+                
+                const errosPorPlaca = {};
+                errorExpenses.forEach(exp => {
+                    errosPorPlaca[exp.placa] = (errosPorPlaca[exp.placa] || 0) + exp.valor;
+                });
+                const errorRankingArray = Object.entries(errosPorPlaca).map(([placa, total]) => ({ placa, total })).sort((a, b) => a.total - b.total).slice(0, 5);
+                setErrorRankingPlacas(errorRankingArray);
+
+                const errosPorTipo = {};
+                errorExpenses.forEach(exp => {
+                    const tipo = plateTypeMap.get(exp.placa) || 'Não Identificado';
+                    errosPorTipo[tipo] = (errosPorTipo[tipo] || 0) + Math.abs(exp.valor);
+                });
+                const errorCustoPorTipoArray = Object.entries(errosPorTipo).map(([tipo, total]) => ({ tipo, total }));
+                setErrorCustoPorTipo(errorCustoPorTipoArray);
 
                 if (validExpenses.length > 0) {
                     let totalDespesas = 0;
@@ -2409,73 +2422,77 @@ function DashboardFinanceiro({ showToast }) {
             }
             setIsLoading(false);
         };
-
         fetchData();
     }, [periodo, showToast]);
-    
-    // Efeito para desenhar/atualizar os gráficos
+
     React.useEffect(() => {
         if (barChartRef.current) barChartRef.current.destroy();
         if (pieChartRef.current) pieChartRef.current.destroy();
         const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
         if (rankingPlacas.length > 0) {
             const barCtx = document.getElementById('rankingDespesasChart').getContext('2d');
-            barChartRef.current = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: rankingPlacas.map(d => d.placa),
-                    datasets: [{
-                        label: 'Custo Total (R$)',
-                        data: rankingPlacas.map(d => d.total),
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (context) => currencyFormatter.format(context.raw) } }
-                    }
-                }
-            });
+            barChartRef.current = new Chart(barCtx, { type: 'bar', data: { labels: rankingPlacas.map(d => d.placa), datasets: [{ label: 'Custo Total (R$)', data: rankingPlacas.map(d => d.total), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => currencyFormatter.format(c.raw) } } } } });
         }
         if (custoPorTipo.length > 0) {
             const pieCtx = document.getElementById('custoPorTipoChart').getContext('2d');
-            pieChartRef.current = new Chart(pieCtx, {
-                type: 'pie',
-                data: {
-                    labels: custoPorTipo.map(d => d.tipo),
-                    datasets: [{
-                        data: custoPorTipo.map(d => d.total),
-                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#6B7280', '#EF4444', '#8B5CF6'],
-                    }]
-                },
-                options: { 
-                    responsive: true,
-                    plugins: { tooltip: { callbacks: { label: (context) => `${context.label}: ${currencyFormatter.format(context.raw)}` } } }
-                }
-            });
+            pieChartRef.current = new Chart(pieCtx, { type: 'pie', data: { labels: custoPorTipo.map(d => d.tipo), datasets: [{ data: custoPorTipo.map(d => d.total), backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#6B7280', '#EF4444', '#8B5CF6'], }] }, options: { responsive: true, plugins: { tooltip: { callbacks: { label: (c) => `${c.label}: ${currencyFormatter.format(c.raw)}` } } } } });
         }
     }, [rankingPlacas, custoPorTipo]);
     
-    // Função auxiliar para formatar moeda
-    const formatCurrency = (value) => {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
-    }
+    React.useEffect(() => {
+        if (errorBarChartRef.current) errorBarChartRef.current.destroy();
+        if (errorPieChartRef.current) errorPieChartRef.current.destroy();
+        const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+        if (errorRankingPlacas.length > 0) {
+            const ctx = document.getElementById('errorRankingChart').getContext('2d');
+            errorBarChartRef.current = new Chart(ctx, { type: 'bar', data: { labels: errorRankingPlacas.map(d => d.placa), datasets: [{ label: 'Valor Total em Erros', data: errorRankingPlacas.map(d => d.total), backgroundColor: 'rgba(239, 68, 68, 0.5)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 1 }] }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => currencyFormatter.format(c.raw) } } } } });
+        }
+        if (errorCustoPorTipo.length > 0) {
+            const ctx = document.getElementById('errorPieChart').getContext('2d');
+            errorPieChartRef.current = new Chart(ctx, { type: 'pie', data: { labels: errorCustoPorTipo.map(d => d.tipo), datasets: [{ data: errorCustoPorTipo.map(d => d.total), backgroundColor: ['#EF4444', '#F59E0B', '#6B7280', '#3B82F6', '#10B981'] }] }, options: { responsive: true, plugins: { tooltip: { callbacks: { label: (c) => `${c.label}: ${currencyFormatter.format(c.raw)}` } } } } });
+        }
+    }, [errorRankingPlacas, errorCustoPorTipo]);
+    
+    const groupedErrors = React.useMemo(() => {
+        if (relatorioErros.items.length === 0) return [];
+        const groups = {};
+        relatorioErros.items.forEach(error => {
+            if (!groups[error.placa]) { groups[error.placa] = { placa: error.placa, count: 0, totalValue: 0, details: [] }; }
+            groups[error.placa].count++;
+            groups[error.placa].totalValue += error.valor;
+            groups[error.placa].details.push(error);
+        });
+        const sorted = Object.values(groups).sort((a, b) => {
+            if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'ascending' ? -1 : 1;
+            if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'ascending' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    }, [relatorioErros.items, sortConfig]);
 
-    // Renderização do componente
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') { direction = 'descending'; }
+        setSortConfig({ key, direction });
+    };
+    
+    const toggleRow = (placa) => { setExpandedRows(prev => ({...prev, [placa]: !prev[placa]})); };
+
+    const exportErrorsToExcel = () => {
+        const dataForExport = relatorioErros.items.map(err => ({ 'Placa': err.placa, 'Descrição': err.descricao, 'Ordem de Manutenção': err.ordem_manutencao, 'Pedido': err.pedido, 'Valor': err.valor, 'Período': err.periodo_referencia, }));
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Erros de Lancamento");
+        XLSX.writeFile(workbook, "Erros_Lancamento_Despesas.xlsx");
+    };
+
+    const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg space-y-8" },
         React.createElement('div', null, 
             React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-center mb-6" },
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Dashboard Financeiro de Manutenção"),
-                React.createElement('select', { 
-                    value: periodo, 
-                    onChange: e => setPeriodo(e.target.value), 
-                    className: "w-full sm:w-auto mt-4 sm:mt-0 p-2 border rounded-md shadow-sm" 
-                }, periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt)))
+                React.createElement('select', { value: periodo, onChange: e => setPeriodo(e.target.value), className: "w-full sm:w-auto mt-4 sm:mt-0 p-2 border rounded-md shadow-sm" }, periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt)))
             ),
             React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" },
                 React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm" },
@@ -2501,7 +2518,10 @@ function DashboardFinanceiro({ showToast }) {
             )
         ),
         React.createElement('div', { className: "mt-8" },
-            React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-4" }, "Relatório de Erros de Lançamento"),
+            React.createElement('div', { className: 'flex justify-between items-center mb-4' },
+                React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, "Relatório de Erros de Lançamento"),
+                React.createElement('button', { onClick: exportErrorsToExcel, className: 'py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition' }, 'Exportar Erros para Excel')
+            ),
             React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-6" },
                 React.createElement('div', { className: "bg-red-50 p-6 rounded-lg shadow-sm" },
                     React.createElement('h3', { className: "text-red-600 font-semibold uppercase text-sm" }, "Total de Lançamentos com Erro"),
@@ -2514,46 +2534,52 @@ function DashboardFinanceiro({ showToast }) {
                     React.createElement('p', { className: "text-3xl font-bold text-red-800 mt-1" }, formatCurrency(relatorioErros.total))
                 )
             ),
+            React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8" },
+                React.createElement('div', { className: "lg:col-span-3 bg-red-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-lg font-semibold text-red-700 mb-4" }, "Top 5 Placas com Erros (por Valor)"),
+                    React.createElement('canvas', { id: 'errorRankingChart' })
+                ),
+                React.createElement('div', { className: "lg:col-span-2 bg-red-50 p-6 rounded-lg shadow-sm" },
+                    React.createElement('h3', { className: "text-lg font-semibold text-red-700 mb-4" }, "Distribuição de Erros por Implemento"),
+                    React.createElement('canvas', { id: 'errorPieChart' })
+                )
+            ),
+            React.createElement('h3', { className: 'text-lg font-semibold text-slate-700 mb-4' }, 'Detalhes dos Erros por Placa'),
             React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
                 React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                     React.createElement('thead', { className: "text-xs text-red-700 uppercase bg-red-100" },
                         React.createElement('tr', null,
-                            ["Placa", "Descrição", "Valor"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                            React.createElement('th', { className: "px-6 py-4 font-semibold" }, 'Placa'),
+                            React.createElement('th', { onClick: () => handleSort('count'), className: "px-6 py-4 font-semibold cursor-pointer hover:bg-red-200" }, 'Qtde. de Erros'),
+                            React.createElement('th', { onClick: () => handleSort('totalValue'), className: "px-6 py-4 font-semibold cursor-pointer hover:bg-red-200" }, 'Valor Total')
                         )
                     ),
                     React.createElement('tbody', null,
                         isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center" }, "Carregando...")) :
-                        relatorioErros.items.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center text-slate-500" }, "Nenhum erro de lançamento encontrado para este período.")) :
-                        relatorioErros.items.map(item =>
-                            React.createElement('tr', { key: item.id, className: "hover:bg-red-50" },
-                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.placa),
-                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.descricao),
-                                React.createElement('td', { className: "px-6 py-4" }, formatCurrency(item.valor))
+                        groupedErrors.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center text-slate-500" }, "Nenhum erro de lançamento encontrado.")) :
+                        groupedErrors.map(group => React.createElement(React.Fragment, { key: group.placa },
+                            React.createElement('tr', { onClick: () => toggleRow(group.placa), className: 'hover:bg-red-50 cursor-pointer border-t' },
+                                React.createElement('td', { className: 'px-6 py-4 font-medium' }, group.placa),
+                                React.createElement('td', { className: 'px-6 py-4' }, group.count),
+                                React.createElement('td', { className: 'px-6 py-4' }, formatCurrency(group.totalValue))
+                            ),
+                            expandedRows[group.placa] && React.createElement('tr', { className: 'bg-slate-50' },
+                                React.createElement('td', { colSpan: 3, className: 'p-4' },
+                                    React.createElement('table', { className: 'w-full text-xs' },
+                                        React.createElement('thead', null, React.createElement('tr', { className: 'text-left' },
+                                            React.createElement('th', { className: 'py-2 px-3' }, 'Descrição'),
+                                            React.createElement('th', { className: 'py-2 px-3' }, 'Valor')
+                                        )),
+                                        React.createElement('tbody', null,
+                                            group.details.map(detail => React.createElement('tr', { key: detail.id, className: 'border-t' },
+                                                React.createElement('td', { className: 'py-2 px-3' }, detail.descricao),
+                                                React.createElement('td', { className: 'py-2 px-3' }, formatCurrency(detail.valor))
+                                            ))
+                                        )
+                                    )
+                                )
                             )
-                        )
-                    )
-                )
-            )
-        ),
-        React.createElement('div', { className: "mt-8" },
-            React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-4" }, "Lançamentos com Placas Não Identificadas"),
-            React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
-                React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                    React.createElement('thead', { className: "text-xs text-amber-700 uppercase bg-amber-100" },
-                        React.createElement('tr', null,
-                            ["Placa", "Descrição", "Valor"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
-                        )
-                    ),
-                    React.createElement('tbody', null,
-                        isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center" }, "Carregando...")) :
-                        relatorioNaoIdentificados.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center text-slate-500" }, "Nenhum lançamento com placa não identificada encontrado para este período.")) :
-                        relatorioNaoIdentificados.map(item =>
-                            React.createElement('tr', { key: item.id, className: "hover:bg-amber-50" },
-                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 font-medium" }, item.placa),
-                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.descricao),
-                                React.createElement('td', { className: "px-6 py-4" }, formatCurrency(item.valor))
-                            )
-                        )
+                        ))
                     )
                 )
             )
