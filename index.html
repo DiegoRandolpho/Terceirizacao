@@ -2406,7 +2406,7 @@ function DashboardFinanceiro({ showToast }) {
                     )
                 );
             }
-/* INÍCIO DA FUNÇÃO ThirdPartyByRegion COMPLETA COM DEPURAÇÃO */
+/* INÍCIO DA FUNÇÃO ThirdPartyByRegion FINAL E CORRIGIDA */
 
 function ThirdPartyByRegion({ showToast }) {
     const [reportData, setReportData] = React.useState([]);
@@ -2415,87 +2415,61 @@ function ThirdPartyByRegion({ showToast }) {
     const [selectedBranch, setSelectedBranch] = React.useState('all');
     const [isLoading, setIsLoading] = React.useState(true);
 
-    // Efeito para buscar e cruzar todos os dados necessários
-    React.useEffect(() => {
-        const fetchReportData = async () => {
-            setIsLoading(true);
-            try {
-                // 1. Pega a localização atual de todas as placas ativas
-                const { data: locations, error: locationsError } = await supabase
-                    .from('trocasFilial')
-                    .select('plate, newBranch')
-                    .is('ending_date', null);
-                if (locationsError) throw locationsError;
-                const locationMap = new Map(locations.map(l => [l.plate, l.newBranch]));
+    const fetchReportData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data: locations, error: locationsError } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
+            if (locationsError) throw locationsError;
+            const locationMap = new Map(locations.map(l => [l.plate, l.newBranch]));
 
-                // 2. Pega todas as concessões ativas (placa -> terceiro)
-                const { data: concessions, error: concessionsError } = await supabase
-                    .from('concessao')
-                    .select('placa, codSAP')
-                    .is('data_fim', null);
-                if (concessionsError) throw concessionsError;
+            const { data: concessions, error: concessionsError } = await supabase.from('concessao').select('placa, codSAP').is('data_fim', null);
+            if (concessionsError) throw concessionsError;
 
-                // 3. Pega os detalhes de todos os terceiros
-                const { data: terceiros, error: terceirosError } = await supabase
-                    .from('terceiros')
-                    .select('codSAP, apelido, razao, cnpj');
-                if (terceirosError) throw terceirosError;
-                const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t]));
-                
-                // 4. Junta todas as informações
-                const joinedData = concessions.map(con => {
-                    const terceiroInfo = terceirosMap.get(con.codSAP);
-                    const region = locationMap.get(con.placa);
-                    if (!terceiroInfo || !region) return null;
+            const { data: terceiros, error: terceirosError } = await supabase.from('terceiros').select('codSAP, apelido, razao, cnpj');
+            if (terceirosError) throw terceirosError;
+            const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t]));
+            
+            const joinedData = concessions.map(con => {
+                const terceiroInfo = terceirosMap.get(con.codSAP);
+                const region = locationMap.get(con.placa);
+                if (!terceiroInfo || !region) return null;
+                return {
+                    id: `${con.placa}-${con.codSAP}`,
+                    region: region,
+                    apelido: terceiroInfo.apelido,
+                    razao: terceiroInfo.razao,
+                    cnpj: terceiroInfo.cnpj,
+                    placa: con.placa,
+                };
+            }).filter(Boolean);
 
-                    return {
-                        id: `${con.placa}-${con.codSAP}`,
-                        region: region,
-                        apelido: terceiroInfo.apelido,
-                        razao: terceiroInfo.razao,
-                        cnpj: terceiroInfo.cnpj,
-                        placa: con.placa,
-                    };
-                }).filter(Boolean);
+            setReportData(joinedData);
+            
+            const { data: branchList, error: branchError } = await supabase.from('filiais').select('name').order('name');
+            if (branchError) throw branchError;
+            setBranches(branchList.map(b => b.name));
 
-                setReportData(joinedData);
-                setFilteredData(joinedData);
-                
-                // 5. Pega a lista de filiais para o filtro
-                const { data: branchList, error: branchError } = await supabase.from('filiais').select('name').order('name');
-                if (branchError) throw branchError;
-                setBranches(branchList.map(b => b.name));
-
-            } catch (err) {
-                showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
-            }
-            setIsLoading(false);
-        };
-
-        fetchReportData();
+        } catch (err) {
+            showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
+        }
+        setIsLoading(false);
     }, [showToast]);
 
-    // Efeito para aplicar o filtro (AGORA COM CONSOLE.LOG)
     React.useEffect(() => {
-        console.log('--- EFEITO DE FILTRO ACIONADO ---');
-        console.log('Filial selecionada:', selectedBranch);
-        console.log('Dados completos para filtrar:', reportData);
+        fetchReportData();
+    }, [fetchReportData]);
 
+    React.useEffect(() => {
         if (selectedBranch === 'all') {
             setFilteredData(reportData);
-            console.log('Resultado: Mostrando todos os', reportData.length, 'itens.');
         } else {
-            const result = reportData.filter(item => item.region === selectedBranch);
-            setFilteredData(result);
-            console.log('Resultado do filtro:', result);
+            setFilteredData(reportData.filter(item => item.region === selectedBranch));
         }
-        console.log('------------------------------------');
     }, [selectedBranch, reportData]);
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Relatório de Terceiros por Região"),
         
-        // Filtro por Região (usando a lista suspensa)
         React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 max-w-sm mx-auto" },
              React.createElement('label', { htmlFor: 'branch-filter', className: "block text-sm font-medium text-gray-700 mb-1" }, "Filtrar por Filial (Região)"),
              React.createElement('select', { 
@@ -2509,7 +2483,6 @@ function ThirdPartyByRegion({ showToast }) {
             )
         ),
         
-        // Tabela de Resultados
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
@@ -2539,7 +2512,7 @@ function ThirdPartyByRegion({ showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO ThirdPartyByRegion COMPLETA */
+/* FIM DA FUNÇÃO ThirdPartyByRegion FINAL E CORRIGIDA */
             
 function TurnoverDashboard({ showToast }) {
     const [stats, setStats] = React.useState({ contratacoes: 0, encerramentos: 0, trocas: 0, turnover: 0 });
