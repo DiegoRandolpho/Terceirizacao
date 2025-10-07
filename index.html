@@ -2073,7 +2073,7 @@ function ParcelaFixaManagement({ userId, showToast }) {
 }
 
 /* FIM DO NOVO COMPONENTE ParcelaFixaManagement */
-/* INÍCIO DO NOVO COMPONENTE AcertoManagement */
+/* INÍCIO DA FUNÇÃO AcertoManagement COMPLETA E ATUALIZADA */
 
 function AcertoManagement({ userId, userRole, showToast }) {
     // Estados do componente
@@ -2085,43 +2085,50 @@ function AcertoManagement({ userId, userRole, showToast }) {
     const initialFormState = { periodo: '', cod_sap: '', placa: '', tipo: '', descricao: '', nf: '', valor: '', observacao: '' };
     const [formData, setFormData] = React.useState(initialFormState);
 
-    // Estados para filtros e formulários
+    // Estados para filtros e dados de formulário
     const [periodoFilter, setPeriodoFilter] = React.useState('');
     const [terceiroFilter, setTerceiroFilter] = React.useState('todos');
     const [allTerceiros, setAllTerceiros] = React.useState([]);
+    const [allPlates, setAllPlates] = React.useState([]);
     const [activeCodSaps, setActiveCodSaps] = React.useState(new Set());
     const tiposDeLancamento = ["CRÉDITO (RECEITA)", "DÉBITO (DESPESA)", "SALDO MEI", "REEMBOLSO SALDO MEI", "RETENÇÃO CONTRATUAL"];
 
-    // Função para formatar moeda
+    // Funções auxiliares
     const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+    const formatPeriodo = (value) => {
+        const cleaned = ('' + value).replace(/[^\d]/g, '');
+        const truncated = cleaned.slice(0, 6);
+        if (truncated.length > 2) { return `${truncated.slice(0, 2)}/${truncated.slice(2)}`; }
+        return truncated;
+    };
 
-    // Função para buscar os dados
-    const fetchAcertos = React.useCallback(async () => {
+    // Função principal para buscar todos os dados
+    const fetchData = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            // Busca as concessões ativas para determinar o STATUS
-            const { data: activeConcessions, error: concessionsError } = await supabase
-                .from('concessao')
-                .select('codSAP')
-                .is('data_fim', null);
-            if (concessionsError) throw concessionsError;
-            const activeSet = new Set(activeConcessions.map(c => c.codSAP));
-            setActiveCodSaps(activeSet);
+            // Busca dados de apoio em paralelo
+            const [activeConcessionsRes, terceirosRes, platesRes] = await Promise.all([
+                supabase.from('concessao').select('codSAP').is('data_fim', null),
+                supabase.from('terceiros').select('codSAP, apelido').order('apelido'),
+                supabase.from('equipamentos').select('plate').order('plate')
+            ]);
             
-            // Busca todos os terceiros para os filtros
-            const { data: terceirosData, error: terceirosError } = await supabase.from('terceiros').select('codSAP, apelido').order('apelido');
-            if (terceirosError) throw terceirosError;
-            setAllTerceiros(terceirosData || []);
+            if (activeConcessionsRes.error) throw activeConcessionsRes.error;
+            if (terceirosRes.error) throw terceirosRes.error;
+            if (platesRes.error) throw platesRes.error;
 
-            // Busca os lançamentos de acerto
+            const activeSet = new Set(activeConcessionsRes.data.map(c => c.codSAP));
+            setActiveCodSaps(activeSet);
+            setAllTerceiros(terceirosRes.data || []);
+            setAllPlates(platesRes.data.map(p => p.plate) || []);
+
+            // Busca os lançamentos de acerto com base nos filtros
             let query = supabase.from('acertos').select('*').order('created_at', { ascending: false });
             if (periodoFilter) { query = query.eq('periodo', periodoFilter); }
             if (terceiroFilter !== 'todos') { query = query.eq('cod_sap', terceiroFilter); }
-
             const { data: acertosData, error: acertosError } = await query;
             if (acertosError) throw acertosError;
             
-            // Adiciona o status dinâmico a cada lançamento
             const listWithStatus = acertosData.map(acerto => ({
                 ...acerto,
                 status: activeSet.has(acerto.cod_sap) ? 'Ativo' : 'Inativo'
@@ -2135,12 +2142,13 @@ function AcertoManagement({ userId, userRole, showToast }) {
     }, [showToast, periodoFilter, terceiroFilter]);
 
     React.useEffect(() => {
-        fetchAcertos();
-    }, [fetchAcertos]);
+        fetchData();
+    }, [fetchData]);
 
+    // Handlers para o formulário
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.periodo || !formData.cod_sap || !formData.tipo || !formData.valor) {
+        if (!formData.periodo || !formData.cod_sap || !formData.tipo || formData.valor === '') {
             showToast("Preencha os campos obrigatórios (Período, Terceiro, Tipo, Valor).", "error");
             return;
         }
@@ -2159,7 +2167,7 @@ function AcertoManagement({ userId, userRole, showToast }) {
             setShowForm(false);
             setIsEditing(false);
             setFormData(initialFormState);
-            fetchAcertos();
+            fetchData();
         } catch(err) {
             showToast(`Erro ao salvar lançamento: ${err.message}`, "error");
         }
@@ -2184,14 +2192,16 @@ function AcertoManagement({ userId, userRole, showToast }) {
 
     const handleDelete = async (acertoId) => {
         if (!window.confirm("Deseja realmente excluir este lançamento?")) return;
+        setIsLoading(true);
         try {
             const { error } = await supabase.from('acertos').delete().eq('id', acertoId);
             if (error) throw error;
             showToast("Lançamento excluído com sucesso!", "success");
-            fetchAcertos();
+            fetchData();
         } catch(err) {
             showToast("Erro ao excluir lançamento.", "error");
         }
+        setIsLoading(false);
     };
     
     const handleCancel = () => {
@@ -2206,45 +2216,47 @@ function AcertoManagement({ userId, userRole, showToast }) {
         }
         return React.createElement('span', { className: 'px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800' }, 'Inativo');
     };
-
+    
+    // Renderização do componente
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('div', { className: "flex justify-between items-center mb-4" },
             React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Controle de Acertos"),
             !showForm && React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, "Novo Lançamento")
         ),
 
-        // Formulário de Adicionar/Editar
         showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 border rounded-lg" },
-            React.createElement('input', { name: "periodo", value: formData.periodo, onChange: e => setFormData({...formData, periodo: e.target.value}), placeholder: "Período (MM/AAAA)*", className: "p-2 border rounded" }),
-            React.createElement('select', { name: "cod_sap", value: formData.cod_sap, onChange: e => setFormData({...formData, cod_sap: e.target.value}), className: "p-2 border rounded" },
+            React.createElement('input', { name: "periodo", value: formData.periodo, onChange: e => setFormData({...formData, periodo: formatPeriodo(e.target.value)}), placeholder: "Período (MM/AAAA)*", className: "p-2 border rounded", maxLength: 7 }),
+            React.createElement('select', { name: "cod_sap", value: formData.cod_sap, onChange: e => setFormData({...formData, cod_sap: e.target.value}), className: "p-2 border rounded", required: true },
                 React.createElement('option', { value: "" }, "Selecione o Terceiro*"),
                 allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
             ),
-            React.createElement('input', { name: "placa", value: formData.placa, onChange: e => setFormData({...formData, placa: e.target.value}), placeholder: "Placa (Opcional)", className: "p-2 border rounded" }),
-            React.createElement('select', { name: "tipo", value: formData.tipo, onChange: e => setFormData({...formData, tipo: e.target.value}), className: "p-2 border rounded" },
+            React.createElement('select', { name: "placa", value: formData.placa, onChange: e => setFormData({...formData, placa: e.target.value}), className: "p-2 border rounded" },
+                React.createElement('option', { value: "" }, "Placa (Opcional)"),
+                React.createElement('option', { value: "-" }, "- (Sem Placa)"),
+                allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+            ),
+            React.createElement('select', { name: "tipo", value: formData.tipo, onChange: e => setFormData({...formData, tipo: e.target.value}), className: "p-2 border rounded", required: true },
                  React.createElement('option', { value: "" }, "Selecione o Tipo*"),
                  tiposDeLancamento.map(t => React.createElement('option', { key: t, value: t }, t))
             ),
             React.createElement('input', { name: "descricao", value: formData.descricao, onChange: e => setFormData({...formData, descricao: e.target.value}), placeholder: "Descrição", className: "p-2 border rounded" }),
             React.createElement('input', { name: "nf", value: formData.nf, onChange: e => setFormData({...formData, nf: e.target.value}), placeholder: "NF", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "valor", type: "number", step: "0.01", value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), placeholder: "Valor*", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "valor", type: "number", step: "0.01", value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), placeholder: "Valor*", className: "p-2 border rounded", required: true }),
             React.createElement('input', { name: "observacao", value: formData.observacao, onChange: e => setFormData({...formData, observacao: e.target.value}), placeholder: "Observação", className: "p-2 border rounded" }),
-            React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
+            React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4 mt-2" },
                 React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                 React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
             )
         ),
         
-        // Filtros da Tabela
         !showForm && React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4" },
-             React.createElement('input', { type: 'text', placeholder: "Filtrar Período (MM/AAAA)...", value: periodoFilter, onChange: e => setPeriodoFilter(e.target.value), className: "p-2 border rounded" }),
+             React.createElement('input', { type: 'text', placeholder: "Filtrar Período (MM/AAAA)...", value: periodoFilter, onChange: e => setPeriodoFilter(formatPeriodo(e.target.value)), className: "p-2 border rounded", maxLength: 7 }),
              React.createElement('select', { value: terceiroFilter, onChange: e => setTerceiroFilter(e.target.value), className: "p-2 border rounded" },
                 React.createElement('option', { value: 'todos' }, 'Todos os Terceiros'),
                 allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
              )
         ),
 
-        // Tabela de Lançamentos
         !showForm && React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-x-auto" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
@@ -2281,7 +2293,7 @@ function AcertoManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO NOVO COMPONENTE AcertoManagement */
+/* FIM DA FUNÇÃO AcertoManagement COMPLETA E ATUALIZADA */
 /* INÍCIO DO COMPONENTE DashboardFinanceiro COMPLETO E CORRIGIDO */
 
 function DashboardFinanceiro({ showToast }) {
