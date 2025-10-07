@@ -163,6 +163,7 @@
     thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
     concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
     acertoManagement: { title: 'Acerto', icon: 'FileText', adminOnly: true },
+    parcelaFixaManagement: { title: 'Parcela Fixa', icon: 'DollarSign', adminOnly: true },
     contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
     implementManagement: { title: 'Tipos de Implemento', icon: 'Settings', adminOnly: true },
 };
@@ -1943,6 +1944,135 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
               );
             }
 
+            /* INÍCIO DO NOVO COMPONENTE ParcelaFixaManagement */
+
+function ParcelaFixaManagement({ userId, showToast }) {
+    const [parcelasList, setParcelasList] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showForm, setShowForm] = React.useState(false);
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [currentParcela, setCurrentParcela] = React.useState(null);
+    const [formData, setFormData] = React.useState({ cod_sap: '', valor: '' });
+    const [allTerceiros, setAllTerceiros] = React.useState([]);
+
+    const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+
+    const fetchData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [parcelasRes, terceirosRes] = await Promise.all([
+                supabase.from('parcelas_fixas').select('*'),
+                supabase.from('terceiros').select('codSAP, apelido').order('apelido')
+            ]);
+            if (parcelasRes.error) throw parcelasRes.error;
+            if (terceirosRes.error) throw terceirosRes.error;
+
+            const terceirosMap = new Map(terceirosRes.data.map(t => [t.cod_sap, t.apelido]));
+            setAllTerceiros(terceirosRes.data || []);
+            
+            const listWithApelido = parcelasRes.data.map(p => ({
+                ...p,
+                apelido: terceirosRes.data.find(t => t.codSAP === p.cod_sap)?.apelido || 'N/A'
+            }));
+            setParcelasList(listWithApelido);
+        } catch(err) {
+            showToast("Erro ao carregar dados.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast]);
+
+    React.useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.cod_sap || formData.valor === '') {
+            showToast("Preencha todos os campos.", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const record = { cod_sap: formData.cod_sap, valor: parseFloat(formData.valor) };
+            if (isEditing) {
+                const { error } = await supabase.from('parcelas_fixas').update(record).eq('id', currentParcela.id);
+                if (error) throw error;
+                showToast("Parcela atualizada com sucesso!", "success");
+            } else {
+                const { error } = await supabase.from('parcelas_fixas').insert([record]);
+                if (error) throw error;
+                showToast("Parcela cadastrada com sucesso!", "success");
+            }
+            setShowForm(false);
+            setFormData({ cod_sap: '', valor: '' });
+            fetchData();
+        } catch(err) {
+            // Trata o erro de duplicação
+            if (err.message.includes('duplicate key value violates unique constraint')) {
+                showToast("Este terceiro já possui uma parcela fixa cadastrada.", "error");
+            } else {
+                showToast(`Erro ao salvar: ${err.message}`, "error");
+            }
+        }
+        setIsLoading(false);
+    };
+
+    const handleEditClick = (parcela) => {
+        setIsEditing(true);
+        setCurrentParcela(parcela);
+        setFormData({ cod_sap: parcela.cod_sap, valor: parcela.valor });
+        setShowForm(true);
+    };
+
+    const handleDelete = async (parcelaId) => {
+        if (!window.confirm("Deseja realmente excluir esta parcela?")) return;
+        try {
+            const { error } = await supabase.from('parcelas_fixas').delete().eq('id', parcelaId);
+            if (error) throw error;
+            showToast("Parcela excluída com sucesso!", "success");
+            fetchData();
+        } catch(err) {
+            showToast("Erro ao excluir.", "error");
+        }
+    };
+    
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Parcela Fixa"),
+        !showForm && React.createElement('div', { className: 'flex justify-center mb-6' }, React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); }, className: 'p-2 bg-blue-600 text-white rounded' }, 'Nova Parcela Fixa')),
+        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 border rounded-lg' },
+            React.createElement('select', { value: formData.cod_sap, onChange: e => setFormData({...formData, cod_sap: e.target.value}), disabled: isEditing, className: 'p-2 border rounded' },
+                React.createElement('option', { value: '' }, 'Selecione o Terceiro'),
+                allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, t.apelido))
+            ),
+            React.createElement('input', { type: 'number', step: '0.01', placeholder: 'Valor da Parcela', value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), className: 'p-2 border rounded' }),
+            React.createElement('div', { className: 'flex gap-4' },
+                React.createElement('button', { type: 'submit', className: 'p-2 bg-blue-600 text-white rounded', disabled: isLoading }, 'Salvar'),
+                React.createElement('button', { type: 'button', onClick: () => setShowForm(false), className: 'p-2 bg-gray-300 rounded' }, 'Cancelar')
+            )
+        ),
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: 'text-xs text-slate-700 uppercase bg-slate-100' }, React.createElement('tr', null,
+                    ['Terceiro (Apelido)', 'Cód. SAP', 'Valor', 'Ações'].map(h => React.createElement('th', { key: h, className: 'px-6 py-4 font-semibold' }, h))
+                )),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: 'p-4 text-center' }, 'Carregando...')) :
+                    parcelasList.map(p => React.createElement('tr', { key: p.id, className: 'hover:bg-blue-50' },
+                        React.createElement('td', { className: 'px-6 py-4 font-medium' }, p.apelido),
+                        React.createElement('td', { className: 'px-6 py-4' }, p.cod_sap),
+                        React.createElement('td', { className: 'px-6 py-4' }, formatCurrency(p.valor)),
+                        React.createElement('td', { className: 'px-6 py-4' }, React.createElement('div', { className: 'flex gap-x-4' },
+                            React.createElement('button', { onClick: () => handleEditClick(p) }, React.createElement(LucideIcon, {name: 'Edit'})),
+                            React.createElement('button', { onClick: () => handleDelete(p.id) }, React.createElement(LucideIcon, {name: 'Trash2'}))
+                        ))
+                    ))
+                )
+            )
+        )
+    );
+}
+
+/* FIM DO NOVO COMPONENTE ParcelaFixaManagement */
 /* INÍCIO DO NOVO COMPONENTE AcertoManagement */
 
 function AcertoManagement({ userId, userRole, showToast }) {
@@ -4281,6 +4411,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
                         case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
                         case 'acertoManagement': return userRole === 'administrador' ? React.createElement(AcertoManagement, { userId, userRole, showToast }) : null;
+                        case 'parcelaFixaManagement': return userRole === 'administrador' ? React.createElement(ParcelaFixaManagement, { userId, showToast }) : null;
                         case 'quickAccessMenu':
                         default: return React.createElement(QuickAccessMenu, { setCurrentPage, userFullname, quickLinks, onEdit: () => setIsEditModalOpen(true) });
                     }
@@ -4300,6 +4431,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
         React.createElement(MenuCategory, { title: "Relatórios", icon: "FileText", menuKey: "relatorios" },
             React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
             React.createElement(MenuItem, { page: 'maintenanceDashboard', icon: 'DollarSign', text: 'Dash. Manutenção' }),
+            React.createElement(MenuItem, { page: 'acertoManagement', icon: 'FileText', text: 'Acerto' }),
             React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover' }),
             React.createElement(MenuItem, { page: 'thirdPartyByRegion', icon: 'Building', text: 'Terceiros por Região' }),
             React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distr. Região' }),
@@ -4326,7 +4458,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
             React.createElement(MenuItem, { page: 'implementManagement', icon: 'Settings', text: 'Tipos de Implemento' }),
             React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
             React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'User', text: 'Terceiros' }),
-            React.createElement(MenuItem, { page: 'acertoManagement', icon: 'FileText', text: 'Acerto' }),
+            React.createElement(MenuItem, { page: 'parcelaFixaManagement', icon: 'DollarSign', text: 'Parcela Fixa' }),
             React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
             React.createElement(MenuItem, { page: 'contractManagement', icon: 'Edit', text: 'Contrato/Distrato' })
         )
