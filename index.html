@@ -2620,57 +2620,90 @@ function TurnoverDashboard({ showToast }) {
 }
 
 /* FIM DO CÓDIGO */
-            function OutsourcingDistribution({ userId, showToast, setCurrentPage }) {
-                const [branchesByResponsible, setBranchesByResponsible] = React.useState({});
-                const [isLoading, setIsLoading] = React.useState(false);
+            /* INÍCIO DA FUNÇÃO OutsourcingDistribution ATUALIZADA */
 
-                React.useEffect(() => {
-                    const fetchDistributionData = async () => {
-                        setIsLoading(true);
-                        try {
-                            const { data: branchesData } = await supabase.from('filiais').select('name, responsible');
-                            const { data: supervisorsData } = await supabase.from('app_users').select('username').eq('role', 'supervisor').order('username');
-                            const supervisors = supervisorsData.map(u => u.username);
-                            const grouped = supervisors.reduce((acc, sup) => ({...acc, [sup]: []}), {});
-                            grouped['Sem Responsável'] = [];
-                            branchesData.forEach(branch => {
-                                if (branch.responsible && grouped[branch.responsible]) {
-                                    grouped[branch.responsible].push(branch.name);
-                                } else {
-                                    grouped['Sem Responsável'].push(branch.name);
-                                }
-                            });
-                            setBranchesByResponsible(grouped);
-                        } catch (e) {
-                            showToast("Erro ao carregar dados.", "error");
-                        }
-                        setIsLoading(false);
-                    };
-                    fetchDistributionData();
-                }, [showToast]);
+function OutsourcingDistribution({ userId, showToast, setCurrentPage }) {
+    const [branchesByResponsible, setBranchesByResponsible] = React.useState({});
+    const [isLoading, setIsLoading] = React.useState(false);
+    // NOVO: Estado para o termo de busca
+    const [searchTerm, setSearchTerm] = React.useState('');
 
-                return (
-                    React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg w-full" },
-                        React.createElement('div', { className: "flex items-center mb-6" },
-                            React.createElement('button', { onClick: () => setCurrentPage('quickAccessMenu'), className: "p-2 mr-4 border rounded" }, React.createElement(LucideIcon, {name: 'ArrowLeft'})),
-                            React.createElement('h2', { className: "text-2xl font-bold text-gray-800 flex-grow text-center" }, "Distribuição de Terceirização")
-                        ),
-                        isLoading ? React.createElement('p', {}, "Carregando...") :
-                        React.createElement('div', { className: "flex flex-wrap gap-6 justify-center" },
-                            Object.entries(branchesByResponsible).filter(([_, branches]) => branches.length > 0).map(([responsible, branches]) => (
-                                React.createElement('div', { key: responsible, className: "w-full md:w-1/3 lg:w-1/4 p-2" },
-                                    React.createElement('div', { className: "bg-gray-100 rounded-lg p-4 h-full" },
-                                        React.createElement('h3', { className: "font-semibold border-b pb-2 mb-2" }, responsible),
-                                        React.createElement('div', { className: "space-y-2" }, branches.map(branch => (
-                                            React.createElement('div', { key: branch, className: "bg-white p-2 rounded shadow-sm" }, branch)
-                                        )))
-                                    )
-                                )
-                            ))
+    React.useEffect(() => {
+        const fetchDistributionData = async () => {
+            setIsLoading(true);
+            try {
+                const { data: branchesData } = await supabase.from('filiais').select('name, responsible');
+                const { data: supervisorsData } = await supabase.from('app_users').select('username').eq('role', 'supervisor').order('username');
+                
+                const supervisors = supervisorsData.map(u => u.username);
+                const grouped = supervisors.reduce((acc, sup) => ({...acc, [sup]: []}), {});
+                grouped['Sem Responsável'] = [];
+                
+                branchesData.forEach(branch => {
+                    if (branch.responsible && grouped[branch.responsible]) {
+                        grouped[branch.responsible].push(branch.name);
+                    } else {
+                        grouped['Sem Responsável'].push(branch.name);
+                    }
+                });
+                setBranchesByResponsible(grouped);
+            } catch (e) {
+                showToast("Erro ao carregar dados.", "error");
+            }
+            setIsLoading(false);
+        };
+        fetchDistributionData();
+    }, [showToast]);
+
+    // NOVO: Filtra os responsáveis com base no termo de busca
+    const filteredSupervisors = Object.entries(branchesByResponsible)
+        .filter(([responsible, branches]) => 
+            branches.length > 0 && responsible.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+    return (
+        React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg w-full" },
+            React.createElement('div', { className: "flex items-center mb-6" },
+                React.createElement('button', { onClick: () => setCurrentPage('quickAccessMenu'), className: "p-2 mr-4 border rounded hover:bg-gray-100" }, React.createElement(LucideIcon, {name: 'ArrowLeft'})),
+                React.createElement('h2', { className: "text-2xl font-bold text-gray-800 flex-grow text-center" }, "Distribuição de Terceirização")
+            ),
+            
+            // NOVO: Campo de busca
+            React.createElement('div', { className: 'mb-8 max-w-md mx-auto' }, 
+                React.createElement('input', {
+                    type: 'text',
+                    placeholder: 'Buscar por responsável...',
+                    value: searchTerm,
+                    onChange: e => setSearchTerm(e.target.value),
+                    className: 'w-full p-2 border border-gray-300 rounded-md shadow-sm'
+                })
+            ),
+
+            isLoading ? React.createElement('p', { className: 'text-center' }, "Carregando...") :
+            React.createElement('div', { className: "flex flex-wrap gap-6 justify-center" },
+                filteredSupervisors.map(([responsible, branches]) => (
+                    React.createElement('div', { key: responsible, className: "w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-2" },
+                        // ALTERADO: Card com novo visual e sem altura fixa ('h-full' removido)
+                        React.createElement('div', { className: "bg-slate-50 border border-slate-200 rounded-lg p-4 shadow-sm" },
+                            React.createElement('div', { className: 'flex justify-between items-center border-b pb-2 mb-3' },
+                                React.createElement('h3', { className: "font-semibold text-slate-800 capitalize flex items-center" }, 
+                                    React.createElement(LucideIcon, { name: 'User', className: 'w-4 h-4 mr-2 text-slate-500' }),
+                                    responsible
+                                ),
+                                React.createElement('span', { className: 'text-sm font-bold text-white bg-blue-500 rounded-full px-2 py-0.5' }, branches.length)
+                            ),
+                            React.createElement('div', { className: "space-y-2" }, branches.sort().map(branch => (
+                                React.createElement('div', { key: branch, className: "bg-white p-2 rounded shadow-sm text-slate-700" }, branch)
+                            )))
                         )
                     )
-                );
-            }
+                ))
+            )
+        )
+    );
+}
+
+/* FIM DA FUNÇÃO OutsourcingDistribution ATUALIZADA */
             function DisplacementApprovals({ userRole, showToast }) {
                 const [approvals, setApprovals] = React.useState([]);
                 const [isLoading, setIsLoading] = React.useState(false);
