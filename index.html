@@ -2406,7 +2406,7 @@ function DashboardFinanceiro({ showToast }) {
                     )
                 );
             }
-/* INÍCIO DA FUNÇÃO ThirdPartyByRegion FINAL E CORRIGIDA */
+/* INÍCIO DA VERSÃO DEFINITIVA DA FUNÇÃO ThirdPartyByRegion */
 
 function ThirdPartyByRegion({ showToast }) {
     const [reportData, setReportData] = React.useState([]);
@@ -2415,50 +2415,55 @@ function ThirdPartyByRegion({ showToast }) {
     const [selectedBranch, setSelectedBranch] = React.useState('all');
     const [isLoading, setIsLoading] = React.useState(true);
 
-    const fetchReportData = React.useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const { data: locations, error: locationsError } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
-            if (locationsError) throw locationsError;
-            const locationMap = new Map(locations.map(l => [l.plate, l.newBranch]));
-
-            const { data: concessions, error: concessionsError } = await supabase.from('concessao').select('placa, codSAP').is('data_fim', null);
-            if (concessionsError) throw concessionsError;
-
-            const { data: terceiros, error: terceirosError } = await supabase.from('terceiros').select('codSAP, apelido, razao, cnpj');
-            if (terceirosError) throw terceirosError;
-            const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t]));
-            
-            const joinedData = concessions.map(con => {
-                const terceiroInfo = terceirosMap.get(con.codSAP);
-                const region = locationMap.get(con.placa);
-                if (!terceiroInfo || !region) return null;
-                return {
-                    id: `${con.placa}-${con.codSAP}`,
-                    region: region,
-                    apelido: terceiroInfo.apelido,
-                    razao: terceiroInfo.razao,
-                    cnpj: terceiroInfo.cnpj,
-                    placa: con.placa,
-                };
-            }).filter(Boolean);
-
-            setReportData(joinedData);
-            
-            const { data: branchList, error: branchError } = await supabase.from('filiais').select('name').order('name');
-            if (branchError) throw branchError;
-            setBranches(branchList.map(b => b.name));
-
-        } catch (err) {
-            showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
-        }
-        setIsLoading(false);
-    }, [showToast]);
-
+    // ALTERADO: A busca de dados agora acontece dentro de um useEffect que roda APENAS UMA VEZ.
     React.useEffect(() => {
-        fetchReportData();
-    }, [fetchReportData]);
+        const fetchReportData = async () => {
+            setIsLoading(true);
+            try {
+                // O corpo desta função é o mesmo de antes, buscando e juntando os dados
+                const { data: locations, error: locationsError } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
+                if (locationsError) throw locationsError;
+                const locationMap = new Map(locations.map(l => [l.plate, l.newBranch]));
 
+                const { data: concessions, error: concessionsError } = await supabase.from('concessao').select('placa, codSAP').is('data_fim', null);
+                if (concessionsError) throw concessionsError;
+
+                const { data: terceiros, error: terceirosError } = await supabase.from('terceiros').select('codSAP, apelido, razao, cnpj');
+                if (terceirosError) throw terceirosError;
+                const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t]));
+                
+                const joinedData = concessions.map(con => {
+                    const terceiroInfo = terceirosMap.get(con.codSAP);
+                    const region = locationMap.get(con.placa);
+                    if (!terceiroInfo || !region) return null;
+                    return {
+                        id: `${con.placa}-${con.codSAP}`,
+                        region: region,
+                        apelido: terceiroInfo.apelido,
+                        razao: terceiroInfo.razao,
+                        cnpj: terceiroInfo.cnpj,
+                        placa: con.placa,
+                    };
+                }).filter(Boolean);
+
+                setReportData(joinedData);
+                
+                const { data: branchList, error: branchError } = await supabase.from('filiais').select('name').order('name');
+                if (branchError) throw branchError;
+                setBranches(branchList.map(b => b.name));
+
+            } catch (err) {
+                // A função showToast ainda pode ser chamada aqui sem problemas
+                showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
+            }
+            setIsLoading(false);
+        };
+
+        fetchReportData();
+    // A array de dependências vazia [] garante que esta busca NUNCA se repita.
+    }, []); 
+
+    // O useEffect de filtragem permanece o mesmo, mas agora ele será estável.
     React.useEffect(() => {
         if (selectedBranch === 'all') {
             setFilteredData(reportData);
@@ -2512,7 +2517,7 @@ function ThirdPartyByRegion({ showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO ThirdPartyByRegion FINAL E CORRIGIDA */
+/* FIM DA VERSÃO DEFINITIVA DA FUNÇÃO ThirdPartyByRegion */
             
 function TurnoverDashboard({ showToast }) {
     const [stats, setStats] = React.useState({ contratacoes: 0, encerramentos: 0, trocas: 0, turnover: 0 });
