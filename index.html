@@ -3934,7 +3934,9 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                     setUserFullname(null);
                     setQuickLinks([]);
                 };
-                const showToast = (message, type = 'success') => setToast({ show: true, message, type });
+                const showToast = React.useCallback((message, type = 'success') => {
+                setToast({ show: true, message, type });
+                }, []);
                 const closeToast = () => setToast({ show: false, message: '', type: '' });
                 
                 const toggleMenu = (menu) => {
