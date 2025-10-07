@@ -162,6 +162,7 @@
     userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
     thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
     concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
+    acertoManagement: { title: 'Acerto', icon: 'FileText', adminOnly: true },
     contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
     implementManagement: { title: 'Tipos de Implemento', icon: 'Settings', adminOnly: true },
 };
@@ -1941,6 +1942,216 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                 )
               );
             }
+
+/* INÍCIO DO NOVO COMPONENTE AcertoManagement */
+
+function AcertoManagement({ userId, userRole, showToast }) {
+    // Estados do componente
+    const [acertosList, setAcertosList] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showForm, setShowForm] = React.useState(false);
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [currentAcerto, setCurrentAcerto] = React.useState(null);
+    const initialFormState = { periodo: '', cod_sap: '', placa: '', tipo: '', descricao: '', nf: '', valor: '', observacao: '' };
+    const [formData, setFormData] = React.useState(initialFormState);
+
+    // Estados para filtros e formulários
+    const [periodoFilter, setPeriodoFilter] = React.useState('');
+    const [terceiroFilter, setTerceiroFilter] = React.useState('todos');
+    const [allTerceiros, setAllTerceiros] = React.useState([]);
+    const [activeCodSaps, setActiveCodSaps] = React.useState(new Set());
+    const tiposDeLancamento = ["CRÉDITO (RECEITA)", "DÉBITO (DESPESA)", "SALDO MEI", "REEMBOLSO SALDO MEI", "RETENÇÃO CONTRATUAL"];
+
+    // Função para formatar moeda
+    const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+
+    // Função para buscar os dados
+    const fetchAcertos = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Busca as concessões ativas para determinar o STATUS
+            const { data: activeConcessions, error: concessionsError } = await supabase
+                .from('concessao')
+                .select('codSAP')
+                .is('data_fim', null);
+            if (concessionsError) throw concessionsError;
+            const activeSet = new Set(activeConcessions.map(c => c.codSAP));
+            setActiveCodSaps(activeSet);
+            
+            // Busca todos os terceiros para os filtros
+            const { data: terceirosData, error: terceirosError } = await supabase.from('terceiros').select('codSAP, apelido').order('apelido');
+            if (terceirosError) throw terceirosError;
+            setAllTerceiros(terceirosData || []);
+
+            // Busca os lançamentos de acerto
+            let query = supabase.from('acertos').select('*').order('created_at', { ascending: false });
+            if (periodoFilter) { query = query.eq('periodo', periodoFilter); }
+            if (terceiroFilter !== 'todos') { query = query.eq('cod_sap', terceiroFilter); }
+
+            const { data: acertosData, error: acertosError } = await query;
+            if (acertosError) throw acertosError;
+            
+            // Adiciona o status dinâmico a cada lançamento
+            const listWithStatus = acertosData.map(acerto => ({
+                ...acerto,
+                status: activeSet.has(acerto.cod_sap) ? 'Ativo' : 'Inativo'
+            }));
+            setAcertosList(listWithStatus);
+
+        } catch (err) {
+            showToast("Erro ao carregar dados de acerto.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast, periodoFilter, terceiroFilter]);
+
+    React.useEffect(() => {
+        fetchAcertos();
+    }, [fetchAcertos]);
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.periodo || !formData.cod_sap || !formData.tipo || !formData.valor) {
+            showToast("Preencha os campos obrigatórios (Período, Terceiro, Tipo, Valor).", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const record = { ...formData, valor: parseFloat(formData.valor) };
+            if (isEditing) {
+                const { error } = await supabase.from('acertos').update(record).eq('id', currentAcerto.id);
+                if (error) throw error;
+                showToast("Lançamento atualizado com sucesso!", "success");
+            } else {
+                const { error } = await supabase.from('acertos').insert([record]);
+                if (error) throw error;
+                showToast("Lançamento criado com sucesso!", "success");
+            }
+            setShowForm(false);
+            setIsEditing(false);
+            setFormData(initialFormState);
+            fetchAcertos();
+        } catch(err) {
+            showToast(`Erro ao salvar lançamento: ${err.message}`, "error");
+        }
+        setIsLoading(false);
+    };
+
+    const handleEditClick = (acerto) => {
+        setIsEditing(true);
+        setCurrentAcerto(acerto);
+        setFormData({
+            periodo: acerto.periodo,
+            cod_sap: acerto.cod_sap,
+            placa: acerto.placa || '',
+            tipo: acerto.tipo,
+            descricao: acerto.descricao || '',
+            nf: acerto.nf || '',
+            valor: acerto.valor,
+            observacao: acerto.observacao || ''
+        });
+        setShowForm(true);
+    };
+
+    const handleDelete = async (acertoId) => {
+        if (!window.confirm("Deseja realmente excluir este lançamento?")) return;
+        try {
+            const { error } = await supabase.from('acertos').delete().eq('id', acertoId);
+            if (error) throw error;
+            showToast("Lançamento excluído com sucesso!", "success");
+            fetchAcertos();
+        } catch(err) {
+            showToast("Erro ao excluir lançamento.", "error");
+        }
+    };
+    
+    const handleCancel = () => {
+        setShowForm(false);
+        setIsEditing(false);
+        setFormData(initialFormState);
+    };
+
+    const getStatusBadge = (status) => {
+        if (status === 'Ativo') {
+            return React.createElement('span', { className: 'px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800' }, 'Ativo');
+        }
+        return React.createElement('span', { className: 'px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800' }, 'Inativo');
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('div', { className: "flex justify-between items-center mb-4" },
+            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Controle de Acertos"),
+            !showForm && React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, "Novo Lançamento")
+        ),
+
+        // Formulário de Adicionar/Editar
+        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 border rounded-lg" },
+            React.createElement('input', { name: "periodo", value: formData.periodo, onChange: e => setFormData({...formData, periodo: e.target.value}), placeholder: "Período (MM/AAAA)*", className: "p-2 border rounded" }),
+            React.createElement('select', { name: "cod_sap", value: formData.cod_sap, onChange: e => setFormData({...formData, cod_sap: e.target.value}), className: "p-2 border rounded" },
+                React.createElement('option', { value: "" }, "Selecione o Terceiro*"),
+                allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+            ),
+            React.createElement('input', { name: "placa", value: formData.placa, onChange: e => setFormData({...formData, placa: e.target.value}), placeholder: "Placa (Opcional)", className: "p-2 border rounded" }),
+            React.createElement('select', { name: "tipo", value: formData.tipo, onChange: e => setFormData({...formData, tipo: e.target.value}), className: "p-2 border rounded" },
+                 React.createElement('option', { value: "" }, "Selecione o Tipo*"),
+                 tiposDeLancamento.map(t => React.createElement('option', { key: t, value: t }, t))
+            ),
+            React.createElement('input', { name: "descricao", value: formData.descricao, onChange: e => setFormData({...formData, descricao: e.target.value}), placeholder: "Descrição", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "nf", value: formData.nf, onChange: e => setFormData({...formData, nf: e.target.value}), placeholder: "NF", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "valor", type: "number", step: "0.01", value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), placeholder: "Valor*", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "observacao", value: formData.observacao, onChange: e => setFormData({...formData, observacao: e.target.value}), placeholder: "Observação", className: "p-2 border rounded" }),
+            React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
+                React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+            )
+        ),
+        
+        // Filtros da Tabela
+        !showForm && React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4" },
+             React.createElement('input', { type: 'text', placeholder: "Filtrar Período (MM/AAAA)...", value: periodoFilter, onChange: e => setPeriodoFilter(e.target.value), className: "p-2 border rounded" }),
+             React.createElement('select', { value: terceiroFilter, onChange: e => setTerceiroFilter(e.target.value), className: "p-2 border rounded" },
+                React.createElement('option', { value: 'todos' }, 'Todos os Terceiros'),
+                allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+             )
+        ),
+
+        // Tabela de Lançamentos
+        !showForm && React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-x-auto" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ["Período", "Status", "Terceiro", "Placa", "Tipo", "Descrição", "NF", "Valor", "Observação", "Ações"].map(h => 
+                            React.createElement('th', { key: h, className: "px-6 py-4 font-semibold whitespace-nowrap" }, h)
+                        )
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 10, className: "p-4 text-center" }, "Carregando...")) :
+                    acertosList.map(acerto => 
+                        React.createElement('tr', { key: acerto.id, className: "hover:bg-blue-50" },
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, acerto.periodo),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, getStatusBadge(acerto.status)),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, allTerceiros.find(t => t.codSAP === acerto.cod_sap)?.apelido || acerto.cod_sap),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, acerto.placa),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, acerto.tipo),
+                            React.createElement('td', { className: "px-6 py-4" }, acerto.descricao),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, acerto.nf),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap font-medium" }, formatCurrency(acerto.valor)),
+                            React.createElement('td', { className: "px-6 py-4" }, acerto.observacao),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" },
+                                React.createElement('div', { className: "flex gap-x-4" },
+                                    React.createElement('button', { onClick: () => handleEditClick(acerto), className: "text-gray-400 hover:text-blue-600" }, React.createElement(LucideIcon, {name: 'Edit', className: 'h-5 w-5'})),
+                                    React.createElement('button', { onClick: () => handleDelete(acerto.id), className: "text-gray-400 hover:text-red-600" }, React.createElement(LucideIcon, {name: 'Trash2', className: 'h-5 w-5'}))
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    );
+}
+
+/* FIM DO NOVO COMPONENTE AcertoManagement */
 /* INÍCIO DO COMPONENTE DashboardFinanceiro COMPLETO E CORRIGIDO */
 
 function DashboardFinanceiro({ showToast }) {
@@ -4069,6 +4280,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         case 'implementManagement': return userRole === 'administrador' ? React.createElement(ImplementManagement, { userId, showToast }) : null;
                         case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
                         case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
+                        case 'acertoManagement': return userRole === 'administrador' ? React.createElement(AcertoManagement, { userId, userRole, showToast }) : null;
                         case 'quickAccessMenu':
                         default: return React.createElement(QuickAccessMenu, { setCurrentPage, userFullname, quickLinks, onEdit: () => setIsEditModalOpen(true) });
                     }
@@ -4114,6 +4326,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
             React.createElement(MenuItem, { page: 'implementManagement', icon: 'Settings', text: 'Tipos de Implemento' }),
             React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
             React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'User', text: 'Terceiros' }),
+            React.createElement(MenuItem, { page: 'acertoManagement', icon: 'FileText', text: 'Acerto' }),
             React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
             React.createElement(MenuItem, { page: 'contractManagement', icon: 'Edit', text: 'Contrato/Distrato' })
         )
