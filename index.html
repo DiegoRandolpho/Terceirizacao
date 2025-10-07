@@ -2406,16 +2406,12 @@ function DashboardFinanceiro({ showToast }) {
                     )
                 );
             }
-/* INÍCIO DA FUNÇÃO ThirdPartyByRegion CORRIGIDA PARA CAMPO DE TEXTO */
+/* INÍCIO DA FUNÇÃO ThirdPartyByRegion - VERSÃO FINAL COM useMemo */
 
 function ThirdPartyByRegion({ showToast }) {
-    const [reportData, setReportData] = React.useState([]); // Guarda todos os dados originais
-    const [filteredData, setFilteredData] = React.useState([]); // Guarda os dados que serão exibidos
+    const [reportData, setReportData] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(true);
-    
-    // Estados para o campo de busca de texto
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('');
 
     // Efeito para buscar os dados iniciais (apenas uma vez)
     React.useEffect(() => {
@@ -2448,7 +2444,6 @@ function ThirdPartyByRegion({ showToast }) {
                 }).filter(Boolean);
 
                 setReportData(joinedData);
-                setFilteredData(joinedData);
 
             } catch (err) {
                 showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
@@ -2459,34 +2454,23 @@ function ThirdPartyByRegion({ showToast }) {
         fetchReportData();
     }, [showToast]);
 
-    // Efeito para criar um "delay" (debounce) na busca
-    React.useEffect(() => {
-        const timerId = setTimeout(() => {
-            setDebouncedSearchTerm(searchTerm);
-        }, 300); // Espera 300ms após o usuário parar de digitar
-
-        return () => {
-            clearTimeout(timerId);
-        };
-    }, [searchTerm]);
-
-    // Efeito que aplica o filtro DE VERDADE
-    React.useEffect(() => {
-        if (debouncedSearchTerm === '') {
-            setFilteredData(reportData); // Se a busca está vazia, mostra tudo
-        } else {
-            const lowercasedFilter = debouncedSearchTerm.toLowerCase();
-            const result = reportData.filter(item => 
-                item.region.toLowerCase().includes(lowercasedFilter)
-            );
-            setFilteredData(result);
+    // LÓGICA DE FILTRAGEM USANDO useMemo
+    // Esta constante 'filteredData' é recalculada automaticamente apenas quando 'searchTerm' ou 'reportData' mudam.
+    const filteredData = React.useMemo(() => {
+        if (!searchTerm) {
+            return reportData; // Se a busca está vazia, retorna todos os dados
         }
-    }, [debouncedSearchTerm, reportData]);
+        const lowercasedFilter = searchTerm.toLowerCase();
+        return reportData.filter(item => 
+            item.region.toLowerCase().includes(lowercasedFilter)
+        );
+    }, [searchTerm, reportData]);
+
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Relatório de Terceiros por Região"),
         
-        // Filtro por Região (agora como campo de texto)
+        // Filtro por Região (campo de texto)
         React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 max-w-sm mx-auto" },
              React.createElement('label', { htmlFor: 'branch-filter', className: "block text-sm font-medium text-gray-700 mb-1" }, "Filtrar por Filial (Região)"),
              React.createElement('input', { 
@@ -2529,7 +2513,7 @@ function ThirdPartyByRegion({ showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO ThirdPartyByRegion CORRIGIDA */
+/* FIM DA FUNÇÃO ThirdPartyByRegion - VERSÃO FINAL COM useMemo */
             
 function TurnoverDashboard({ showToast }) {
     const [stats, setStats] = React.useState({ contratacoes: 0, encerramentos: 0, trocas: 0, turnover: 0 });
