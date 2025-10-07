@@ -2307,7 +2307,8 @@ function DashboardFinanceiro({ showToast }) {
     const [rankingPlacas, setRankingPlacas] = React.useState([]);
     const [custoPorTipo, setCustoPorTipo] = React.useState([]);
     const [relatorioErros, setRelatorioErros] = React.useState({ count: 0, total: 0, items: [] });
-    
+    const [relatorioNaoIdentificados, setRelatorioNaoIdentificados] = React.useState([]);
+
     // Referências para os gráficos
     const barChartRef = React.useRef(null);
     const pieChartRef = React.useRef(null);
@@ -2324,20 +2325,20 @@ function DashboardFinanceiro({ showToast }) {
         setPeriodo(`${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`);
     }, []);
 
-    // Efeito principal para buscar e processar os dados quando o período muda
+    // Efeito principal para buscar e processar os dados
     React.useEffect(() => {
         if (!periodo) return;
 
         const fetchData = async () => {
             setIsLoading(true);
-            // Limpa os dados anteriores antes de uma nova busca
             setKpis({ total: 0, media: 0 });
             setRankingPlacas([]);
             setCustoPorTipo([]);
             setRelatorioErros({ count: 0, total: 0, items: [] });
+            setRelatorioNaoIdentificados([]);
 
             try {
-                // Lógica de paginação para buscar todos os registros
+                // LÓGICA DE PAGINAÇÃO PARA BUSCAR TODOS OS REGISTROS
                 let allExpensesData = [];
                 let page = 0;
                 const pageSize = 1000;
@@ -2363,27 +2364,27 @@ function DashboardFinanceiro({ showToast }) {
                     }
                     page++;
                 }
+                // FIM DA LÓGICA DE PAGINAÇÃO
 
                 if (allExpensesData.length === 0) {
                     setIsLoading(false);
                     return;
                 }
 
+                const { data: equipamentosData, error: equipamentosError } = await supabase.from('equipamentos').select('plate, type');
+                if (equipamentosError) throw equipamentosError;
+                const plateTypeMap = new Map(equipamentosData.map(eq => [eq.plate, eq.type]));
+
+                const naoIdentificados = allExpensesData.filter(exp => !plateTypeMap.has(exp.placa) || !plateTypeMap.get(exp.placa));
+                setRelatorioNaoIdentificados(naoIdentificados);
+
                 const validExpenses = allExpensesData.filter(e => e.erro_lancamento !== true);
                 const errorExpenses = allExpensesData.filter(e => e.erro_lancamento === true);
 
                 const totalErros = errorExpenses.reduce((sum, item) => sum + (item.valor || 0), 0);
-                setRelatorioErros({
-                    count: errorExpenses.length,
-                    total: totalErros,
-                    items: errorExpenses.sort((a, b) => a.valor - b.valor)
-                });
+                setRelatorioErros({ count: errorExpenses.length, total: totalErros, items: errorExpenses.sort((a, b) => a.valor - b.valor) });
 
                 if (validExpenses.length > 0) {
-                    const { data: equipamentosData, error: equipamentosError } = await supabase.from('equipamentos').select('plate, type');
-                    if (equipamentosError) throw equipamentosError;
-                    const plateTypeMap = new Map(equipamentosData.map(eq => [eq.plate, eq.type]));
-
                     let totalDespesas = 0;
                     const despesasPorPlaca = {};
                     const despesasPorTipo = {};
@@ -2411,14 +2412,12 @@ function DashboardFinanceiro({ showToast }) {
 
         fetchData();
     }, [periodo, showToast]);
-
+    
     // Efeito para desenhar/atualizar os gráficos
     React.useEffect(() => {
         if (barChartRef.current) barChartRef.current.destroy();
         if (pieChartRef.current) pieChartRef.current.destroy();
-
         const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
         if (rankingPlacas.length > 0) {
             const barCtx = document.getElementById('rankingDespesasChart').getContext('2d');
             barChartRef.current = new Chart(barCtx, {
@@ -2438,16 +2437,11 @@ function DashboardFinanceiro({ showToast }) {
                     responsive: true,
                     plugins: { 
                         legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => currencyFormatter.format(context.raw)
-                            }
-                        }
+                        tooltip: { callbacks: { label: (context) => currencyFormatter.format(context.raw) } }
                     }
                 }
             });
         }
-        
         if (custoPorTipo.length > 0) {
             const pieCtx = document.getElementById('custoPorTipoChart').getContext('2d');
             pieChartRef.current = new Chart(pieCtx, {
@@ -2461,13 +2455,7 @@ function DashboardFinanceiro({ showToast }) {
                 },
                 options: { 
                     responsive: true,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => `${context.label}: ${currencyFormatter.format(context.raw)}`
-                            }
-                        }
-                    }
+                    plugins: { tooltip: { callbacks: { label: (context) => `${context.label}: ${currencyFormatter.format(context.raw)}` } } }
                 }
             });
         }
@@ -2539,6 +2527,29 @@ function DashboardFinanceiro({ showToast }) {
                         relatorioErros.items.map(item =>
                             React.createElement('tr', { key: item.id, className: "hover:bg-red-50" },
                                 React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.placa),
+                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.descricao),
+                                React.createElement('td', { className: "px-6 py-4" }, formatCurrency(item.valor))
+                            )
+                        )
+                    )
+                )
+            )
+        ),
+        React.createElement('div', { className: "mt-8" },
+            React.createElement('h2', { className: "text-xl font-bold text-gray-800 mb-4" }, "Lançamentos com Placas Não Identificadas"),
+            React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                    React.createElement('thead', { className: "text-xs text-amber-700 uppercase bg-amber-100" },
+                        React.createElement('tr', null,
+                            ["Placa", "Descrição", "Valor"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        )
+                    ),
+                    React.createElement('tbody', null,
+                        isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center" }, "Carregando...")) :
+                        relatorioNaoIdentificados.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 3, className: "p-4 text-center text-slate-500" }, "Nenhum lançamento com placa não identificada encontrado para este período.")) :
+                        relatorioNaoIdentificados.map(item =>
+                            React.createElement('tr', { key: item.id, className: "hover:bg-amber-50" },
+                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 font-medium" }, item.placa),
                                 React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.descricao),
                                 React.createElement('td', { className: "px-6 py-4" }, formatCurrency(item.valor))
                             )
