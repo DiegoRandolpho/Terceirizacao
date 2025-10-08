@@ -4036,9 +4036,7 @@ function PlateHistory({ showToast }) {
     );
 }
 
-/* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
-
-/* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
+/* INÍCIO DA FUNÇÃO ExpenseQuery ATUALIZADA COM SELEÇÃO MÚLTIPLA */
 
 function ExpenseQuery({ userId, userRole, showToast }) {
     // Estados do componente
@@ -4049,253 +4047,155 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     const [isImporting, setIsImporting] = React.useState(false);
     const [file, setFile] = React.useState(null);
     const [hasSearched, setHasSearched] = React.useState(false);
-    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-    const [expenseToFlag, setExpenseToFlag] = React.useState(null);
     const [typeFilter, setTypeFilter] = React.useState('Todos');
     const [equipmentTypes, setEquipmentTypes] = React.useState([]);
 
-    // useEffect para buscar os tipos de implemento existentes ao carregar o componente
+    // Estados para o modal de confirmação (ação individual)
+    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+    const [expenseToFlag, setExpenseToFlag] = React.useState(null);
+    
+    // NOVO: Estado para armazenar os IDs das despesas selecionadas
+    const [selectedExpenses, setSelectedExpenses] = React.useState([]);
+
+    // Busca os tipos de implemento ao carregar
     React.useEffect(() => {
-        const fetchTypes = async () => {
-            const { data, error } = await supabase.from('equipamentos').select('type');
-            if (!error && data) {
-                const uniqueTypes = [...new Set(data.map(item => item.type).filter(Boolean))].sort();
-                setEquipmentTypes(['Todos', ...uniqueTypes]);
-            } else {
-                showToast('Erro ao carregar tipos de implemento.', 'error');
-                setEquipmentTypes(['Todos']);
-            }
-        };
+        const fetchTypes = async () => { /* ...código existente... */ };
         fetchTypes();
     }, [showToast]);
 
-    // Função para formatar o período
-    const formatPeriodo = (value) => {
-        const cleaned = ('' + value).replace(/[^\d]/g, '');
-        const truncated = cleaned.slice(0, 6);
-        if (truncated.length > 2) {
-            return `${truncated.slice(0, 2)}/${truncated.slice(2)}`;
-        }
-        return truncated;
+    // Funções auxiliares e de busca
+    const formatPeriodo = (value) => { /* ...código existente... */ };
+    const handleSearch = async () => { /* ...código existente... */ };
+    const handleFileChange = (e) => { /* ...código existente... */ };
+    const handleImport = () => { /* ...código existente... */ };
+    const confirmFlagError = (expense) => { /* ...código existente... */ };
+    const handleFlagError = async () => { /* ...código existente... */ };
+
+    // NOVO: Handler para selecionar/deselecionar uma linha
+    const handleRowSelect = (expenseId) => {
+        setSelectedExpenses(prevSelected => {
+            if (prevSelected.includes(expenseId)) {
+                return prevSelected.filter(id => id !== expenseId); // Remove se já estiver selecionado
+            } else {
+                return [...prevSelected, expenseId]; // Adiciona se não estiver
+            }
+        });
     };
-    
-    // Função de busca, com a lógica do filtro de implemento
-    const handleSearch = async () => {
-        if (!periodo && !placa && typeFilter === 'Todos') {
-            showToast("Informe ao menos um filtro para buscar.", "error");
-            return;
+
+    // NOVO: Handler para o checkbox "Selecionar Todos"
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            // Seleciona o ID de todos os itens atualmente visíveis
+            setSelectedExpenses(expenses.map(exp => exp.id));
+        } else {
+            // Limpa a seleção
+            setSelectedExpenses([]);
         }
+    };
+
+    // NOVO: Handler para a ação em lote (marcar como erro ou normalizar)
+    const handleBulkFlag = async (isError) => {
+        if (selectedExpenses.length === 0) return;
+
+        const actionText = isError ? 'marcar como erro' : 'normalizar';
+        if (!window.confirm(`Deseja realmente ${actionText} os ${selectedExpenses.length} itens selecionados?`)) return;
+
         setIsLoading(true);
-        setHasSearched(true);
-        setExpenses([]);
-
         try {
-            const { data: equipmentData, error: equipmentError } = await supabase.from('equipamentos').select('plate, type');
-            if (equipmentError) throw equipmentError;
-            const plateTypeMap = new Map(equipmentData.map(eq => [eq.plate, eq.type]));
+            const { error } = await supabase
+                .from('despesas_manutencao')
+                .update({ erro_lancamento: isError })
+                .in('id', selectedExpenses);
 
-            let platesToFilter = null;
-            if (typeFilter !== 'Todos') {
-                platesToFilter = equipmentData.filter(eq => eq.type === typeFilter).map(eq => eq.plate);
-                if (platesToFilter.length === 0) {
-                    setIsLoading(false);
-                    return;
-                }
-            }
+            if (error) throw error;
+
+            showToast(`${selectedExpenses.length} itens atualizados com sucesso!`, "success");
             
-            let allResults = [];
-            let page = 0;
-            const pageSize = 1000;
-            while (true) {
-                const from = page * pageSize;
-                const to = from + pageSize - 1;
-                
-                let query = supabase.from('despesas_manutencao').select('*').order('placa').range(from, to);
-                if (periodo) { query = query.eq('periodo_referencia', periodo); }
-                if (placa) { query = query.eq('placa', placa.trim().toUpperCase()); }
-                if (platesToFilter) { query = query.in('placa', platesToFilter); }
-
-                const { data, error } = await query;
-                if (error) throw error;
-                if (data) { allResults = [...allResults, ...data]; }
-                if (!data || data.length < pageSize) { break; }
-                page++;
-            }
-
-            const expensesWithTypes = allResults.map(expense => ({
-                ...expense,
-                implemento_tipo: plateTypeMap.get(expense.placa) || 'Não Identificado'
-            }));
-
-            setExpenses(expensesWithTypes);
+            // Atualiza o estado local para refletir a mudança na UI
+            setExpenses(prevExpenses => prevExpenses.map(exp => 
+                selectedExpenses.includes(exp.id) ? { ...exp, erro_lancamento: isError } : exp
+            ));
+            
+            // Limpa a seleção após a ação
+            setSelectedExpenses([]);
 
         } catch (err) {
-            showToast("Erro ao buscar despesas.", "error");
+            showToast("Erro ao atualizar os lançamentos.", "error");
         }
         setIsLoading(false);
     };
-    
-    // Funções de importação de arquivo
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-        }
-    };
 
-    const handleImport = () => {
-        if (!file) {
-            showToast("Por favor, selecione um arquivo para importar.", "error");
-            return;
-        }
-        if (!periodo.match(/^\d{2}\/\d{4}$/)) {
-            showToast("Por favor, insira um período de referência válido (MM/AAAA) para a importação.", "error");
-            return;
-        }
-        setIsImporting(true);
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet);
-                const dataToInsert = json
-                    .filter(row => row['Tipo Lancamento'] == 2)
-                    .map(row => ({
-                        periodo_referencia: periodo,
-                        placa: row['Placa'],
-                        ordem_manutencao: row['Fatura/Doc.Contab'],
-                        pedido: row['Pedido'],
-                        descricao: row['Material'],
-                        valor: parseFloat(row['Total']) || 0,
-                        erro_lancamento: false
-                    }));
-                if (dataToInsert.length === 0) {
-                    showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
-                    setIsImporting(false);
-                    return;
-                }
-                const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
-                if (error) throw error;
-                showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
-                setFile(null);
-                document.getElementById('file-input').value = '';
-                handleSearch();
-            } catch (err) {
-                showToast(`Erro ao processar o arquivo: ${err.message}`, "error");
-            }
-            setIsImporting(false);
-        };
-        reader.readAsArrayBuffer(file);
-    };
-    
-    // Funções para marcar erro de lançamento
-    const confirmFlagError = (expense) => {
-        setExpenseToFlag(expense);
-        setShowConfirmModal(true);
-    };
-
-    const handleFlagError = async () => {
-        if (!expenseToFlag) return;
-
-        const newStatus = !expenseToFlag.erro_lancamento;
-        const { error } = await supabase
-            .from('despesas_manutencao')
-            .update({ erro_lancamento: newStatus })
-            .eq('id', expenseToFlag.id);
-
-        if (error) {
-            showToast("Erro ao atualizar o lançamento.", "error");
-        } else {
-            showToast(`Lançamento ${newStatus ? 'marcado como erro' : 'normalizado'}!`, "success");
-            setExpenses(prevExpenses => prevExpenses.map(exp => 
-                exp.id === expenseToFlag.id ? { ...exp, erro_lancamento: newStatus } : exp
-            ));
-        }
-        setShowConfirmModal(false);
-        setExpenseToFlag(null);
-    };
 
     // Renderização do componente
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
-        React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-4 gap-4 items-end" },
-            React.createElement('div', null,
-                React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Período (MM/AAAA)"),
-                React.createElement('input', { type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
-            ),
-            React.createElement('div', null,
-                React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Placa"),
-                React.createElement('input', { type: 'text', placeholder: "Ex: ABC1234", value: placa, onChange: e => setPlaca(e.target.value), className: "w-full p-2 border rounded" })
-            ),
-            React.createElement('div', null,
-                React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Tipo de Implemento"),
-                React.createElement('select', { value: typeFilter, onChange: e => setTypeFilter(e.target.value), className: "w-full p-2 border rounded" },
-                    equipmentTypes.map(type => React.createElement('option', { key: type, value: type }, type))
-                )
-            ),
-            React.createElement('button', { onClick: handleSearch, disabled: isLoading, className: "w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400" },
-                isLoading ? 'Buscando...' : 'Buscar'
+        React.createElement('h2', { /* ... */ }, "Consulta e Importação de Despesas"),
+        React.createElement('div', { /* ...Filtros... */ }),
+        userRole === 'administrador' && React.createElement('div', { /* ...Área de Importação... */ }),
+
+        // NOVO: Painel de Ações em Lote (aparece quando há itens selecionados)
+        selectedExpenses.length > 0 && React.createElement('div', { className: 'mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between' },
+            React.createElement('span', { className: 'font-semibold text-blue-800' }, `${selectedExpenses.length} itens selecionados`),
+            React.createElement('div', { className: 'flex gap-x-4' },
+                React.createElement('button', { onClick: () => handleBulkFlag(true), className: 'py-1 px-3 text-xs font-bold rounded-full bg-red-500 hover:bg-red-600 text-white transition' }, 'Marcar como Erro'),
+                React.createElement('button', { onClick: () => handleBulkFlag(false), className: 'py-1 px-3 text-xs font-bold rounded-full bg-yellow-500 hover:bg-yellow-600 text-white transition' }, 'Normalizar Selecionados')
             )
         ),
-        userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
-            React.createElement('div', null,
-                React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha para Importar"),
-                React.createElement('input', {
-                    id: 'file-input', type: "file", onChange: handleFileChange,
-                    className: "w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
-                    accept: ".xlsx, .xls"
-                })
-            ),
-            React.createElement('button', { onClick: handleImport, disabled: isImporting, className: "w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400" },
-                isImporting ? 'Importando...' : 'Importar Dados'
-            )
-        ),
+
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        ["Período", "Placa", "Tipo de Implemento", "Ordem", "Pedido", "Descrição", "Valor", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        // NOVO: Checkbox "Selecionar Todos" no cabeçalho
+                        React.createElement('th', { className: "px-3 py-4" }, 
+                            React.createElement('input', {
+                                type: 'checkbox',
+                                className: 'rounded',
+                                checked: selectedExpenses.length > 0 && selectedExpenses.length === expenses.length,
+                                ref: el => el && (el.indeterminate = selectedExpenses.length > 0 && selectedExpenses.length < expenses.length),
+                                onChange: handleSelectAll
+                            })
+                        ),
+                        // ALTERADO: Aumentado o colSpan para 9
+                        ["Período", "Placa", "Tipo de Implemento", "Ordem", "Pedido", "Descrição", "Valor", "Ação Individual"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-l border-slate-200" }, h))
                     )
                 ),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
-                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Utilize os filtros para iniciar a busca.")) :
-                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Carregando...")) :
+                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center text-slate-500" }, "Utilize os filtros para iniciar a busca.")) :
+                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Nenhuma despesa encontrada.")) :
                     expenses.map(exp => {
-                        const rowClass = exp.erro_lancamento ? "hover:bg-red-100 even:bg-red-50 text-red-700 line-through" : "hover:bg-blue-50 even:bg-slate-50";
-                        const isUnidentified = exp.implemento_tipo === 'Não Identificado';
-
-                        return React.createElement('tr', { key: exp.id, className: rowClass },
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.periodo_referencia),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium" }, exp.placa)),
-                            React.createElement('td', { className: `px-6 py-4 border-r border-slate-200 ${isUnidentified ? 'text-red-600 font-bold' : ''}` }, exp.implemento_tipo),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.ordem_manutencao),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.pedido),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, exp.descricao),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${(exp.valor || 0).toFixed(2).replace('.', ',')}`),
-                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                React.createElement('button', {
-                                    onClick: () => confirmFlagError(exp),
-                                    className: `py-1 px-3 text-xs font-bold rounded-full transition ${exp.erro_lancamento ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`,
-                                    title: exp.erro_lancamento ? 'Desfazer marcação de erro' : 'Marcar como erro de lançamento'
-                                }, exp.erro_lancamento ? 'Normalizar' : 'Marcar Erro')
+                        const rowClass = exp.erro_lancamento ? "bg-red-50 text-red-700 line-through" : "";
+                        const isSelected = selectedExpenses.includes(exp.id);
+                        return React.createElement('tr', { key: exp.id, className: `${rowClass} ${isSelected ? 'bg-blue-100' : 'hover:bg-slate-50'}` },
+                            // NOVO: Checkbox da linha
+                            React.createElement('td', { className: 'px-3 py-4 border-b border-slate-200' },
+                                React.createElement('input', {
+                                    type: 'checkbox',
+                                    className: 'rounded',
+                                    checked: isSelected,
+                                    onChange: () => handleRowSelect(exp.id)
+                                })
+                            ),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200" }, exp.periodo_referencia),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200 font-medium" }, exp.placa),
+                            React.createElement('td', { className: `px-6 py-4 border-b border-l border-slate-200 ${exp.implemento_tipo === 'Não Identificado' ? 'font-bold' : ''}` }, exp.implemento_tipo),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200" }, exp.ordem_manutencao),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200" }, exp.pedido),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200" }, exp.descricao),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200" }, `R$ ${(exp.valor || 0).toFixed(2).replace('.', ',')}`),
+                            React.createElement('td', { className: "px-6 py-4 border-b border-l border-slate-200 text-center" },
+                                React.createElement('button', { onClick: () => confirmFlagError(exp), /* ... */ }, exp.erro_lancamento ? 'Normalizar' : 'Marcar Erro')
                             )
                         )
                     })
                 )
             )
         ),
-        showConfirmModal && React.createElement(ConfirmationModal, {
-            message: `Deseja realmente ${expenseToFlag?.erro_lancamento ? 'normalizar este' : 'marcar como erro o'} lançamento da placa "${expenseToFlag?.placa}"?`,
-            onConfirm: handleFlagError,
-            onCancel: () => setShowConfirmModal(false)
-        })
+        showConfirmModal && React.createElement(ConfirmationModal, { /* ... */ })
     );
 }
 
-/* FIM DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
+/* FIM DA FUNÇÃO ExpenseQuery ATUALIZADA */
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
 
 function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
