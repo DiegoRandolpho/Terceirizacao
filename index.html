@@ -1950,7 +1950,6 @@ function ContractManagement({ userId, userRole, showToast }) {
                     if (hireError) throw hireError;
                     break;
                 case 'Troca de Placa':
-                    // CORREÇÃO DEFINITIVA: Lógica de data que ignora o fuso horário local
                     const [year, month, day] = formData.data_alteracao.split('-').map(Number);
                     const date = new Date(Date.UTC(year, month - 1, day));
                     date.setUTCDate(date.getUTCDate() - 1);
@@ -2007,19 +2006,51 @@ function ContractManagement({ userId, userRole, showToast }) {
                 if (formData.codSAP && activeConcessions.length > 0) {
                     return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro já possui placa. Para adicionar outra, use a aba "Concessão de Placa (Entrada)".');
                 }
-                return [ /* ...código dos campos... */ ];
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
             case 'Concessão de Placa (Entrada)':
                  if (formData.codSAP && activeConcessions.length === 0) {
                     return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro não possui nenhuma placa. Para a primeira placa, use a aba "Contratação".');
                 }
-                return [ /* ...código dos campos... */ ];
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
             case 'Troca de Placa':
-                return [ /* ...código dos campos... */ ];
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa_antiga', name: 'placa_antiga', value: formData.placa_antiga, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa Antiga" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p.placa, value: p.placa }, p.placa))
+                    ),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Nova Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
             case 'Concessão de Placa (Saída)':
                 if (formData.codSAP && activeConcessions.length <= 1) {
                     return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro possui apenas uma ou nenhuma placa. Para finalizar o contrato, use a aba "Encerramento".');
                 }
-                return [ /* ...código dos campos... */ ];
+                return [
+                    ...commonFields.slice(0, 1),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa a Encerrar" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p.placa, value: p.placa }, p.placa))
+                    ),
+                    ...commonFields.slice(1)
+                ];
             case 'Encerramento':
                 return commonFields;
             default:
@@ -2059,11 +2090,20 @@ function ContractManagement({ userId, userRole, showToast }) {
         React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                React.createElement('thead', { /* ... */ }),
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
                 React.createElement('tbody', null,
                     !history ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
-                    history.map(rec => React.createElement('tr', { key: rec.id, /* ... */ },
-                        /* ...células da tabela... */
+                    history.map(rec => React.createElement('tr', { key: rec.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, formatDate(rec.data_alteracao))
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, getCategoryBadge(rec.categoria)),
+                        React.createElement('td', { className: "px-6 py-4" }, rec.atraso)
                     ))
                 )
             )
