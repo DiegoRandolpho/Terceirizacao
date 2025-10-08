@@ -99,6 +99,12 @@
             if (len <= 12) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`;
             return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12, 14)}`;
         }
+function toUTCSafeString(dateString) {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() + userTimezoneOffset).toISOString();
+}
         function formatCPF(value) {
             if (!value) return "";
             const cpf = value.replace(/[^\d]/g, "").slice(0, 11);
@@ -1591,14 +1597,16 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     }
                     setIsLoading(true);
                     try {
-                        const record = {
-                            placa: formData.placa,
-                            codSAP: formData.codSAP,
-                            valorfixo: parseFloat(formData.valorfixo),
-                            data_inicio: formData.data_inicio,
-                            data_fim: formData.data_fim || null,
-                            observacao: formData.observacao.trim() // Linha adicionada
+                        // ...
+const record = {
+    placa: formData.placa,
+    codSAP: formData.codSAP,
+    valorfixo: parseFloat(formData.valorfixo),
+    data_inicio: toUTCSafeString(formData.data_inicio), 
+    data_fim: toUTCSafeString(formData.data_fim), 
+    observacao: formData.observacao.trim()
 };
+
                         if (isEditing) {
                             const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
                             if (error) throw error;
@@ -1820,7 +1828,6 @@ function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
 
 /* FIM DO CÓDIGO ATUALIZADO */
 
-/* FIM DO CÓDIGO */
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA ContractManagement */
 
 function ContractManagement({ userId, userRole, showToast }) {
@@ -1908,42 +1915,45 @@ function ContractManagement({ userId, userRole, showToast }) {
                 atraso: parseInt(formData.atraso, 10) || 0,
             };
             const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
-            if (contractError) throw contractError;
-            
-            // ATUALIZADO: Adicionado 'Contratação' para usar a mesma lógica de 'Entrada'
-            switch (category) {
-                case 'Contratação':
-                case 'Concessão de Placa (Entrada)':
-                    const { error: hireError } = await supabase.from('concessao').insert([{
-                        codSAP: formData.codSAP,
-                        placa: formData.placa,
-                        valorfixo: parseFloat(formData.valorfixo),
-                        data_inicio: formData.data_alteracao
-                    }]);
-                    if (hireError) throw hireError;
-                    break;
-                case 'Troca de Placa':
-                    const endDate = new Date(formData.data_alteracao);
-                    endDate.setDate(endDate.getDate() - 1);
-                    const { error: endError } = await supabase.from('concessao').update({ data_fim: endDate.toISOString().split('T')[0] }).eq('codSAP', formData.codSAP).eq('placa', formData.placa_antiga).is('data_fim', null);
-                    if (endError) throw endError;
-                    const { error: newPlateError } = await supabase.from('concessao').insert([{
-                        codSAP: formData.codSAP,
-                        placa: formData.placa,
-                        valorfixo: parseFloat(formData.valorfixo),
-                        data_inicio: formData.data_alteracao
-                    }]);
-                    if (newPlateError) throw newPlateError;
-                    break;
-                case 'Concessão de Placa (Saída)':
-                    const { error: terminatePlateError } = await supabase.from('concessao').update({ data_fim: formData.data_alteracao }).eq('codSAP', formData.codSAP).eq('placa', formData.placa).is('data_fim', null);
-                    if (terminatePlateError) throw terminatePlateError;
-                    break;
-                case 'Encerramento':
-                    const { error: terminateError } = await supabase.from('concessao').update({ data_fim: formData.data_alteracao }).eq('codSAP', formData.codSAP).is('data_fim', null);
-                    if (terminateError) throw terminateError;
-                    break;
-            }
+if (contractError) throw contractError;
+
+// Adiciona uma data de término calculada de forma segura
+const alteracaoDate = new Date(formData.data_alteracao + 'T00:00:00');
+alteracaoDate.setDate(alteracaoDate.getDate() - 1);
+const safeEndDate = alteracaoDate.toISOString().split('T')[0];
+
+
+switch (category) {
+    case 'Contratação':
+    case 'Concessão de Placa (Entrada)':
+        const { error: hireError } = await supabase.from('concessao').insert([{
+            codSAP: formData.codSAP,
+            placa: formData.placa,
+            valorfixo: parseFloat(formData.valorfixo),
+            data_inicio: toUTCSafeString(formData.data_alteracao) // CORRIGIDO
+        }]);
+        if (hireError) throw hireError;
+        break;
+    case 'Troca de Placa':
+        const { error: endError } = await supabase.from('concessao').update({ data_fim: safeEndDate }).eq('codSAP', formData.codSAP).eq('placa', formData.placa_antiga).is('data_fim', null);
+        if (endError) throw endError;
+        const { error: newPlateError } = await supabase.from('concessao').insert([{
+            codSAP: formData.codSAP,
+            placa: formData.placa,
+            valorfixo: parseFloat(formData.valorfixo),
+            data_inicio: toUTCSafeString(formData.data_alteracao) // CORRIGIDO
+        }]);
+        if (newPlateError) throw newPlateError;
+        break;
+    case 'Concessão de Placa (Saída)':
+        const { error: terminatePlateError } = await supabase.from('concessao').update({ data_fim: toUTCSafeString(formData.data_alteracao) }).eq('codSAP', formData.codSAP).eq('placa', formData.placa).is('data_fim', null); // CORRIGIDO
+        if (terminatePlateError) throw terminatePlateError;
+        break;
+    case 'Encerramento':
+        const { error: terminateError } = await supabase.from('concessao').update({ data_fim: toUTCSafeString(formData.data_alteracao) }).eq('codSAP', formData.codSAP).is('data_fim', null); // CORRIGIDO
+        if (terminateError) throw terminateError;
+        break;
+}
             showToast(`Operação de ${category} registrada com sucesso!`, 'success');
             setFormData(initialFormState);
             fetchInitialData();
