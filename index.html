@@ -150,6 +150,7 @@
     thirdPartyByRegion: { title: 'Terceiros por Região', icon: 'Building' },
     outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
     plateHistory: { title: 'Consulta Placas', icon: 'Search' },
+    monitoramentoRemessas: { title: 'Monitor. Remessas', icon: 'Truck', adminOnly: true },
     expenseQuery: { title: 'Consulta Despesas', icon: 'DollarSign' },
     branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
     displacementReleases: { title: 'Lanç. Deslocamento', icon: 'CalendarDays' },
@@ -865,6 +866,194 @@ function EquipmentManagement({ userId, showToast }) {
 }
 
 /* FIM DA FUNÇÃO EquipmentManagement COMPLETA E ATUALIZADA */
+            /* INÍCIO DO NOVO COMPONENTE MonitoramentoRemessas */
+
+function MonitoramentoRemessas({ userId, showToast }) {
+    const [remessasList, setRemessasList] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showForm, setShowForm] = React.useState(false);
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [currentRemessa, setCurrentRemessa] = React.useState(null);
+    const initialFormState = { placa: '', data_remessa: '', numero_os: '', nfe: '' };
+    const [formData, setFormData] = React.useState(initialFormState);
+
+    // Estados para dados de apoio (formulário e cálculos)
+    const [allPlates, setAllPlates] = React.useState([]);
+    const [allConcessions, setAllConcessions] = React.useState([]);
+    const [allTerceiros, setAllTerceiros] = React.useState([]);
+
+    const fetchData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Busca os dados de apoio em paralelo
+            const [remessasRes, platesRes, concessionsRes, terceirosRes] = await Promise.all([
+                supabase.from('remessas').select('*').order('data_remessa', { ascending: false }),
+                supabase.from('equipamentos').select('plate').order('plate'),
+                supabase.from('concessao').select('*'), // Pega todo o histórico de concessões
+                supabase.from('terceiros').select('*') // Pega todos os dados dos terceiros
+            ]);
+
+            if (remessasRes.error) throw remessasRes.error;
+            if (platesRes.error) throw platesRes.error;
+            if (concessionsRes.error) throw concessionsRes.error;
+            if (terceirosRes.error) throw terceirosRes.error;
+
+            setAllPlates(platesRes.data.map(p => p.plate) || []);
+            const concessionsData = concessionsRes.data || [];
+            const terceirosData = terceirosRes.data || [];
+            setAllConcessions(concessionsData);
+            setAllTerceiros(terceirosData);
+
+            // Processa os dados para calcular os campos dinâmicos
+            const processedRemessas = (remessasRes.data || []).map(remessa => {
+                const dataRemessa = new Date(remessa.data_remessa + 'T00:00:00');
+                
+                // Encontra a concessão correta para a placa na data da remessa
+                const concessaoAtiva = concessionsData.find(c =>
+                    c.placa === remessa.placa &&
+                    new Date(c.data_inicio + 'T00:00:00') <= dataRemessa &&
+                    (c.data_fim === null || new Date(c.data_fim + 'T00:00:00') >= dataRemessa)
+                );
+
+                if (concessaoAtiva) {
+                    const terceiroInfo = terceirosData.find(t => t.codSAP === concessaoAtiva.codSAP);
+                    return {
+                        ...remessa,
+                        terceiro: terceiroInfo?.apelido || 'N/A',
+                        razao_social: terceiroInfo?.razao || 'N/A',
+                        cnpj: terceiroInfo?.cnpj || 'N/A',
+                        email: terceiroInfo?.email || 'N/A',
+                    };
+                }
+
+                return { ...remessa, terceiro: 'Não encontrado', razao_social: 'N/A', cnpj: 'N/A', email: 'N/A' };
+            });
+
+            setRemessasList(processedRemessas);
+
+        } catch (err) {
+            showToast("Erro ao carregar remessas.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast]);
+
+    React.useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.placa || !formData.data_remessa || !formData.numero_os || !formData.nfe) {
+            showToast("Preencha todos os campos.", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const record = { ...formData };
+            if (isEditing) {
+                const { error } = await supabase.from('remessas').update(record).eq('id', currentRemessa.id);
+                if (error) throw error;
+                showToast("Remessa atualizada com sucesso!", "success");
+            } else {
+                const { error } = await supabase.from('remessas').insert([record]);
+                if (error) throw error;
+                showToast("Remessa cadastrada com sucesso!", "success");
+            }
+            setShowForm(false);
+            setFormData(initialFormState);
+            fetchData(); // Recarrega os dados
+        } catch(err) {
+            showToast(`Erro ao salvar remessa: ${err.message}`, "error");
+        }
+        setIsLoading(false);
+    };
+
+    const handleEditClick = (remessa) => {
+        setIsEditing(true);
+        setCurrentRemessa(remessa);
+        setFormData({
+            placa: remessa.placa,
+            data_remessa: remessa.data_remessa,
+            numero_os: remessa.numero_os,
+            nfe: remessa.nfe
+        });
+        setShowForm(true);
+    };
+    
+    const handleDelete = async (remessaId) => {
+        if (!window.confirm("Deseja realmente excluir esta remessa?")) return;
+        try {
+            const { error } = await supabase.from('remessas').delete().eq('id', remessaId);
+            if (error) throw error;
+            showToast("Remessa excluída com sucesso!", "success");
+            fetchData();
+        } catch(err) {
+            showToast("Erro ao excluir remessa.", "error");
+        }
+    };
+
+    const handleCancel = () => {
+        setShowForm(false);
+        setIsEditing(false);
+        setFormData(initialFormState);
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('div', { className: "flex justify-between items-center mb-4" },
+            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Monitoramento de Remessas"),
+            !showForm && React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, "Nova Remessa")
+        ),
+
+        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 border rounded-lg" },
+            React.createElement('select', { name: "placa", value: formData.placa, onChange: e => setFormData({...formData, placa: e.target.value}), className: "p-2 border rounded", required: true },
+                React.createElement('option', { value: '' }, 'Selecione a Placa*'),
+                allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+            ),
+            React.createElement('input', { name: "data_remessa", type: 'date', value: formData.data_remessa, onChange: e => setFormData({...formData, data_remessa: e.target.value}), className: "p-2 border rounded", required: true }),
+            React.createElement('input', { name: "numero_os", value: formData.numero_os, onChange: e => setFormData({...formData, numero_os: e.target.value}), placeholder: "Nº OS*", className: "p-2 border rounded", required: true }),
+            React.createElement('input', { name: "nfe", value: formData.nfe, onChange: e => setFormData({...formData, nfe: e.target.value}), placeholder: "NFe*", className: "p-2 border rounded", required: true }),
+            React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4 mt-2" },
+                React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+            )
+        ),
+        
+        !showForm && React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-x-auto" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ["Terceiro", "Placa", "Razão Social", "CNPJ", "E-mail", "Data Remessa", "Nº OS", "NFe", "Ações"].map(h => 
+                            React.createElement('th', { key: h, className: "px-6 py-4 font-semibold whitespace-nowrap" }, h)
+                        )
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Carregando...")) :
+                    remessasList.map(remessa => 
+                        React.createElement('tr', { key: remessa.id, className: "hover:bg-blue-50" },
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap font-medium" }, remessa.terceiro),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, remessa.placa),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, remessa.razao_social),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, formatCNPJ(remessa.cnpj)),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, remessa.email),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, new Date(remessa.data_remessa + 'T00:00:00').toLocaleDateString('pt-BR')),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, remessa.numero_os),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" }, remessa.nfe),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap" },
+                                React.createElement('div', { className: "flex gap-x-4" },
+                                    React.createElement('button', { onClick: () => handleEditClick(remessa), className: "text-gray-400 hover:text-blue-600" }, React.createElement(LucideIcon, {name: 'Edit', className: 'h-5 w-5'})),
+                                    React.createElement('button', { onClick: () => handleDelete(remessa.id), className: "text-gray-400 hover:text-red-600" }, React.createElement(LucideIcon, {name: 'Trash2', className: 'h-5 w-5'}))
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    );
+}
+
+/* FIM DO NOVO COMPONENTE MonitoramentoRemessas */
 /* INÍCIO DA FUNÇÃO ThirdPartyManagement COMPLETA E ATUALIZADA */
 
 function ThirdPartyManagement({ userId, showToast }) {
@@ -4402,6 +4591,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
                         case 'contractManagement': return React.createElement(ContractManagement, { userId, userRole, showToast });
                         case 'plateHistory': return React.createElement(PlateHistory, { showToast });
+                         case 'monitoramentoRemessas': return userRole === 'administrador' ? React.createElement(MonitoramentoRemessas, { userId, showToast }) : null;   
                         case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
@@ -4447,6 +4637,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
         // ATUALIZADO: Itens removidos daqui
         React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
             React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
+            React.createElement(MenuItem, { page: 'monitoramentoRemessas', icon: 'Truck', text: 'Monitor. Remessas' }),
             React.createElement(MenuItem, { page: 'displacementReleases', icon: 'CalendarDays', text: 'Lanç. Deslocamento' })
         ),
         React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
