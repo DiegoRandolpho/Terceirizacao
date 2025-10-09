@@ -646,6 +646,8 @@ function BranchManagement({ userId, userRole, showToast }) {
 
 /* INÍCIO DA FUNÇÃO EquipmentManagement COMPLETA E ATUALIZADA */
 
+/* INÍCIO DA FUNÇÃO EquipmentManagement COMPLETA E CORRIGIDA */
+
 function EquipmentManagement({ userId, showToast }) {
     const [newPlate, setNewPlate] = React.useState('');
     const [newModel, setNewModel] = React.useState('');
@@ -674,37 +676,15 @@ function EquipmentManagement({ userId, showToast }) {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                let allEquipment = [];
-                let page = 0;
-                const pageSize = 1000;
+                const { data: eqData, error: eqError } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
+                if (eqError) throw eqError;
+                setEquipmentList(eqData || []);
 
-                while (true) {
-                    const from = page * pageSize;
-                    const to = from + pageSize - 1;
-
-                    const { data, error } = await supabase
-                        .from('equipamentos')
-                        .select('*')
-                        .order('created_at', { ascending: false })
-                        .range(from, to);
-
-                    if (error) throw error;
-                    
-                    if (data) {
-                        allEquipment = [...allEquipment, ...data];
-                    }
-
-                    if (!data || data.length < pageSize) {
-                        break;
-                    }
-                    page++;
-                }
+                // CORRIGIDO: Buscando da coluna 'descricao' como você informou
+                const { data: typesData, error: typesError } = await supabase.from('tipos_implemento').select('descricao').order('descricao');
+                if (typesError) throw typesError;
                 
-                setEquipmentList(allEquipment);
-
-                const typesData = allEquipment.map(item => item.type).filter(Boolean);
-                const uniqueTypes = [...new Set(typesData)].sort();
-                setEquipmentTypes(uniqueTypes);
+                setEquipmentTypes(typesData.map(t => t.descricao) || []);
 
             } catch (err) {
                 showToast("Erro ao carregar dados.", "error");
@@ -723,7 +703,6 @@ function EquipmentManagement({ userId, showToast }) {
             'Tipo de Implemento': eq.type,
             'Data de Cadastro': new Date(eq.created_at).toLocaleDateString('pt-BR')
         }));
-
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
@@ -823,12 +802,7 @@ function EquipmentManagement({ userId, showToast }) {
             React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
                 React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
                     React.createElement('tr', null, 
-                        React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Placa"),
-                        React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Modelo"),
-                        React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Marca"),
-                        React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Chassi"),
-                        React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Tipo"), 
-                        React.createElement('th', {className: "px-6 py-4 font-semibold text-right border-b-2 border-gray-200"}, "Ações")
+                        ["Placa", "Modelo", "Marca", "Chassi", "Tipo", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200" }, h))
                     )
                 ),
                 React.createElement('tbody', { className: "divide-y divide-gray-100" },
@@ -874,7 +848,7 @@ function EquipmentManagement({ userId, showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO EquipmentManagement COMPLETA E ATUALIZADA */
+/* FIM DA FUNÇÃO EquipmentManagement ATUALIZADA */
             /* INÍCIO DO NOVO COMPONENTE MonitoramentoRemessas */
 
 function MonitoramentoRemessas({ userId, showToast }) {
