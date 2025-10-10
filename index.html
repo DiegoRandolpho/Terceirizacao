@@ -2167,17 +2167,15 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
               );
             }
 
-            /* INÍCIO DO NOVO COMPONENTE ParcelaFixaManagement */
-
-function ParcelaFixaManagement({ userId, showToast }) {
+            function ParcelaFixaManagement({ userId, showToast }) {
     const [parcelasList, setParcelasList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showForm, setShowForm] = React.useState(false);
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentParcela, setCurrentParcela] = React.useState(null);
-    const [formData, setFormData] = React.useState({ cod_sap: '', valor: '' });
+    // 1. ADICIONADO 'observacao' AO ESTADO INICIAL
+    const [formData, setFormData] = React.useState({ cod_sap: '', valor: '', observacao: '' });
     const [allTerceiros, setAllTerceiros] = React.useState([]);
-
     const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
     const fetchData = React.useCallback(async () => {
@@ -2211,12 +2209,17 @@ function ParcelaFixaManagement({ userId, showToast }) {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         if (!formData.cod_sap || formData.valor === '') {
-            showToast("Preencha todos os campos.", "error");
+            showToast("Preencha todos os campos obrigatórios (Terceiro, Valor).", "error");
             return;
         }
         setIsLoading(true);
         try {
-            const record = { cod_sap: formData.cod_sap, valor: parseFloat(formData.valor) };
+            // 2. ADICIONADO 'observacao' AO REGISTRO A SER SALVO
+            const record = { 
+                cod_sap: formData.cod_sap, 
+                valor: parseFloat(formData.valor),
+                observacao: formData.observacao.trim() 
+            };
             if (isEditing) {
                 const { error } = await supabase.from('parcelas_fixas').update(record).eq('id', currentParcela.id);
                 if (error) throw error;
@@ -2227,10 +2230,10 @@ function ParcelaFixaManagement({ userId, showToast }) {
                 showToast("Parcela cadastrada com sucesso!", "success");
             }
             setShowForm(false);
-            setFormData({ cod_sap: '', valor: '' });
+            // 3. RESETADO 'observacao' APÓS O ENVIO
+            setFormData({ cod_sap: '', valor: '', observacao: '' });
             fetchData();
         } catch(err) {
-            // Trata o erro de duplicação
             if (err.message.includes('duplicate key value violates unique constraint')) {
                 showToast("Este terceiro já possui uma parcela fixa cadastrada.", "error");
             } else {
@@ -2243,7 +2246,12 @@ function ParcelaFixaManagement({ userId, showToast }) {
     const handleEditClick = (parcela) => {
         setIsEditing(true);
         setCurrentParcela(parcela);
-        setFormData({ cod_sap: parcela.cod_sap, valor: parcela.valor });
+        // 4. PREENCHIDO CAMPO 'observacao' AO EDITAR
+        setFormData({ 
+            cod_sap: parcela.cod_sap, 
+            valor: parcela.valor, 
+            observacao: parcela.observacao || '' 
+        });
         setShowForm(true);
     };
 
@@ -2261,29 +2269,34 @@ function ParcelaFixaManagement({ userId, showToast }) {
     
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Parcela Fixa"),
-        !showForm && React.createElement('div', { className: 'flex justify-center mb-6' }, React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); }, className: 'p-2 bg-blue-600 text-white rounded' }, 'Nova Parcela Fixa')),
-        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 border rounded-lg' },
-            React.createElement('select', { value: formData.cod_sap, onChange: e => setFormData({...formData, cod_sap: e.target.value}), disabled: isEditing, className: 'p-2 border rounded' },
+        !showForm && React.createElement('div', { className: 'flex justify-center mb-6' }, React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData({ cod_sap: '', valor: '', observacao: '' }); }, className: 'p-2 bg-blue-600 text-white rounded' }, 'Nova Parcela Fixa')),
+        // 5. ATUALIZADO O FORMULÁRIO PARA INCLUIR O CAMPO DE OBSERVAÇÃO
+        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded-lg' },
+            React.createElement('select', { value: formData.cod_sap, onChange: e => setFormData({...formData, cod_sap: e.target.value}), disabled: isEditing, className: 'p-2 border rounded md:col-span-1' },
                 React.createElement('option', { value: '' }, 'Selecione o Terceiro'),
                 allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, t.apelido))
             ),
-            React.createElement('input', { type: 'number', step: '0.01', placeholder: 'Valor da Parcela', value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), className: 'p-2 border rounded' }),
-            React.createElement('div', { className: 'flex gap-4' },
+            React.createElement('input', { type: 'number', step: '0.01', placeholder: 'Valor da Parcela', value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), className: 'p-2 border rounded md:col-span-1' }),
+            React.createElement('textarea', { placeholder: 'Observação (opcional)', value: formData.observacao, onChange: e => setFormData({...formData, observacao: e.target.value}), className: 'p-2 border rounded md:col-span-2 lg:col-span-3', rows: 2 }),
+            React.createElement('div', { className: 'md:col-span-full flex justify-end gap-4' },
                 React.createElement('button', { type: 'submit', className: 'p-2 bg-blue-600 text-white rounded', disabled: isLoading }, 'Salvar'),
                 React.createElement('button', { type: 'button', onClick: () => setShowForm(false), className: 'p-2 bg-gray-300 rounded' }, 'Cancelar')
             )
         ),
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                // 6. ADICIONADO CABEÇALHO "OBSERVAÇÃO" À TABELA
                 React.createElement('thead', { className: 'text-xs text-slate-700 uppercase bg-slate-100' }, React.createElement('tr', null,
-                    ['Terceiro (Apelido)', 'Cód. SAP', 'Valor', 'Ações'].map(h => React.createElement('th', { key: h, className: 'px-6 py-4 font-semibold' }, h))
+                    ['Terceiro (Apelido)', 'Cód. SAP', 'Valor', 'Observação', 'Ações'].map(h => React.createElement('th', { key: h, className: 'px-6 py-4 font-semibold' }, h))
                 )),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: 'p-4 text-center' }, 'Carregando...')) :
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: 'p-4 text-center' }, 'Carregando...')) :
                     parcelasList.map(p => React.createElement('tr', { key: p.id, className: 'hover:bg-blue-50' },
                         React.createElement('td', { className: 'px-6 py-4 font-medium' }, p.apelido),
                         React.createElement('td', { className: 'px-6 py-4' }, p.cod_sap),
                         React.createElement('td', { className: 'px-6 py-4' }, formatCurrency(p.valor)),
+                        // 7. ADICIONADO CAMPO DE OBSERVAÇÃO NA LINHA DA TABELA
+                        React.createElement('td', { className: 'px-6 py-4 max-w-xs truncate', title: p.observacao }, p.observacao || '—'),
                         React.createElement('td', { className: 'px-6 py-4' }, React.createElement('div', { className: 'flex gap-x-4' },
                             React.createElement('button', { onClick: () => handleEditClick(p) }, React.createElement(LucideIcon, {name: 'Edit'})),
                             React.createElement('button', { onClick: () => handleDelete(p.id) }, React.createElement(LucideIcon, {name: 'Trash2'}))
@@ -2294,8 +2307,6 @@ function ParcelaFixaManagement({ userId, showToast }) {
         )
     );
 }
-
-/* FIM DO NOVO COMPONENTE ParcelaFixaManagement */
 /* INÍCIO DA FUNÇÃO AcertoManagement COMPLETA E ATUALIZADA */
 
 function AcertoManagement({ userId, userRole, showToast }) {
