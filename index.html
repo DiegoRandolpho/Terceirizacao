@@ -1421,315 +1421,329 @@ function UserManagement({ userId, showToast }) {
     );
 }
 
-/* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
+/* INÍCIO DA FUNÇÃO ContractManagement COMPLETA E CORRIGIDA */
 
-function ConcessionManagement({ userId, userRole, showToast }) {
-                // ... (todos os estados permanecem os mesmos) ...
-                const [concessions, setConcessions] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(false);
-                const [showForm, setShowForm] = React.useState(false);
-                const [isEditing, setIsEditing] = React.useState(false);
-                const [currentConcession, setCurrentConcession] = React.useState(null);
-                const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '', data_fim: '', observacao: '' };
-                const [formData, setFormData] = React.useState(initialFormState);
-                const [allPlates, setAllPlates] = React.useState([]);
-                const [allTerceiros, setAllTerceiros] = React.useState([]);
-                const [placaSearch, setPlacaSearch] = React.useState('');
-                const [terceiroSearch, setTerceiroSearch] = React.useState('');
-                const [filteredPlates, setFilteredPlates] = React.useState([]);
-                const [filteredTerceiros, setFilteredTerceiros] = React.useState([]);
-                const [searchTerm, setSearchTerm] = React.useState('');
-                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-                const [concessionToEnd, setConcessionToEnd] = React.useState(null);
-                const [tiposImplemento, setTiposImplemento] = React.useState([]);
+function ContractManagement({ userId, userRole, showToast }) {
+    const [category, setCategory] = React.useState('Contratação');
+    const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
+    const [formData, setFormData] = React.useState(initialFormState);
+    const [terceiros, setTerceiros] = React.useState([]);
+    const [allPlates, setAllPlates] = React.useState([]);
+    const [activeConcessions, setActiveConcessions] = React.useState([]);
+    const [history, setHistory] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const getCategoryBadge = (category) => {
+        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
+        switch (category) {
+            case 'Contratação':
+            case 'Concessão de Placa (Entrada)':
+                return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, category);
+            case 'Troca de Placa':
+                return React.createElement('span', { className: `bg-yellow-100 text-yellow-800 ${baseClasses}` }, category);
+            case 'Encerramento':
+            case 'Concessão de Placa (Saída)':
+                return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, category);
+            default:
+                return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, category);
+        }
+    };
+    
+    const fetchInitialData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [terceirosRes, platesRes, historyRes] = await Promise.all([
+                supabase.from('terceiros').select('codSAP, apelido'),
+                supabase.from('equipamentos').select('plate'),
+                supabase.from('contrato_distrato').select('*').order('data_alteracao', { ascending: false })
+            ]);
+            if (terceirosRes.error) throw terceirosRes.error;
+            if (platesRes.error) throw platesRes.error;
+            if (historyRes.error) throw historyRes.error;
+            setTerceiros(terceirosRes.data);
+            setAllPlates(platesRes.data.map(p => p.plate));
+            setHistory(historyRes.data);
+        } catch (err) {
+            showToast("Erro ao carregar dados iniciais.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast]);
 
-                // --- INÍCIO DA ALTERAÇÃO ---
+    React.useEffect(() => { fetchInitialData(); }, [fetchInitialData]);
 
-                // ALTERADO: A função handleInputChange agora valida campos de data
-                const handleInputChange = (e) => {
-                    let { name, value, type } = e.target;
-                    
-                    // Se o campo for do tipo 'date', aplicamos a validação no ano
-                    if (type === 'date') {
-                        const parts = value.split('-');
-                        if (parts[0] && parts[0].length > 4) {
-                            parts[0] = parts[0].slice(0, 4); // Corta o ano para 4 dígitos
-                            value = parts.join('-');
-                        }
-                    }
+    React.useEffect(() => {
+        const fetchActiveConcessions = async () => {
+            if (formData.codSAP) {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('concessao')
+                    .select('placa, data_inicio')
+                    .eq('codSAP', formData.codSAP)
+                    .is('data_fim', null);
+                if (error) {
+                    showToast("Erro ao buscar concessões ativas.", "error");
+                    setActiveConcessions([]);
+                } else {
+                    setActiveConcessions(data || []);
+                }
+                setIsLoading(false);
+            } else {
+                setActiveConcessions([]);
+            }
+        };
+        fetchActiveConcessions();
+    }, [formData.codSAP, category, showToast]);
 
-                    setFormData(prev => ({ ...prev, [name]: value }));
+    const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        // NOVO: Cliente Supabase para a tabela de alertas e função auxiliar
+        const supabaseAlertas = window.supabase.createClient(
+            'https://gfivmnnysomfwrffybeh.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaXZtbm55c29tZndyZmZ5YmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTY3NjgsImV4cCI6MjA2ODg3Mjc2OH0.NxetXJoCLh4q9zAqn_olimziI3YP4MAJzB8ed4qf8cg'
+        );
+
+        const createAlerta = async (placaAlerta, nomeAlerta) => {
+            if (!formData.data_alteracao || !placaAlerta) return;
+            
+            try {
+                const [year, month] = formData.data_alteracao.split('-');
+                const periodoAlerta = `${month}/${year}`;
+
+                const alertaRecord = {
+                    periodo: periodoAlerta,
+                    cod_sap: formData.codSAP,
+                    placa: placaAlerta,
+                    data: toUTCSafeString(formData.data_alteracao),
+                    alerta: nomeAlerta,
+                    origem_alerta: 'Contrato/Distrato',
+                    origem_username: userId,
+                    lida: false
                 };
 
-                // --- FIM DA ALTERAÇÃO ---
+                const { error: alertError } = await supabaseAlertas.from('alertas').insert([alertaRecord]);
+                if (alertError) throw alertError;
 
-                const isColorLight = (hexColor) => {
-                    if (!hexColor) return false;
-                    const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
-                    const r = parseInt(color.substring(0, 2), 16);
-                    const g = parseInt(color.substring(2, 4), 16);
-                    const b = parseInt(color.substring(4, 6), 16);
-                    return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
-                };
+            } catch (err) {
+                console.error("Falha ao criar o alerta:", err.message);
+                showToast("Aviso: A operação principal foi bem-sucedida, mas não foi possível criar o alerta.", "error");
+            }
+        };
 
-                const getTypeBadgeStyle = (typeDescricao) => {
-                    const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
-                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6';
-                    const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
-                    return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
-                };
-                
-                const getConcessionStatusBadge = (isFinished) => {
-                    const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
-                    if (isFinished) {
-                        return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, "Encerrada");
-                    }
-                    return null;
-                };
-
-                const fetchAllData = React.useCallback(async () => {
-                    setIsLoading(true);
-                    try {
-                        const [concessaoRes, terceirosRes, equipamentosRes, tiposImplementoRes] = await Promise.all([
-                            supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
-                            supabase.from('terceiros').select('codSAP, apelido, cnpj, nome_completo, cpf'),
-                            supabase.from('equipamentos').select('plate, type'),
-                            supabase.from('tipos_implemento').select('descricao, cor')
-                        ]);
-
-                        if (concessaoRes.error) throw concessaoRes.error;
-                        if (terceirosRes.error) throw terceirosRes.error;
-                        if (equipamentosRes.error) throw equipamentosRes.error;
-                        if (tiposImplementoRes.error) throw tiposImplementoRes.error;
-
-                        setTiposImplemento(tiposImplementoRes.data || []);
-                        const platesData = equipamentosRes.data.map(e => e.plate) || [];
-                        const terceirosData = terceirosRes.data || [];
-                        
-                        setAllPlates(platesData);
-                        setAllTerceiros(terceirosData);
-                        setFilteredPlates(platesData);
-                        setFilteredTerceiros(terceirosData);
-
-                        const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
-                        const terceirosMap = new Map(terceirosData.map(t => [t.codSAP, t]));
-
-                        const joinedData = concessaoRes.data.map(c => {
-                            const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome_completo: 'N/A', cpf: 'N/A' };
-                            const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
-                            return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome_completo, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
-                        });
-                        setConcessions(joinedData);
-                    } catch (err) {
-                        showToast("Erro ao carregar dados de concessão.", "error");
-                    }
+        try {
+            if (category === 'Concessão de Placa (Saída)' || category === 'Encerramento') {
+                const placaSaindo = category === 'Encerramento' ?
+                    activeConcessions[0]?.placa : formData.placa;
+                const concessaoSaindo = activeConcessions.find(c => c.placa === placaSaindo);
+                if (concessaoSaindo && formData.data_alteracao < concessaoSaindo.data_inicio) {
+                    showToast("A data de fim não pode ser anterior à data de início da concessão.", "error");
                     setIsLoading(false);
-                }, [showToast]);
-
-                const formatDate = (dateString) => {
-                    if (!dateString) return '—';
-                    const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
-                    return date.toLocaleDateString('pt-BR');
-                };
-                React.useEffect(() => { fetchAllData(); }, [fetchAllData]);
-                
-                // As outras funções (handlePlacaChange, handleFormSubmit, etc.) permanecem as mesmas
-                const handlePlacaChange = (e) => {
-                    const value = e.target.value.toUpperCase();
-                    setPlacaSearch(value);
-                    setFormData(prev => ({...prev, placa: value}));
-                    if (value) {
-                        setFilteredPlates(allPlates.filter(p => p.toUpperCase().includes(value)));
-                    } else {
-                        setFilteredPlates(allPlates);
-                    }
-                };
-                const handleTerceiroChange = (e) => {
-                    const value = e.target.value;
-                    setTerceiroSearch(value);
-                    const match = value.match(/\(([^)]+)\)$/);
-                    if (match && match[1]) {
-                        setFormData(prev => ({ ...prev, codSAP: match[1] }));
-                    } else {
-                        setFormData(prev => ({ ...prev, codSAP: '' }));
-                    }
-                    if (value) {
-                        const lowerCaseValue = value.toLowerCase();
-                        setFilteredTerceiros(allTerceiros.filter(t => 
-                            t.apelido.toLowerCase().includes(lowerCaseValue) || 
-                            t.codSAP.toLowerCase().includes(lowerCaseValue)
-                        ));
-                    } else {
-                        setFilteredTerceiros(allTerceiros);
-                    }
-                };
-                const handleFormSubmit = async (e) => {
-                    e.preventDefault();
-                    if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
-                        showToast("Por favor, preencha todos os campos obrigatórios.", "error");
-                        return;
-                    }
-                    setIsLoading(true);
-                    try {
-                        // ...
-const record = {
-    placa: formData.placa,
-    codSAP: formData.codSAP,
-    valorfixo: parseFloat(formData.valorfixo),
-    data_inicio: toUTCSafeString(formData.data_inicio), 
-    data_fim: toUTCSafeString(formData.data_fim), 
-    observacao: formData.observacao.trim()
-};
-
-                        if (isEditing) {
-                            const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
-                            if (error) throw error;
-                            showToast("Concessão atualizada com sucesso!", "success");
-                        } else {
-                            const { error } = await supabase.from('concessao').insert([record]);
-                            if (error) throw error;
-                            showToast("Concessão criada com sucesso!", "success");
-                        }
-                        setShowForm(false);
-                        setIsEditing(false);
-                        setFormData(initialFormState);
-                        setPlacaSearch('');
-                        setTerceiroSearch('');
-                        fetchAllData();
-                    } catch (err) {
-                        showToast(`Erro ao salvar concessão: ${err.message}`, "error");
-                    }
-                    setIsLoading(false);
-                };
-                const handleEditClick = (concession) => {
-                    setIsEditing(true);
-                    setCurrentConcession(concession);
-                    const startDate = concession.data_inicio ? new Date(concession.data_inicio).toISOString().split('T')[0] : '';
-                    const endDate = concession.data_fim ? new Date(concession.data_fim).toISOString().split('T')[0] : '';
-                    setFormData({
-                    placa: concession.placa,
-                    codSAP: concession.codSAP,
-                    valorfixo: concession.valorfixo,
-                    data_inicio: startDate,
-                    data_fim: endDate,
-                    observacao: concession.observacao || '' // Linha adicionada
-});
-                    setPlacaSearch(concession.placa);
-                    const terceiroCorrespondente = allTerceiros.find(t => t.codSAP === concession.codSAP);
-                    if (terceiroCorrespondente) {
-                        setTerceiroSearch(`${terceiroCorrespondente.apelido} (${terceiroCorrespondente.codSAP})`);
-                    } else {
-                        setTerceiroSearch('');
-                    }
-                    setShowForm(true);
-                };
-                const handleCancel = () => {
-                    setShowForm(false);
-                    setIsEditing(false);
-                    setFormData(initialFormState);
-                    setPlacaSearch('');
-                    setTerceiroSearch('');
-                };
-                const confirmEndConcession = (concession) => {
-                    setConcessionToEnd(concession);
-                    setShowConfirmModal(true);
-                };
-                const handleEndConcession = async () => {
-                    if (!concessionToEnd) return;
-                    setIsLoading(true);
-                    try {
-                        const { error } = await supabase.from('concessao').update({ data_fim: new Date().toISOString() }).eq('id', concessionToEnd.id);
-                        if (error) throw error;
-                        showToast("Concessão encerrada com sucesso!", "success");
-                        fetchAllData();
-                    } catch (err) {
-                        showToast("Erro ao encerrar concessão.", "error");
-                    }
-                    setShowConfirmModal(false);
-                    setConcessionToEnd(null);
-                    setIsLoading(false);
-                };
-                const filteredList = concessions.filter(c => {
-                    const search = searchTerm.toLowerCase();
-                    return Object.values(c).some(val => val && String(val).toLowerCase().includes(search));
-                });
-                
-                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
-                    userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
-                        React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); setTerceiroSearch(''); setPlacaSearch(''); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
-                            React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
-                            "Nova Concessão"
-                        )
-                    ),
-                    showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-                        React.createElement('div', null,
-                            React.createElement('input', { name: "placa", value: placaSearch, onChange: handlePlacaChange, className: "w-full p-2 border rounded", placeholder: "Digite para pesquisar a placa...", list: "lista-de-placas", required: true, autoComplete: "off" }),
-                            React.createElement('datalist', { id: "lista-de-placas" }, filteredPlates.map(p => React.createElement('option', { key: p, value: p })))
-                        ),
-                        React.createElement('div', null,
-                            React.createElement('input', { name: "terceiro", value: terceiroSearch, onChange: handleTerceiroChange, className: "w-full p-2 border rounded", placeholder: "Pesquise o apelido do terceiro...", list: "lista-de-terceiros", required: true, autoComplete: "off" }),
-                            React.createElement('datalist', { id: "lista-de-terceiros" }, filteredTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: `${t.apelido} (${t.codSAP})` })))
-                        ),
-                        React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true }),
-                        
-                        // ALTERADO: Adicionado atributo 'max' para limitar o ano
-                        React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true, max: "9999-12-31" }),
-                        React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded", max: "9999-12-31" }),
-                        React.createElement('textarea', {
-                            name: "observacao",
-                            value: formData.observacao,
-                            onChange: handleInputChange,
-                            placeholder: "Observações (opcional)",
-                            className: "w-full p-2 border rounded lg:col-span-3", // Ocupa a largura total
-                            rows: 3
-                        }),
-                        React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
-                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
-                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
-                        )
-                    ),
-                    React.createElement('input', { type: "text", placeholder: "Buscar na tabela...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-                    React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
-                        React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                            React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
-                                React.createElement('tr', null,
-                                    ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome Completo", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo", "Observação"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
-                                    userRole === 'administrador' && React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
-                                )
-                            ),
-                            React.createElement('tbody', null,
-                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando..."))
-                                : !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada."))
-                                : filteredList.map(c =>
-                                    React.createElement('tr', { key: c.id, className: "hover:bg-blue-50 even:bg-slate-50" },
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.codSAP),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.apelido),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: 'font-medium text-slate-800' }, c.placa)),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { style: getTypeBadgeStyle(c.tipoImplemento), className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium` }, c.tipoImplemento)),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
-                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 max-w-xs truncate", title: c.observacao }, c.observacao || '—'),
-                                        userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
-                                            c.data_fim ? getConcessionStatusBadge(true)
-                                            : React.createElement('div', { className: 'flex justify-center gap-x-4' },
-                                                React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
-                                                React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    ),
-                    showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
-                );
+                    return;
+                }
+            }
+            if (category === 'Concessão de Placa (Saída)' && !formData.placa) {
+                 showToast("Selecione a placa que será encerrada.", "error");
+                 setIsLoading(false);
+                 return;
             }
 
+            const contractData = {
+                data_alteracao: formData.data_alteracao,
+                codSAP: formData.codSAP,
+                categoria: category,
+                atraso: parseInt(formData.atraso, 10) || 0,
+            };
+            const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
+            if (contractError) throw contractError;
+            
+            switch (category) {
+                case 'Contratação':
+                case 'Concessão de Placa (Entrada)':
+                    const { data: existing } = await supabase.from('concessao').select('id').eq('placa', formData.placa).is('data_fim', null);
+                    if (existing && existing.length > 0) {
+                        showToast(`A placa ${formData.placa} já possui uma concessão ativa.`, "error");
+                        throw new Error('Duplicação de concessão ativa.');
+                    }
+                    const { error: hireError } = await supabase.from('concessao').insert([{
+                        codSAP: formData.codSAP,
+                        placa: formData.placa,
+                        valorfixo: parseFloat(formData.valorfixo),
+                        data_inicio: toUTCSafeString(formData.data_alteracao)
+                    }]);
+                    if (hireError) throw hireError;
+                    break;
+                case 'Troca de Placa':
+                    const [year, month, day] = formData.data_alteracao.split('-').map(Number);
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    date.setUTCDate(date.getUTCDate() - 1);
+                    const endDateForUpdate = date.toISOString().split('T')[0];
+                    const { error: endError } = await supabase.from('concessao').update({ data_fim: endDateForUpdate }).eq('codSAP', formData.codSAP).eq('placa', formData.placa_antiga).is('data_fim', null);
+                    if (endError) throw endError;
+                    const { error: newPlateError } = await supabase.from('concessao').insert([{
+                        codSAP: formData.codSAP,
+                        placa: formData.placa,
+                        valorfixo: parseFloat(formData.valorfixo),
+                        data_inicio: toUTCSafeString(formData.data_alteracao)
+                    }]);
+                    if (newPlateError) throw newPlateError;
+                    // ALTERADO: Adicionada chamada para criar o alerta
+                    await createAlerta(formData.placa_antiga, "Troca de placa");
+                    break;
+                case 'Concessão de Placa (Saída)':
+                    const { error: terminatePlateError } = await supabase.from('concessao').update({ data_fim: toUTCSafeString(formData.data_alteracao) }).eq('codSAP', formData.codSAP).eq('placa', formData.placa).is('data_fim', null);
+                    if (terminatePlateError) throw terminatePlateError;
+                    // ALTERADO: Adicionada chamada para criar o alerta
+                    await createAlerta(formData.placa, "Encerramento (concessão)");
+                    break;
+                case 'Encerramento':
+                    // ALTERADO: Captura a placa antes de encerrar para poder usá-la no alerta
+                    const placaParaEncerrar = activeConcessions.length > 0 ? activeConcessions[0].placa : null;
+                    const { error: terminateError } = await supabase.from('concessao').update({ data_fim: toUTCSafeString(formData.data_alteracao) }).eq('codSAP', formData.codSAP).is('data_fim', null);
+                    if (terminateError) throw terminateError;
+                    // ALTERADO: Adicionada chamada para criar o alerta
+                    if (placaParaEncerrar) {
+                        await createAlerta(placaParaEncerrar, "Encerramento de Terceiro");
+                    }
+                    break;
+            }
+            showToast(`Operação de ${category} registrada com sucesso!`, 'success');
+            setFormData(initialFormState);
+            fetchInitialData();
+        } catch (err) {
+            showToast(`Erro na operação: ${err.message}`, "error");
+        }
+        setIsLoading(false);
+    };
+    
+    const formatDate = (dateString) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
+    };
+
+    const renderFormFields = () => {
+        const commonFields = [
+            React.createElement('select', { key: 'codSAP', name: 'codSAP', value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                React.createElement('option', { value: '' }, "Selecione o Terceiro"),
+                terceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+             ),
+            React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
+            React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
+        ];
+        switch (category) {
+            case 'Contratação':
+                if (formData.codSAP && activeConcessions.length > 0) {
+                    return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro já possui placa. Para adicionar outra, use a aba "Concessão de Placa (Entrada)".');
+                }
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Concessão de Placa (Entrada)':
+                 if (formData.codSAP && activeConcessions.length === 0) {
+                    return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro não possui nenhuma placa. Para a primeira placa, use a aba "Contratação".');
+                }
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Troca de Placa':
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa_antiga', name: 'placa_antiga', value: formData.placa_antiga, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa Antiga" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p.placa, value: p.placa }, p.placa))
+                    ),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Nova Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Concessão de Placa (Saída)':
+                if (formData.codSAP && activeConcessions.length <= 1) {
+                    return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro possui apenas uma ou nenhuma placa. Para finalizar o contrato, use a aba "Encerramento".');
+                }
+                return [
+                    ...commonFields.slice(0, 1),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa a Encerrar" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p.placa, value: p.placa }, p.placa))
+                    ),
+                    ...commonFields.slice(1)
+                ];
+            case 'Encerramento':
+                return commonFields;
+            default:
+                return [];
+        }
+    };
+
+    const isSubmitDisabled = () => {
+        if (isLoading) return true;
+        if (category === 'Contratação' && formData.codSAP && activeConcessions.length > 0) return true;
+        if (category === 'Concessão de Placa (Entrada)' && formData.codSAP && activeConcessions.length === 0) return true;
+        if (category === 'Concessão de Placa (Saída)' && formData.codSAP && activeConcessions.length <= 1) return true;
+        return false;
+    };
+    
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
+        React.createElement('div', { className: "mb-6" },
+            React.createElement('div', { className: "flex justify-center border-b" },
+                ['Contratação', 'Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
+                    React.createElement('button', {
+                        key: cat,
+                        onClick: () => { setCategory(cat); setFormData(initialFormState); },
+                        className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+                    }, cat)
+                ))
+            )
+        ),
+        React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
+            renderFormFields(),
+            React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
+                React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50", disabled: isSubmitDisabled() },
+                    isLoading ? 'Processando...' : 'Executar Operação'
+                )
+            )
+        ),
+        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    !history ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
+                    history.map(rec => React.createElement('tr', { key: rec.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, formatDate(rec.data_alteracao))
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, getCategoryBadge(rec.categoria)),
+                        React.createElement('td', { className: "px-6 py-4" }, rec.atraso)
+                    ))
+                )
+            )
+        )
+    );
+}
+
+/* FIM DA FUNÇÃO ContractManagement COMPLETA E CORRIGIDA */
 function WhatsAppButton({ phoneNumber, message }) {
     const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
     const whatsappUrl = `https://wa.me/${cleanedPhoneNumber}?text=${encodeURIComponent(message)}`;
@@ -1801,7 +1815,329 @@ function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
 }
 
 /* FIM DO CÓDIGO ATUALIZADO */
+/* INÍCIO DA FUNÇÃO ContractManagement COMPLETA E CORRIGIDA */
 
+function ContractManagement({ userId, userRole, showToast }) {
+    const [category, setCategory] = React.useState('Contratação');
+    const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
+    const [formData, setFormData] = React.useState(initialFormState);
+    const [terceiros, setTerceiros] = React.useState([]);
+    const [allPlates, setAllPlates] = React.useState([]);
+    const [activeConcessions, setActiveConcessions] = React.useState([]);
+    const [history, setHistory] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const getCategoryBadge = (category) => {
+        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
+        switch (category) {
+            case 'Contratação':
+            case 'Concessão de Placa (Entrada)':
+                return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, category);
+            case 'Troca de Placa':
+                return React.createElement('span', { className: `bg-yellow-100 text-yellow-800 ${baseClasses}` }, category);
+            case 'Encerramento':
+            case 'Concessão de Placa (Saída)':
+                return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, category);
+            default:
+                return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, category);
+        }
+    };
+    
+    const fetchInitialData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [terceirosRes, platesRes, historyRes] = await Promise.all([
+                supabase.from('terceiros').select('codSAP, apelido'),
+                supabase.from('equipamentos').select('plate'),
+                supabase.from('contrato_distrato').select('*').order('data_alteracao', { ascending: false })
+            ]);
+            if (terceirosRes.error) throw terceirosRes.error;
+            if (platesRes.error) throw platesRes.error;
+            if (historyRes.error) throw historyRes.error;
+            setTerceiros(terceirosRes.data);
+            setAllPlates(platesRes.data.map(p => p.plate));
+            setHistory(historyRes.data);
+        } catch (err) {
+            showToast("Erro ao carregar dados iniciais.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast]);
+
+    React.useEffect(() => { fetchInitialData(); }, [fetchInitialData]);
+
+    React.useEffect(() => {
+        const fetchActiveConcessions = async () => {
+            if (formData.codSAP) {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('concessao')
+                    .select('placa, data_inicio')
+                    .eq('codSAP', formData.codSAP)
+                    .is('data_fim', null);
+                if (error) {
+                    showToast("Erro ao buscar concessões ativas.", "error");
+                    setActiveConcessions([]);
+                } else {
+                    setActiveConcessions(data || []);
+                }
+                setIsLoading(false);
+            } else {
+                setActiveConcessions([]);
+            }
+        };
+        fetchActiveConcessions();
+    }, [formData.codSAP, category, showToast]);
+
+    const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        // NOVO: Cliente Supabase para a tabela de alertas e função auxiliar
+        const supabaseAlertas = window.supabase.createClient(
+            'https://gfivmnnysomfwrffybeh.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaXZtbm55c29tZndyZmZ5YmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTY3NjgsImV4cCI6MjA2ODg3Mjc2OH0.NxetXJoCLh4q9zAqn_olimziI3YP4MAJzB8ed4qf8cg'
+        );
+
+        const createAlerta = async (placaAlerta, nomeAlerta) => {
+            if (!formData.data_alteracao || !placaAlerta) return;
+            
+            try {
+                const [year, month] = formData.data_alteracao.split('-');
+                const periodoAlerta = `${month}/${year}`;
+
+                const alertaRecord = {
+                    periodo: periodoAlerta,
+                    cod_sap: formData.codSAP,
+                    placa: placaAlerta,
+                    data: toUTCSafeString(formData.data_alteracao),
+                    alerta: nomeAlerta,
+                    origem_alerta: 'Contrato/Distrato',
+                    origem_username: userId,
+                    lida: false
+                };
+
+                const { error: alertError } = await supabaseAlertas.from('alertas').insert([alertaRecord]);
+                if (alertError) throw alertError;
+
+            } catch (err) {
+                console.error("Falha ao criar o alerta:", err.message);
+                showToast("Aviso: A operação principal foi bem-sucedida, mas não foi possível criar o alerta.", "error");
+            }
+        };
+
+        try {
+            if (category === 'Concessão de Placa (Saída)' || category === 'Encerramento') {
+                const placaSaindo = category === 'Encerramento' ?
+                    activeConcessions[0]?.placa : formData.placa;
+                const concessaoSaindo = activeConcessions.find(c => c.placa === placaSaindo);
+                if (concessaoSaindo && formData.data_alteracao < concessaoSaindo.data_inicio) {
+                    showToast("A data de fim não pode ser anterior à data de início da concessão.", "error");
+                    setIsLoading(false);
+                    return;
+                }
+            }
+            if (category === 'Concessão de Placa (Saída)' && !formData.placa) {
+                 showToast("Selecione a placa que será encerrada.", "error");
+                 setIsLoading(false);
+                 return;
+            }
+
+            const contractData = {
+                data_alteracao: formData.data_alteracao,
+                codSAP: formData.codSAP,
+                categoria: category,
+                atraso: parseInt(formData.atraso, 10) || 0,
+            };
+            const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
+            if (contractError) throw contractError;
+            
+            switch (category) {
+                case 'Contratação':
+                case 'Concessão de Placa (Entrada)':
+                    const { data: existing } = await supabase.from('concessao').select('id').eq('placa', formData.placa).is('data_fim', null);
+                    if (existing && existing.length > 0) {
+                        showToast(`A placa ${formData.placa} já possui uma concessão ativa.`, "error");
+                        throw new Error('Duplicação de concessão ativa.');
+                    }
+                    const { error: hireError } = await supabase.from('concessao').insert([{
+                        codSAP: formData.codSAP,
+                        placa: formData.placa,
+                        valorfixo: parseFloat(formData.valorfixo),
+                        data_inicio: toUTCSafeString(formData.data_alteracao)
+                    }]);
+                    if (hireError) throw hireError;
+                    break;
+                case 'Troca de Placa':
+                    const [year, month, day] = formData.data_alteracao.split('-').map(Number);
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    date.setUTCDate(date.getUTCDate() - 1);
+                    const endDateForUpdate = date.toISOString().split('T')[0];
+                    const { error: endError } = await supabase.from('concessao').update({ data_fim: endDateForUpdate }).eq('codSAP', formData.codSAP).eq('placa', formData.placa_antiga).is('data_fim', null);
+                    if (endError) throw endError;
+                    const { error: newPlateError } = await supabase.from('concessao').insert([{
+                        codSAP: formData.codSAP,
+                        placa: formData.placa,
+                        valorfixo: parseFloat(formData.valorfixo),
+                        data_inicio: toUTCSafeString(formData.data_alteracao)
+                    }]);
+                    if (newPlateError) throw newPlateError;
+                    // ALTERADO: Adicionada chamada para criar o alerta
+                    await createAlerta(formData.placa_antiga, "Troca de placa");
+                    break;
+                case 'Concessão de Placa (Saída)':
+                    const { error: terminatePlateError } = await supabase.from('concessao').update({ data_fim: toUTCSafeString(formData.data_alteracao) }).eq('codSAP', formData.codSAP).eq('placa', formData.placa).is('data_fim', null);
+                    if (terminatePlateError) throw terminatePlateError;
+                    // ALTERADO: Adicionada chamada para criar o alerta
+                    await createAlerta(formData.placa, "Encerramento (concessão)");
+                    break;
+                case 'Encerramento':
+                    // ALTERADO: Captura a placa antes de encerrar para poder usá-la no alerta
+                    const placaParaEncerrar = activeConcessions.length > 0 ? activeConcessions[0].placa : null;
+                    const { error: terminateError } = await supabase.from('concessao').update({ data_fim: toUTCSafeString(formData.data_alteracao) }).eq('codSAP', formData.codSAP).is('data_fim', null);
+                    if (terminateError) throw terminateError;
+                    // ALTERADO: Adicionada chamada para criar o alerta
+                    if (placaParaEncerrar) {
+                        await createAlerta(placaParaEncerrar, "Encerramento de Terceiro");
+                    }
+                    break;
+            }
+            showToast(`Operação de ${category} registrada com sucesso!`, 'success');
+            setFormData(initialFormState);
+            fetchInitialData();
+        } catch (err) {
+            showToast(`Erro na operação: ${err.message}`, "error");
+        }
+        setIsLoading(false);
+    };
+    
+    const formatDate = (dateString) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
+    };
+
+    const renderFormFields = () => {
+        const commonFields = [
+            React.createElement('select', { key: 'codSAP', name: 'codSAP', value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                React.createElement('option', { value: '' }, "Selecione o Terceiro"),
+                terceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+             ),
+            React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
+            React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
+        ];
+        switch (category) {
+            case 'Contratação':
+                if (formData.codSAP && activeConcessions.length > 0) {
+                    return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro já possui placa. Para adicionar outra, use a aba "Concessão de Placa (Entrada)".');
+                }
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Concessão de Placa (Entrada)':
+                 if (formData.codSAP && activeConcessions.length === 0) {
+                    return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro não possui nenhuma placa. Para a primeira placa, use a aba "Contratação".');
+                }
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Troca de Placa':
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa_antiga', name: 'placa_antiga', value: formData.placa_antiga, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa Antiga" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p.placa, value: p.placa }, p.placa))
+                    ),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Nova Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Concessão de Placa (Saída)':
+                if (formData.codSAP && activeConcessions.length <= 1) {
+                    return React.createElement('div', { className: 'text-center text-red-600 font-semibold lg:col-span-3' }, 'Este terceiro possui apenas uma ou nenhuma placa. Para finalizar o contrato, use a aba "Encerramento".');
+                }
+                return [
+                    ...commonFields.slice(0, 1),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa a Encerrar" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p.placa, value: p.placa }, p.placa))
+                    ),
+                    ...commonFields.slice(1)
+                ];
+            case 'Encerramento':
+                return commonFields;
+            default:
+                return [];
+        }
+    };
+
+    const isSubmitDisabled = () => {
+        if (isLoading) return true;
+        if (category === 'Contratação' && formData.codSAP && activeConcessions.length > 0) return true;
+        if (category === 'Concessão de Placa (Entrada)' && formData.codSAP && activeConcessions.length === 0) return true;
+        if (category === 'Concessão de Placa (Saída)' && formData.codSAP && activeConcessions.length <= 1) return true;
+        return false;
+    };
+    
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
+        React.createElement('div', { className: "mb-6" },
+            React.createElement('div', { className: "flex justify-center border-b" },
+                ['Contratação', 'Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
+                    React.createElement('button', {
+                        key: cat,
+                        onClick: () => { setCategory(cat); setFormData(initialFormState); },
+                        className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+                    }, cat)
+                ))
+            )
+        ),
+        React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
+            renderFormFields(),
+            React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
+                React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50", disabled: isSubmitDisabled() },
+                    isLoading ? 'Processando...' : 'Executar Operação'
+                )
+            )
+        ),
+        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    !history ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
+                    history.map(rec => React.createElement('tr', { key: rec.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, formatDate(rec.data_alteracao))
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, getCategoryBadge(rec.categoria)),
+                        React.createElement('td', { className: "px-6 py-4" }, rec.atraso)
+                    ))
+                )
+            )
+        )
+    );
+}
+
+/* FIM DA FUNÇÃO ContractManagement COMPLETA E CORRIGIDA */
 /* INÍCIO DA FUNÇÃO ContractManagement COMPLETA E CORRIGIDA */
 
 function ContractManagement({ userId, userRole, showToast }) {
