@@ -4259,8 +4259,6 @@ function PlateHistory({ showToast }) {
     );
 }
 
-/* INÍCIO DA FUNÇÃO ExpenseQuery ATUALIZADA COM SELEÇÃO MÚLTIPLA */
-
 /* INÍCIO DA FUNÇÃO ExpenseQuery COMPLETA E CORRIGIDA */
 
 function ExpenseQuery({ userId, userRole, showToast }) {
@@ -4307,7 +4305,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         setIsLoading(true);
         setHasSearched(true);
         setExpenses([]);
-        setSelectedExpenses([]); // Limpa a seleção ao fazer nova busca
+        setSelectedExpenses([]);
         try {
             const { data: equipmentData, error: equipmentError } = await supabase.from('equipamentos').select('plate, type');
             if (equipmentError) throw equipmentError;
@@ -4350,12 +4348,79 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) { setFile(e.target.files[0]); }
     };
-    const handleImport = () => { /* ...código de importação... */ };
+
+    const handleImport = () => {
+        if (!file) {
+            showToast("Por favor, selecione um arquivo para importar.", "error");
+            return;
+        }
+        if (!periodo.match(/^\d{2}\/\d{4}$/)) {
+            showToast("Por favor, insira um período de referência válido (MM/AAAA) para a importação.", "error");
+            return;
+        }
+        setIsImporting(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                const dataToInsert = json
+                    .filter(row => row['Tipo Lancamento'] == 2)
+                    .map(row => ({
+                        periodo_referencia: periodo,
+                        placa: row['Placa'],
+                        ordem_manutencao: row['Fatura/Doc.Contab'],
+                        pedido: row['Pedido'],
+                        descricao: row['Material'],
+                        valor: parseFloat(row['Total']) || 0,
+                        erro_lancamento: false
+                    }));
+                if (dataToInsert.length === 0) {
+                    showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
+                    setIsImporting(false);
+                    return;
+                }
+                const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
+                if (error) throw error;
+                showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
+                setFile(null);
+                document.getElementById('file-input').value = '';
+                handleSearch();
+            } catch (err) {
+                showToast(`Erro ao processar o arquivo: ${err.message}`, "error");
+            }
+            setIsImporting(false);
+        };
+        reader.readAsArrayBuffer(file);
+    };
+    
+    // FUNÇÕES CORRIGIDAS E COMPLETAS
     const confirmFlagError = (expense) => {
         setExpenseToFlag(expense);
         setShowConfirmModal(true);
     };
-    const handleFlagError = async () => { /* ...código de marcar erro individual... */ };
+
+    const handleFlagError = async () => {
+        if (!expenseToFlag) return;
+        const newStatus = !expenseToFlag.erro_lancamento;
+        const { error } = await supabase
+            .from('despesas_manutencao')
+            .update({ erro_lancamento: newStatus })
+            .eq('id', expenseToFlag.id);
+        if (error) {
+            showToast("Erro ao atualizar o lançamento.", "error");
+        } else {
+            showToast(`Lançamento ${newStatus ? 'marcado como erro' : 'normalizado'}!`, "success");
+            setExpenses(prevExpenses => prevExpenses.map(exp => 
+                exp.id === expenseToFlag.id ? { ...exp, erro_lancamento: newStatus } : exp
+            ));
+        }
+        setShowConfirmModal(false);
+        setExpenseToFlag(null);
+    };
 
     const handleRowSelect = (expenseId) => {
         setSelectedExpenses(prevSelected => {
@@ -4396,8 +4461,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
-        
-        // SEÇÃO DE FILTROS RESTAURADA
         React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-4 gap-4 items-end" },
             React.createElement('div', null,
                 React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Período (MM/AAAA)"),
@@ -4417,7 +4480,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 isLoading ? 'Buscando...' : 'Buscar'
             )
         ),
-
         userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
             React.createElement('div', null,
                 React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha para Importar"),
@@ -4425,7 +4487,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
             ),
             React.createElement('button', { onClick: handleImport, disabled: isImporting, className: "w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400" }, isImporting ? 'Importando...' : 'Importar Dados')
         ),
-
         selectedExpenses.length > 0 && React.createElement('div', { className: 'mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between' },
             React.createElement('span', { className: 'font-semibold text-blue-800' }, `${selectedExpenses.length} itens selecionados`),
             React.createElement('div', { className: 'flex gap-x-4' },
@@ -4433,7 +4494,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 React.createElement('button', { onClick: () => handleBulkFlag(false), className: 'py-1 px-3 text-xs font-bold rounded-full bg-yellow-500 hover:bg-yellow-600 text-white transition' }, 'Normalizar Selecionados')
             )
         ),
-
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
@@ -4474,7 +4534,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO ExpenseQuery COMPLETA E ATUALIZADA */
+/* FIM DA FUNÇÃO ExpenseQuery COMPLETA E CORRIGIDA */
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
 
 function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
