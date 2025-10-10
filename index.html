@@ -2169,18 +2169,20 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
 
             /* INÍCIO DA FUNÇÃO ParcelaFixaManagement COMPLETA E ATUALIZADA */
 
+/* INÍCIO DA FUNÇÃO ParcelaFixaManagement COMPLETA E CORRIGIDA */
+
 function ParcelaFixaManagement({ userId, showToast }) {
     const [parcelasList, setParcelasList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showForm, setShowForm] = React.useState(false);
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentParcela, setCurrentParcela] = React.useState(null);
-    // Adicionado 'obs' ao estado inicial
     const [formData, setFormData] = React.useState({ cod_sap: '', valor: '', obs: '' });
     const [allTerceiros, setAllTerceiros] = React.useState([]);
 
     const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
+    // CORRIGIDO E OTIMIZADO: A lógica de busca e junção de dados foi refeita
     const fetchData = React.useCallback(async () => {
         setIsLoading(true);
         try {
@@ -2188,17 +2190,28 @@ function ParcelaFixaManagement({ userId, showToast }) {
                 supabase.from('parcelas_fixas').select('*'),
                 supabase.from('terceiros').select('codSAP, apelido').order('apelido')
             ]);
+
             if (parcelasRes.error) throw parcelasRes.error;
             if (terceirosRes.error) throw terceirosRes.error;
 
-            setAllTerceiros(terceirosRes.data || []);
+            const terceiros = terceirosRes.data || [];
+            setAllTerceiros(terceiros);
+
+            // Cria um mapa para uma busca mais eficiente (O(1) em vez de O(n))
+            const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t.apelido]));
+
+            const parcelas = parcelasRes.data || [];
             
-            const listWithApelido = parcelasRes.data.map(p => ({
+            // Usa o mapa para adicionar o 'apelido' a cada parcela
+            const listWithApelido = parcelas.map(p => ({
                 ...p,
-                apelido: terceirosRes.data.find(t => t.codSAP === p.cod_sap)?.apelido || 'N/A'
+                apelido: terceirosMap.get(p.cod_sap) || 'N/A' // p.cod_sap (da tabela parcelas) busca em t.codSAP (do mapa)
             }));
             setParcelasList(listWithApelido);
+
         } catch(err) {
+            // Adicionado para facilitar futuras depurações
+            console.error("Erro detalhado ao carregar dados da Parcela Fixa:", err);
             showToast("Erro ao carregar dados.", "error");
         }
         setIsLoading(false);
@@ -2216,7 +2229,6 @@ function ParcelaFixaManagement({ userId, showToast }) {
         }
         setIsLoading(true);
         try {
-            // Adicionado 'obs' ao registro que será salvo
             const record = { cod_sap: formData.cod_sap, valor: parseFloat(formData.valor), obs: formData.obs };
             if (isEditing) {
                 const { error } = await supabase.from('parcelas_fixas').update(record).eq('id', currentParcela.id);
@@ -2228,7 +2240,7 @@ function ParcelaFixaManagement({ userId, showToast }) {
                 showToast("Parcela cadastrada com sucesso!", "success");
             }
             setShowForm(false);
-            setFormData({ cod_sap: '', valor: '', obs: '' }); // Limpa o formulário
+            setFormData({ cod_sap: '', valor: '', obs: '' });
             fetchData();
         } catch(err) {
             if (err.message.includes('duplicate key value violates unique constraint')) {
@@ -2243,7 +2255,6 @@ function ParcelaFixaManagement({ userId, showToast }) {
     const handleEditClick = (parcela) => {
         setIsEditing(true);
         setCurrentParcela(parcela);
-        // Adicionado 'obs' ao carregar para edição
         setFormData({ cod_sap: parcela.cod_sap, valor: parcela.valor, obs: parcela.obs || '' });
         setShowForm(true);
     };
@@ -2263,7 +2274,7 @@ function ParcelaFixaManagement({ userId, showToast }) {
     const handleCancel = () => {
         setShowForm(false);
         setIsEditing(false);
-        setFormData({ cod_sap: '', valor: '', obs: '' }); // Limpa o formulário ao cancelar
+        setFormData({ cod_sap: '', valor: '', obs: '' });
     };
     
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
@@ -2276,7 +2287,6 @@ function ParcelaFixaManagement({ userId, showToast }) {
                 allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, t.apelido))
             ),
             React.createElement('input', { type: 'number', step: '0.01', placeholder: 'Valor da Parcela*', value: formData.valor, onChange: e => setFormData({...formData, valor: e.target.value}), className: 'p-2 border rounded' }),
-            // NOVO: Campo de Observação no formulário
             React.createElement('input', { type: 'text', placeholder: 'Observação (Opcional)', value: formData.obs, onChange: e => setFormData({...formData, obs: e.target.value}), className: 'p-2 border rounded' }),
             
             React.createElement('div', { className: 'md:col-span-2 flex justify-end gap-4 mt-2' },
@@ -2288,7 +2298,6 @@ function ParcelaFixaManagement({ userId, showToast }) {
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: 'text-xs text-slate-700 uppercase bg-slate-100' }, React.createElement('tr', null,
-                    // NOVO: Adicionada coluna "Observação"
                     ['Terceiro (Apelido)', 'Cód. SAP', 'Valor', 'Observação', 'Ações'].map(h => React.createElement('th', { key: h, className: 'px-6 py-4 font-semibold' }, h))
                 )),
                 React.createElement('tbody', null,
@@ -2297,7 +2306,6 @@ function ParcelaFixaManagement({ userId, showToast }) {
                         React.createElement('td', { className: 'px-6 py-4 font-medium' }, p.apelido),
                         React.createElement('td', { className: 'px-6 py-4' }, p.cod_sap),
                         React.createElement('td', { className: 'px-6 py-4' }, formatCurrency(p.valor)),
-                        // NOVO: Célula para exibir a observação
                         React.createElement('td', { className: 'px-6 py-4' }, p.obs || '—'),
                         React.createElement('td', { className: 'px-6 py-4' }, React.createElement('div', { className: 'flex gap-x-4' },
                             React.createElement('button', { onClick: () => handleEditClick(p), className: 'text-gray-400 hover:text-blue-600' }, React.createElement(LucideIcon, {name: 'Edit'})),
@@ -2310,7 +2318,7 @@ function ParcelaFixaManagement({ userId, showToast }) {
     );
 }
 
-/* FIM DA FUNÇÃO ParcelaFixaManagement COMPLETA E ATUALIZADA */
+/* FIM DA FUNÇÃO ParcelaFixaManagement COMPLETA E CORRIGIDA */
 /* INÍCIO DA FUNÇÃO AcertoManagement COMPLETA E ATUALIZADA */
 
 function AcertoManagement({ userId, userRole, showToast }) {
