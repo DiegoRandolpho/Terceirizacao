@@ -3675,11 +3675,10 @@ function AdditionalCities({ userId, userRole, showToast }) {
     const [records, setRecords] = React.useState([]);
     const [branches, setBranches] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [showForm, setShowForm] = React.useState(false);
-    const [isEditing, setIsEditing] = React.useState(false);
-    const [currentRecord, setCurrentRecord] = React.useState(null);
+    const [showForm, setShowForm] = React.useState(false); // Usado apenas para 'Novo Registro'
+    const [editingRecord, setEditingRecord] = React.useState(null); // Controla a edição em linha
     const initialFormState = { filial: '', cidade: '', km: '', valor: '' };
-    const [formData, setFormData] = React.useState(initialFormState);
+    const [formData, setFormData] = React.useState(initialFormState); // Usado apenas para 'Novo Registro'
     const [searchTerm, setSearchTerm] = React.useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
     const [branchFilter, setBranchFilter] = React.useState('all');
@@ -3687,6 +3686,35 @@ function AdditionalCities({ userId, userRole, showToast }) {
 
     const formatDate = (date) => date ?
         new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
+
+    const fetchInitialData = React.useCallback(async (force = false) => {
+        if (!force && (debouncedSearchTerm === '' && branchFilter === 'all')) {
+            setRecords([]);
+            setHasSearched(false);
+            return;
+        }
+        setHasSearched(true);
+        setIsLoading(true);
+        try {
+            let query = supabase
+                .from('adicionais_cidades')
+                .select('*')
+                .is('data_encerramento', null)
+                .order('data_criacao', { ascending: false });
+            if (debouncedSearchTerm) {
+                query = query.ilike('cidade', `%${debouncedSearchTerm}%`);
+            }
+            if (branchFilter !== 'all') {
+                query = query.eq('filial', branchFilter);
+            }
+            const { data, error } = await query;
+            if (error) throw error;
+            setRecords(data || []);
+        } catch (err) {
+            showToast("Erro ao buscar adicionais de cidades.", "error");
+        }
+        setIsLoading(false);
+    }, [debouncedSearchTerm, branchFilter, showToast]);
 
     React.useEffect(() => {
         const fetchBranches = async () => {
@@ -3704,46 +3732,17 @@ function AdditionalCities({ userId, userRole, showToast }) {
         const timerId = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
         }, 500);
-        return () => {
-            clearTimeout(timerId);
-        };
+        return () => clearTimeout(timerId);
     }, [searchTerm]);
 
     React.useEffect(() => {
-        const fetchFilteredData = async () => {
-            if (debouncedSearchTerm === '' && branchFilter === 'all') {
-                setRecords([]);
-                setHasSearched(false);
-                return;
-            }
-            setHasSearched(true);
-            setIsLoading(true);
-            try {
-                let query = supabase
-                    .from('adicionais_cidades')
-                    .select('*')
-                    .is('data_encerramento', null)
-                    .order('data_criacao', { ascending: false });
-                if (debouncedSearchTerm) {
-                    query = query.ilike('cidade', `%${debouncedSearchTerm}%`);
-                }
-                if (branchFilter !== 'all') {
-                    query = query.eq('filial', branchFilter);
-                }
-                const { data, error } = await query;
-                if (error) throw error;
-                setRecords(data || []);
-            } catch (err) {
-                showToast("Erro ao buscar adicionais de cidades.", "error");
-            }
-            setIsLoading(false);
-        };
-        fetchFilteredData();
-    }, [debouncedSearchTerm, branchFilter, showToast]);
+        fetchInitialData();
+    }, [fetchInitialData]);
 
     const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    const handleFormSubmit = async (e) => {
+    // Função para o formulário de NOVO REGISTRO
+    const handleAddRecord = async (e) => {
         e.preventDefault();
         if (!formData.filial || !formData.cidade.trim() || formData.km === '' || formData.valor === '') {
             showToast("Por favor, preencha todos os campos.", "error");
@@ -3751,71 +3750,88 @@ function AdditionalCities({ userId, userRole, showToast }) {
         }
         setIsLoading(true);
         try {
-            if (isEditing) {
-                const { error: updateError } = await supabase
-                    .from('adicionais_cidades')
-                    .update({ data_encerramento: new Date().toISOString() })
-                    .eq('id', currentRecord.id);
-                if (updateError) throw updateError;
-            }
             const newRecord = {
                 filial: formData.filial,
                 cidade: formData.cidade.trim(),
                 km: parseFloat(formData.km),
                 valor: parseFloat(formData.valor)
             };
-            const { error: insertError } = await supabase
-                .from('adicionais_cidades')
-                .insert([newRecord]);
-            if (insertError) throw insertError;
-            showToast(`Registro ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, "success");
+            const { error } = await supabase.from('adicionais_cidades').insert([newRecord]);
+            if (error) throw error;
+            showToast("Registro criado com sucesso!", "success");
             setShowForm(false);
-            setIsEditing(false);
             setFormData(initialFormState);
-            // Refetch data
-            setSearchTerm('');
-            setBranchFilter('all');
+            fetchInitialData(true); // Força a atualização dos dados
         } catch (err) {
             showToast("Falha ao salvar o registro.", "error");
         }
         setIsLoading(false);
     };
 
+    // Funções para a EDIÇÃO EM LINHA
     const handleEditClick = (record) => {
-        setIsEditing(true);
-        setCurrentRecord(record);
-        setFormData({
-            filial: record.filial,
-            cidade: record.cidade,
-            km: record.km,
-            valor: record.valor
-        });
-        setShowForm(true);
+        setEditingRecord({ ...record });
     };
 
-    const handleCancel = () => {
-        setShowForm(false);
-        setIsEditing(false);
-        setFormData(initialFormState);
+    const handleCancelEdit = () => {
+        setEditingRecord(null);
+    };
+
+    const handleFieldChange = (e, fieldName) => {
+        setEditingRecord(prev => ({ ...prev, [fieldName]: e.target.value }));
+    };
+
+    const handleUpdateRecord = async () => {
+        if (!editingRecord) return;
+        if (!editingRecord.filial || !editingRecord.cidade.trim() || editingRecord.km === '' || editingRecord.valor === '') {
+            showToast("Por favor, preencha todos os campos.", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            // Passo 1: Encerrar o registro antigo
+            const { error: updateError } = await supabase
+                .from('adicionais_cidades')
+                .update({ data_encerramento: new Date().toISOString() })
+                .eq('id', editingRecord.id);
+            if (updateError) throw updateError;
+
+            // Passo 2: Inserir o novo registro com os dados atualizados
+            const newRecord = {
+                filial: editingRecord.filial,
+                cidade: editingRecord.cidade.trim(),
+                km: parseFloat(editingRecord.km),
+                valor: parseFloat(editingRecord.valor)
+            };
+            const { error: insertError } = await supabase.from('adicionais_cidades').insert([newRecord]);
+            if (insertError) throw insertError;
+            
+            showToast("Registro atualizado com sucesso!", "success");
+            setEditingRecord(null);
+            fetchInitialData(true); // Força a atualização para mostrar o novo registro
+        } catch (err) {
+            showToast("Falha ao atualizar o registro.", "error");
+        }
+        setIsLoading(false);
     };
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('div', { className: "flex justify-between items-center mb-6" },
             React.createElement('h2', { className: "text-2xl font-bold" }, "Adicional de Cidades"),
             userRole === 'administrador' && !showForm && 
-            React.createElement('button', { onClick: () => setShowForm(true), className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
+            React.createElement('button', { onClick: () => { setShowForm(true); setEditingRecord(null); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
                 React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
                 "Novo Registro"
             )
         ),
-        showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+        showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleAddRecord, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
             React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, React.createElement('option', {value: ""}, "Selecione a Filial"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
             React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder:"Cidade", required: true, className:"p-2 border rounded" }),
             React.createElement('input', { type: "number", name: "km", value: formData.km, onChange: handleInputChange, placeholder:"KM", required: true, step: "0.01", className:"p-2 border rounded" }),
             React.createElement('input', { type: "number", name: "valor", value: formData.valor, onChange: handleInputChange, placeholder:"Valor", required: true, step: "0.01", className:"p-2 border rounded" }),
             React.createElement('div', { className: "md:col-span-full flex justify-end gap-4 mt-2" },
-                React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
-                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, isEditing ? "Salvar Alterações" : "Salvar")
+                React.createElement('button', { type: "button", onClick: () => setShowForm(false), className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, "Salvar")
             )
         ),
         React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
@@ -3832,7 +3848,6 @@ function AdditionalCities({ userId, userRole, showToast }) {
             )
         ),
         
-        // ATUALIZADO: Tabela com o novo estilo
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead',{className:"text-xs text-slate-700 uppercase bg-slate-100"}, 
@@ -3844,17 +3859,33 @@ function AdditionalCities({ userId, userRole, showToast }) {
                     isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center"}, "Carregando...")) : 
                     !hasSearched ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-slate-500"}, "Utilize os filtros acima para buscar.")) :
                     records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-slate-500"}, "Nenhum registro encontrado para os filtros aplicados.")) :
-                    records.map(r => React.createElement('tr', {key:r.id, className:"hover:bg-blue-50 even:bg-slate-50"},
-                        React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, r.filial),
-                        React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, 
-                            React.createElement('span', { className: 'font-medium text-slate-800' }, r.cidade)
-                        ),
-                        React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, r.km),
-                        React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, `R$ ${r.valor.toFixed(2).replace('.', ',')}`),
-                        React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, formatDate(r.data_criacao)),
-                        userRole === 'administrador' && React.createElement('td', {className:"px-6 py-4 text-center"}, 
-                            React.createElement('button',{onClick:()=>handleEditClick(r), className:"text-gray-400 hover:text-blue-600 transition-colors"}, 
-                                React.createElement(LucideIcon, {name:'Edit', className: 'h-5 w-5'})
+                    records.map(r => (
+                        editingRecord && editingRecord.id === r.id ?
+                        // Linha em modo de edição
+                        React.createElement('tr', { key: r.id, className:"bg-blue-50" },
+                            React.createElement('td', { className: "p-2" }, React.createElement('select', { value: editingRecord.filial, onChange: (e) => handleFieldChange(e, 'filial'), className: "p-2 border rounded w-full" }, branches.map(b => React.createElement('option',{key:b, value:b},b)))),
+                            React.createElement('td', { className: "p-2" }, React.createElement('input', { type: "text", value: editingRecord.cidade, onChange: (e) => handleFieldChange(e, 'cidade'), className: "p-2 border rounded w-full" })),
+                            React.createElement('td', { className: "p-2" }, React.createElement('input', { type: "number", value: editingRecord.km, onChange: (e) => handleFieldChange(e, 'km'), className: "p-2 border rounded w-full" })),
+                            React.createElement('td', { className: "p-2" }, React.createElement('input', { type: "number", value: editingRecord.valor, onChange: (e) => handleFieldChange(e, 'valor'), className: "p-2 border rounded w-full" })),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(r.data_criacao)),
+                            React.createElement('td', { className: "px-6 py-4 text-center" }, 
+                                React.createElement('div', { className: "flex justify-center gap-x-2" },
+                                    React.createElement('button', { onClick: handleUpdateRecord, className: "text-gray-400 hover:text-green-600", title:"Salvar" }, React.createElement(LucideIcon, {name: 'Save', className: 'h-5 w-5'})),
+                                    React.createElement('button', { onClick: handleCancelEdit, className: "text-gray-400 hover:text-red-600", title:"Cancelar" }, React.createElement(LucideIcon, {name: 'Ban', className: 'h-5 w-5'}))
+                                )
+                            )
+                        ) :
+                        // Linha normal
+                        React.createElement('tr', {key:r.id, className:"hover:bg-blue-50 even:bg-slate-50"},
+                            React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, r.filial),
+                            React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, React.createElement('span', { className: 'font-medium text-slate-800' }, r.cidade)),
+                            React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, r.km),
+                            React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, `R$ ${r.valor.toFixed(2).replace('.', ',')}`),
+                            React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, formatDate(r.data_criacao)),
+                            userRole === 'administrador' && React.createElement('td', {className:"px-6 py-4 text-center"}, 
+                                React.createElement('button',{onClick:()=>handleEditClick(r), className:"text-gray-400 hover:text-blue-600 transition-colors"}, 
+                                    React.createElement(LucideIcon, {name:'Edit', className: 'h-5 w-5'})
+                                )
                             )
                         )
                     ))
