@@ -3669,16 +3669,16 @@ function Displacements({ userId, userRole, showToast }) {
 
 /* FIM DO CÓDIGO CORRIGIDO */
             
-            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO AdditionalCities */
+/* INÍCIO DO CÓDIGO CORRIGIDO E ATUALIZADO PARA A FUNÇÃO AdditionalCities */
 
 function AdditionalCities({ userId, userRole, showToast }) {
     const [records, setRecords] = React.useState([]);
     const [branches, setBranches] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [showForm, setShowForm] = React.useState(false); // Usado apenas para 'Novo Registro'
-    const [editingRecord, setEditingRecord] = React.useState(null); // Controla a edição em linha
+    const [showForm, setShowForm] = React.useState(false);
+    const [editingRecord, setEditingRecord] = React.useState(null);
     const initialFormState = { filial: '', cidade: '', km: '', valor: '' };
-    const [formData, setFormData] = React.useState(initialFormState); // Usado apenas para 'Novo Registro'
+    const [formData, setFormData] = React.useState(initialFormState);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
     const [branchFilter, setBranchFilter] = React.useState('all');
@@ -3741,7 +3741,6 @@ function AdditionalCities({ userId, userRole, showToast }) {
 
     const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    // Função para o formulário de NOVO REGISTRO
     const handleAddRecord = async (e) => {
         e.preventDefault();
         if (!formData.filial || !formData.cidade.trim() || formData.km === '' || formData.valor === '') {
@@ -3761,25 +3760,16 @@ function AdditionalCities({ userId, userRole, showToast }) {
             showToast("Registro criado com sucesso!", "success");
             setShowForm(false);
             setFormData(initialFormState);
-            fetchInitialData(true); // Força a atualização dos dados
+            fetchInitialData(true);
         } catch (err) {
             showToast("Falha ao salvar o registro.", "error");
         }
         setIsLoading(false);
     };
 
-    // Funções para a EDIÇÃO EM LINHA
-    const handleEditClick = (record) => {
-        setEditingRecord({ ...record });
-    };
-
-    const handleCancelEdit = () => {
-        setEditingRecord(null);
-    };
-
-    const handleFieldChange = (e, fieldName) => {
-        setEditingRecord(prev => ({ ...prev, [fieldName]: e.target.value }));
-    };
+    const handleEditClick = (record) => setEditingRecord({ ...record });
+    const handleCancelEdit = () => setEditingRecord(null);
+    const handleFieldChange = (e, fieldName) => setEditingRecord(prev => ({ ...prev, [fieldName]: e.target.value }));
 
     const handleUpdateRecord = async () => {
         if (!editingRecord) return;
@@ -3789,14 +3779,9 @@ function AdditionalCities({ userId, userRole, showToast }) {
         }
         setIsLoading(true);
         try {
-            // Passo 1: Encerrar o registro antigo
-            const { error: updateError } = await supabase
-                .from('adicionais_cidades')
-                .update({ data_encerramento: new Date().toISOString() })
-                .eq('id', editingRecord.id);
+            const { error: updateError } = await supabase.from('adicionais_cidades').update({ data_encerramento: new Date().toISOString() }).eq('id', editingRecord.id);
             if (updateError) throw updateError;
 
-            // Passo 2: Inserir o novo registro com os dados atualizados
             const newRecord = {
                 filial: editingRecord.filial,
                 cidade: editingRecord.cidade.trim(),
@@ -3808,22 +3793,51 @@ function AdditionalCities({ userId, userRole, showToast }) {
             
             showToast("Registro atualizado com sucesso!", "success");
             setEditingRecord(null);
-            fetchInitialData(true); // Força a atualização para mostrar o novo registro
+            fetchInitialData(true);
         } catch (err) {
             showToast("Falha ao atualizar o registro.", "error");
         }
         setIsLoading(false);
     };
 
+    // NOVO: Função para exportar os dados filtrados
+    const exportToExcel = () => {
+        // Prepara os dados, usando a mesma lista 'records' que a tabela usa
+        const dataForExport = records.map(rec => ({
+            'Filial': rec.filial,
+            'Cidade': rec.cidade,
+            'KM': rec.km,
+            'Valor': rec.valor,
+            'Data Criação': formatDate(rec.data_criacao)
+        }));
+
+        // Cria a planilha e o arquivo Excel
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Adicional Cidades");
+        
+        // Inicia o download do arquivo
+        XLSX.writeFile(workbook, "Adicional_de_Cidades.xlsx");
+    };
+
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        // ATUALIZADO: Cabeçalho agora inclui o botão de exportar
         React.createElement('div', { className: "flex justify-between items-center mb-6" },
             React.createElement('h2', { className: "text-2xl font-bold" }, "Adicional de Cidades"),
-            userRole === 'administrador' && !showForm && 
-            React.createElement('button', { onClick: () => { setShowForm(true); setEditingRecord(null); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
-                React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
-                "Novo Registro"
+            React.createElement('div', { className: "flex gap-x-4" },
+                React.createElement('button', {
+                    onClick: exportToExcel,
+                    className: "py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                    disabled: isLoading || records.length === 0
+                }, "Exportar para Excel"),
+                userRole === 'administrador' && !showForm && 
+                React.createElement('button', { onClick: () => { setShowForm(true); setEditingRecord(null); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
+                    React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
+                    "Novo Registro"
+                )
             )
         ),
+        // O resto do componente continua igual...
         showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleAddRecord, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
             React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, React.createElement('option', {value: ""}, "Selecione a Filial"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
             React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder:"Cidade", required: true, className:"p-2 border rounded" }),
@@ -3861,7 +3875,6 @@ function AdditionalCities({ userId, userRole, showToast }) {
                     records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-slate-500"}, "Nenhum registro encontrado para os filtros aplicados.")) :
                     records.map(r => (
                         editingRecord && editingRecord.id === r.id ?
-                        // Linha em modo de edição
                         React.createElement('tr', { key: r.id, className:"bg-blue-50" },
                             React.createElement('td', { className: "p-2" }, React.createElement('select', { value: editingRecord.filial, onChange: (e) => handleFieldChange(e, 'filial'), className: "p-2 border rounded w-full" }, branches.map(b => React.createElement('option',{key:b, value:b},b)))),
                             React.createElement('td', { className: "p-2" }, React.createElement('input', { type: "text", value: editingRecord.cidade, onChange: (e) => handleFieldChange(e, 'cidade'), className: "p-2 border rounded w-full" })),
@@ -3875,7 +3888,6 @@ function AdditionalCities({ userId, userRole, showToast }) {
                                 )
                             )
                         ) :
-                        // Linha normal
                         React.createElement('tr', {key:r.id, className:"hover:bg-blue-50 even:bg-slate-50"},
                             React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, r.filial),
                             React.createElement('td',{className:"px-6 py-4 border-r border-slate-200"}, React.createElement('span', { className: 'font-medium text-slate-800' }, r.cidade)),
@@ -3895,7 +3907,7 @@ function AdditionalCities({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
+/* FIM DO CÓDIGO CORRIGIDO E ATUALIZADO */
             function DisplacementReleases({ userId, userRole, showToast }) {
                 const [myReleases, setMyReleases] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
